@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+wheels/
+
+# Distribution / packaging
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.mypy_cache/
+.pyre/
+.pytype/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editors and IDEs
+# PyCharm
+.idea/  # Uncomment this to ignore the entire .idea folder
+# VS Code
+.vscode/
+# Spyder
+.spyderproject
+.spyproject
+
+# OS-specific files
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python version management
+.python-version
+
+# UV lock file (si usas uv para dependencias)
+uv.lock
+
+# Cursor IDE
+.cursor/.env

@@ -1,0 +1,25 @@
+- PARA USAR LOS SEEDERS:
+
+# Desde la raíz del proyecto
+python -m app.utils.seeders
+
+- PARA CORRER EL BACKEND:
+
+uv run uvicorn backend.app.main:app --reload
+
+- PARA CONCATENAR TODOS LOS ARCHIVOS DEL BACKEND:
+
+# Desde el directorio "backend"
+find app -type f -name "*.py" ! -path "*/__pycache__/*" | sort | while read f; do
+  echo "###############################"
+  echo "# ARCHIVO: $f"
+  echo "###############################"
+  echo
+  cat "$f"
+  echo -e "\n\n"
+done > contexto_backend_merx_v2.txt
+
+- PARA OBTENER LA ARQUITECTURA DEL BACKEND:
+
+# Desde el directorio "backend"
+tree -I "__pycache__"
