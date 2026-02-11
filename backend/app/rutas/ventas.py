@@ -15,7 +15,7 @@ from ..servicios.servicio_ventas import (
     confirmar_venta,
     obtener_estadisticas_ventas
 )
-from ..utils.seguridad import get_current_user
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
 
 router = APIRouter()
@@ -26,39 +26,12 @@ logger = setup_logger(__name__)
 async def crear_nueva_venta(
         venta_data: VentasCreate,
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Crea una nueva venta.
-
-    **Validaciones automáticas:**
-    - Tercero existe y es cliente
-    - Productos existen y están activos
-    - Inventario suficiente (si aplica)
-
-    **Cálculos automáticos:**
-    - Subtotales, descuentos, IVA, total
-    - No enviar estos campos en el request
-
-    **Ejemplo request:**
-    ```json
-    {
-        "tercero_id": "uuid-del-cliente",
-        "fecha_venta": "2026-01-29",
-        "detalles": [
-            {
-                "producto_id": "uuid-del-producto",
-                "cantidad": 5,
-                "precio_unitario": 10000,
-                "descuento": 500,
-                "porcentaje_iva": 19
-            }
-        ]
-    }
-    ```
-    """
+    """Crea una nueva venta."""
     try:
-        nueva_venta = crear_venta(db, venta_data)
+        nueva_venta = crear_venta(db, venta_data, tenant_id)
         db.commit()
 
         logger.info(
@@ -89,26 +62,18 @@ async def crear_nueva_venta(
 
 @router.get("/", response_model=List[VentasResponse])
 async def listar_ventas_endpoint(
-        skip: int = Query(0, ge=0, description="Registros a saltar"),
-        limit: int = Query(100, ge=1, le=1000, description="Máximo de registros"),
-        tercero_id: Optional[UUID] = Query(None, description="Filtrar por cliente"),
-        estado: Optional[str] = Query(None, description="Filtrar por estado"),
+        skip: int = Query(0, ge=0),
+        limit: int = Query(100, ge=1, le=1000),
+        tercero_id: Optional[UUID] = Query(None),
+        estado: Optional[str] = Query(None),
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Lista ventas con filtros opcionales.
-
-    **Filtros disponibles:**
-    - `tercero_id`: Ventas de un cliente específico
-    - `estado`: PENDIENTE, CONFIRMADA, FACTURADA, ANULADA
-
-    **Paginación:**
-    - `skip`: Número de registros a saltar (default: 0)
-    - `limit`: Máximo de registros (default: 100, max: 1000)
-    """
+    """Lista ventas con filtros opcionales."""
     ventas = listar_ventas(
         db,
+        tenant_id=tenant_id,
         skip=skip,
         limit=limit,
         tercero_id=tercero_id,
@@ -121,43 +86,22 @@ async def listar_ventas_endpoint(
 @router.get("/estadisticas", response_model=dict)
 async def obtener_estadisticas(
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Obtiene estadísticas de ventas.
-
-    **Retorna:**
-    ```json
-    {
-        "total_ventas": 150,
-        "total_monto": 5000000.00,
-        "promedio_venta": 33333.33,
-        "por_estado": {
-            "CONFIRMADA": {"cantidad": 120, "monto": 4200000.00},
-            "PENDIENTE": {"cantidad": 30, "monto": 800000.00}
-        }
-    }
-    ```
-    """
-    # TODO: Agregar filtros de fecha cuando sea necesario
-    return obtener_estadisticas_ventas(db)
+    """Obtiene estadísticas de ventas."""
+    return obtener_estadisticas_ventas(db, tenant_id)
 
 
 @router.get("/{venta_id}", response_model=VentasResponse)
 async def obtener_venta_endpoint(
         venta_id: UUID,
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Obtiene una venta por ID.
-
-    **Incluye:**
-    - Datos completos de la venta
-    - Detalles con productos
-    - Totales calculados
-    """
-    venta = obtener_venta(db, venta_id)
+    """Obtiene una venta por ID."""
+    venta = obtener_venta(db, venta_id, tenant_id)
     return VentasResponse.model_validate(venta)
 
 
@@ -166,21 +110,12 @@ async def actualizar_venta_endpoint(
         venta_id: UUID,
         venta_data: VentasUpdate,
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Actualiza una venta existente.
-
-    **Campos actualizables:**
-    - `estado`: Cambiar estado de la venta
-    - `observaciones`: Modificar observaciones
-
-    **Restricciones:**
-    - No se puede modificar una venta anulada
-    - No se puede anular una venta facturada (usar endpoint específico)
-    """
+    """Actualiza una venta existente."""
     try:
-        venta = actualizar_venta(db, venta_id, venta_data)
+        venta = actualizar_venta(db, venta_id, venta_data, tenant_id)
         db.commit()
 
         logger.info(
@@ -194,7 +129,6 @@ async def actualizar_venta_endpoint(
         return VentasResponse.model_validate(venta)
 
     except ValueError as e:
-        logger.warning(f"Validación fallida al actualizar venta: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -214,18 +148,12 @@ async def actualizar_venta_endpoint(
 async def confirmar_venta_endpoint(
         venta_id: UUID,
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Confirma una venta (PENDIENTE → CONFIRMADA).
-
-    **Efectos:**
-    - Cambia estado a CONFIRMADA
-    - Genera movimientos de inventario
-    - Registra asiento contable (si aplica)
-    """
+    """Confirma una venta (PENDIENTE -> CONFIRMADA). Descuenta inventario."""
     try:
-        venta = confirmar_venta(db, venta_id)
+        venta = confirmar_venta(db, venta_id, tenant_id)
         db.commit()
 
         logger.info(
@@ -257,24 +185,14 @@ async def confirmar_venta_endpoint(
 @router.post("/{venta_id}/anular", response_model=VentasResponse)
 async def anular_venta_endpoint(
         venta_id: UUID,
-        motivo: Optional[str] = Query(None, description="Motivo de anulación"),
+        motivo: Optional[str] = Query(None),
         db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user)
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """
-    Anula una venta.
-
-    **Efectos:**
-    - Cambia estado a ANULADA
-    - Revierte movimientos de inventario
-    - Registra asiento contable de anulación (si aplica)
-
-    **Restricciones:**
-    - No se puede anular una venta facturada
-    - Requiere motivo (recomendado)
-    """
+    """Anula una venta. Revierte inventario si estaba confirmada."""
     try:
-        venta = anular_venta(db, venta_id, motivo)
+        venta = anular_venta(db, venta_id, tenant_id, motivo)
         db.commit()
 
         logger.warning(

@@ -10,32 +10,32 @@ from sqlalchemy.orm import Session
 from typing import List
 from fastapi import HTTPException
 
-from ..datos.modelos import Ventas, VentasDetalle, Terceros, Productos
+from ..datos.modelos import Ventas, VentasDetalle, Terceros, Productos, TipoMovimiento
 from ..datos.esquemas import VentasCreate, VentasUpdate
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.logger import setup_logger
+from ..servicios.servicio_inventario import ServicioInventario
 
 logger = setup_logger(__name__)
 
 
-def crear_venta(db: Session, venta_data: VentasCreate) -> Ventas:
+def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Ventas:
     """
     Crea una nueva venta con sus detalles.
-    Los totales se calculan automáticamente via @hybrid_property.
 
     Args:
         db: Sesión de base de datos
         venta_data: Datos de la venta a crear
+        tenant_id: UUID del tenant
 
     Returns:
         Venta creada con todos los campos calculados
-
-    Raises:
-        ValueError: Si el tercero no existe o no es cliente
-        HTTPException: Si hay errores de inventario
     """
     # Validar tercero
-    tercero = db.query(Terceros).filter(Terceros.id == venta_data.tercero_id).first()
+    tercero = db.query(Terceros).filter(
+        Terceros.id == venta_data.tercero_id,
+        Terceros.tenant_id == tenant_id
+    ).first()
     if not tercero:
         raise ValueError("El tercero especificado no existe")
 
@@ -43,10 +43,11 @@ def crear_venta(db: Session, venta_data: VentasCreate) -> Ventas:
         raise ValueError("El tercero no está marcado como cliente")
 
     # Generar número de venta
-    numero_venta = generar_numero_secuencia(db, 'VENTAS')
+    numero_venta = generar_numero_secuencia(db, 'VENTAS', tenant_id)
 
-    # Crear venta (sin totales, se calculan automáticamente)
+    # Crear venta
     nueva_venta = Ventas(
+        tenant_id=tenant_id,
         numero_venta=numero_venta,
         tercero_id=venta_data.tercero_id,
         fecha_venta=venta_data.fecha_venta,
@@ -54,30 +55,30 @@ def crear_venta(db: Session, venta_data: VentasCreate) -> Ventas:
         observaciones=venta_data.observaciones
     )
     db.add(nueva_venta)
-    db.flush()  # Genera el ID para usarlo en detalles
+    db.flush()
 
     # Crear detalles
     for detalle_data in venta_data.detalles:
-        # Validar producto
-        producto = db.query(Productos).filter(Productos.id == detalle_data.producto_id).first()
+        producto = db.query(Productos).filter(
+            Productos.id == detalle_data.producto_id,
+            Productos.tenant_id == tenant_id
+        ).first()
         if not producto:
             raise ValueError(f"Producto {detalle_data.producto_id} no existe")
 
         if not producto.estado:
             raise ValueError(f"Producto {producto.nombre} está inactivo")
 
-        # Usar precio_venta del producto si no se especifica precio_unitario
         precio_unitario = detalle_data.precio_unitario
         if precio_unitario == Decimal("0.00"):
             precio_unitario = producto.precio_venta
 
-        # Usar porcentaje_iva del producto si no se especifica
         porcentaje_iva = detalle_data.porcentaje_iva
         if porcentaje_iva == Decimal("0.00"):
             porcentaje_iva = producto.porcentaje_iva
 
-        # Crear detalle (campos calculados se generan automáticamente via @hybrid_property)
         detalle = VentasDetalle(
+            tenant_id=tenant_id,
             venta_id=nueva_venta.id,
             producto_id=detalle_data.producto_id,
             cantidad=detalle_data.cantidad,
@@ -87,10 +88,7 @@ def crear_venta(db: Session, venta_data: VentasCreate) -> Ventas:
         )
         db.add(detalle)
 
-    db.flush()  # Asegura que los detalles estén en la sesión
-
-    # Los totales de la venta se calculan automáticamente via @hybrid_property
-    # Al hacer db.refresh() o al acceder a nueva_venta.total_venta, se calculan dinámicamente
+    db.flush()
 
     logger.info(
         f"Venta {numero_venta} creada - "
@@ -104,25 +102,14 @@ def crear_venta(db: Session, venta_data: VentasCreate) -> Ventas:
 
 def listar_ventas(
         db: Session,
+        tenant_id: UUID,
         skip: int = 0,
         limit: int = 100,
         tercero_id: UUID = None,
         estado: str = None
 ) -> List[Ventas]:
-    """
-    Lista ventas con filtros opcionales.
-
-    Args:
-        db: Sesión de base de datos
-        skip: Número de registros a saltar (paginación)
-        limit: Máximo de registros a retornar
-        tercero_id: Filtrar por tercero (opcional)
-        estado: Filtrar por estado (opcional)
-
-    Returns:
-        Lista de ventas que cumplen los criterios
-    """
-    query = db.query(Ventas)
+    """Lista ventas con filtros opcionales."""
+    query = db.query(Ventas).filter(Ventas.tenant_id == tenant_id)
 
     if tercero_id:
         query = query.filter(Ventas.tercero_id == tercero_id)
@@ -139,21 +126,12 @@ def listar_ventas(
     )
 
 
-def obtener_venta(db: Session, venta_id: UUID) -> Ventas:
-    """
-    Obtiene una venta por ID con sus detalles.
-
-    Args:
-        db: Sesión de base de datos
-        venta_id: UUID de la venta
-
-    Returns:
-        Venta con detalles cargados
-
-    Raises:
-        HTTPException: Si la venta no existe
-    """
-    venta = db.query(Ventas).filter(Ventas.id == venta_id).first()
+def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
+    """Obtiene una venta por ID."""
+    venta = db.query(Ventas).filter(
+        Ventas.id == venta_id,
+        Ventas.tenant_id == tenant_id
+    ).first()
 
     if not venta:
         raise HTTPException(
@@ -167,32 +145,16 @@ def obtener_venta(db: Session, venta_id: UUID) -> Ventas:
 def actualizar_venta(
         db: Session,
         venta_id: UUID,
-        venta_data: VentasUpdate
+        venta_data: VentasUpdate,
+        tenant_id: UUID
 ) -> Ventas:
-    """
-    Actualiza una venta existente.
-    Solo permite actualizar estado y observaciones (no detalles).
-
-    Args:
-        db: Sesión de base de datos
-        venta_id: UUID de la venta
-        venta_data: Datos a actualizar
-
-    Returns:
-        Venta actualizada
-
-    Raises:
-        HTTPException: Si la venta no existe
-        ValueError: Si se intenta modificar una venta anulada
-    """
-    venta = obtener_venta(db, venta_id)
+    """Actualiza una venta existente."""
+    venta = obtener_venta(db, venta_id, tenant_id)
 
     if venta.estado == "ANULADA":
         raise ValueError("No se puede modificar una venta anulada")
 
-    # Actualizar solo campos permitidos
     if venta_data.estado is not None:
-        # Validar transición de estado
         if venta_data.estado == "ANULADA" and venta.estado == "FACTURADA":
             raise ValueError("No se puede anular una venta facturada")
         venta.estado = venta_data.estado
@@ -205,28 +167,30 @@ def actualizar_venta(
     return venta
 
 
-def anular_venta(db: Session, venta_id: UUID, motivo: str = None) -> Ventas:
-    """
-    Anula una venta (cambio de estado a ANULADA).
-
-    Args:
-        db: Sesión de base de datos
-        venta_id: UUID de la venta
-        motivo: Motivo de la anulación (opcional)
-
-    Returns:
-        Venta anulada
-
-    Raises:
-        ValueError: Si la venta ya está anulada o facturada
-    """
-    venta = obtener_venta(db, venta_id)
+def anular_venta(db: Session, venta_id: UUID, tenant_id: UUID, motivo: str = None) -> Ventas:
+    """Anula una venta (cambio de estado a ANULADA)."""
+    venta = obtener_venta(db, venta_id, tenant_id)
 
     if venta.estado == "ANULADA":
         raise ValueError("La venta ya está anulada")
 
     if venta.estado == "FACTURADA":
         raise ValueError("No se puede anular una venta facturada")
+
+    # Si la venta estaba confirmada, revertir inventario
+    if venta.estado == "CONFIRMADA":
+        servicio_inv = ServicioInventario(db, tenant_id)
+        for detalle in venta.detalles:
+            producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+            if producto and producto.maneja_inventario:
+                servicio_inv.crear_movimiento(
+                    producto_id=detalle.producto_id,
+                    tipo=TipoMovimiento.ENTRADA,
+                    cantidad=detalle.cantidad,
+                    costo_unitario=servicio_inv.obtener_costo_promedio(detalle.producto_id),
+                    documento_referencia=f"ANULACION-{venta.numero_venta}",
+                    observaciones=f"Reversión por anulación de venta {venta.numero_venta}"
+                )
 
     venta.estado = "ANULADA"
 
@@ -242,49 +206,47 @@ def anular_venta(db: Session, venta_id: UUID, motivo: str = None) -> Ventas:
     return venta
 
 
-def confirmar_venta(db: Session, venta_id: UUID) -> Ventas:
+def confirmar_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
     """
-    Confirma una venta (cambia estado de PENDIENTE a CONFIRMADA).
-
-    Args:
-        db: Sesión de base de datos
-        venta_id: UUID de la venta
-
-    Returns:
-        Venta confirmada
-
-    Raises:
-        ValueError: Si la venta no está en estado PENDIENTE
+    Confirma una venta (PENDIENTE -> CONFIRMADA).
+    Descuenta inventario de cada producto que maneja inventario.
     """
-    venta = obtener_venta(db, venta_id)
+    venta = obtener_venta(db, venta_id, tenant_id)
 
     if venta.estado != "PENDIENTE":
         raise ValueError(f"Solo se pueden confirmar ventas en estado PENDIENTE. Estado actual: {venta.estado}")
 
+    # Descontar inventario
+    servicio_inv = ServicioInventario(db, tenant_id)
+    for detalle in venta.detalles:
+        producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+        if producto and producto.maneja_inventario:
+            servicio_inv.crear_movimiento(
+                producto_id=detalle.producto_id,
+                tipo=TipoMovimiento.SALIDA,
+                cantidad=detalle.cantidad,
+                documento_referencia=f"VENTA-{venta.numero_venta}",
+                observaciones=f"Venta {venta.numero_venta}"
+            )
+
     venta.estado = "CONFIRMADA"
 
-    logger.info(f"Venta {venta.numero_venta} CONFIRMADA")
+    logger.info(f"Venta {venta.numero_venta} CONFIRMADA con descuento de inventario")
 
     return venta
 
 
 def obtener_estadisticas_ventas(
         db: Session,
+        tenant_id: UUID,
         fecha_inicio: datetime = None,
         fecha_fin: datetime = None
 ) -> dict:
-    """
-    Obtiene estadísticas de ventas en un rango de fechas.
-
-    Args:
-        db: Sesión de base de datos
-        fecha_inicio: Fecha inicial (opcional)
-        fecha_fin: Fecha final (opcional)
-
-    Returns:
-        Diccionario con estadísticas
-    """
-    query = db.query(Ventas).filter(Ventas.estado != "ANULADA")
+    """Obtiene estadísticas de ventas en un rango de fechas."""
+    query = db.query(Ventas).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado != "ANULADA"
+    )
 
     if fecha_inicio:
         query = query.filter(Ventas.fecha_venta >= fecha_inicio)

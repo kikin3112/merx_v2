@@ -1,13 +1,14 @@
 """
 Utilidades de seguridad: JWT, hashing de passwords, autenticación.
 Usa Argon2 para hashing (más seguro que bcrypt).
+Soporte multi-tenant con tenant_id en JWT payload.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Callable
+from typing import Optional, Callable, List, NamedTuple
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -18,6 +19,17 @@ from ..datos.modelos import Usuarios
 from ..utils.logger import setup_logger, set_request_context
 
 logger = setup_logger(__name__)
+
+
+# ============================================================================
+# TIPOS DE DATOS PARA CONTEXTO DE USUARIO
+# ============================================================================
+
+class UserContext(NamedTuple):
+    """Contexto del usuario autenticado con información del tenant."""
+    user: Usuarios
+    tenant_id: Optional[UUID]
+    rol_en_tenant: Optional[str]
 
 # ============================================================================
 # CONFIGURACIÓN DE HASHING
@@ -88,20 +100,29 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # FUNCIONES JWT - ACCESS TOKEN
 # ============================================================================
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: dict,
+    expires_delta: Optional[timedelta] = None,
+    tenant_id: Optional[UUID] = None,
+    rol_en_tenant: Optional[str] = None
+) -> str:
     """
-    Crea un access token JWT.
+    Crea un access token JWT con soporte multi-tenant.
 
     Args:
         data: Datos a incluir (típicamente {"sub": user_id, "email": ..., "rol": ...})
         expires_delta: Tiempo de expiración personalizado (default: 30 min)
+        tenant_id: UUID del tenant seleccionado (opcional)
+        rol_en_tenant: Rol del usuario en el tenant específico (opcional)
 
     Returns:
         Token JWT codificado
 
     Ejemplo:
         >>> token = create_access_token(
-        ...     data={"sub": str(user.id), "email": user.email, "rol": user.rol}
+        ...     data={"sub": str(user.id), "email": user.email, "rol": user.rol},
+        ...     tenant_id=selected_tenant_id,
+        ...     rol_en_tenant="admin"
         ... )
     """
     to_encode = data.copy()
@@ -119,6 +140,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         "iat": now,  # Issued at
         "type": "access"
     })
+
+    # Agregar tenant_id si está presente
+    if tenant_id:
+        to_encode["tenant_id"] = str(tenant_id)
+
+    # Agregar rol en el tenant si está presente
+    if rol_en_tenant:
+        to_encode["rol_tenant"] = rol_en_tenant
 
     encoded_jwt = jwt.encode(
         to_encode,
@@ -257,6 +286,7 @@ def get_current_user(
 ) -> Usuarios:
     """
     Dependencia de FastAPI para obtener el usuario autenticado.
+    NO valida contexto de tenant (usar get_current_user_with_tenant para eso).
 
     Uso:
         @router.get("/protected")
@@ -321,11 +351,105 @@ def get_current_user(
     return user
 
 
+def get_current_user_with_tenant(
+        request: Request,
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        db: Session = Depends(get_db)
+) -> UserContext:
+    """
+    Dependencia de FastAPI para obtener usuario con contexto de tenant.
+    Valida que el tenant_id del header coincida con el del token.
+
+    Uso:
+        @router.get("/tenant-protected")
+        async def tenant_route(
+            ctx: UserContext = Depends(get_current_user_with_tenant)
+        ):
+            return {"user": ctx.user.email, "tenant": ctx.tenant_id}
+
+    Returns:
+        UserContext con usuario, tenant_id y rol en tenant
+
+    Raises:
+        HTTPException 401: Si el token es inválido
+        HTTPException 403: Si el usuario no tiene acceso al tenant
+    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+
+    # Extraer user_id del token
+    user_id: str = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: falta subject",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Validar formato UUID del usuario
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: ID de usuario malformado",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Buscar usuario en DB
+    user = db.query(Usuarios).filter(Usuarios.id == user_uuid).first()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Validar que esté activo
+    if not user.estado:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario inactivo"
+        )
+
+    # Extraer tenant_id del token
+    token_tenant_id_str = payload.get("tenant_id")
+    rol_en_tenant = payload.get("rol_tenant")
+
+    # Obtener tenant_id del header (establecido por middleware)
+    header_tenant_id = getattr(request.state, 'tenant_id', None)
+
+    tenant_id = None
+
+    if token_tenant_id_str:
+        try:
+            tenant_id = UUID(token_tenant_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: tenant_id malformado",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        # Si hay tenant_id en header, validar que coincida con el del token
+        if header_tenant_id and header_tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="El tenant_id del header no coincide con el del token"
+            )
+
+    # Establecer contexto de usuario para logging
+    set_request_context(user_id=str(user.id))
+
+    return UserContext(user=user, tenant_id=tenant_id, rol_en_tenant=rol_en_tenant)
+
+
 def get_current_active_admin(
         current_user: Usuarios = Depends(get_current_user)
 ) -> Usuarios:
     """
-    Dependencia para rutas que requieren rol admin.
+    Dependencia para rutas que requieren rol admin o superadmin.
 
     Uso:
         @router.delete("/users/{user_id}")
@@ -338,7 +462,7 @@ def get_current_active_admin(
     Raises:
         HTTPException 403: Si el usuario no es admin
     """
-    if current_user.rol != "admin":
+    if current_user.rol != "admin" and not current_user.es_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permisos insuficientes. Se requiere rol admin"
@@ -377,6 +501,76 @@ def require_roles(*allowed_roles: str) -> Callable:
         return current_user
 
     return role_checker
+
+
+def require_tenant_roles(*allowed_roles: str) -> Callable:
+    """
+    Factory de dependencias para validación de roles en contexto de tenant.
+
+    Uso:
+        @router.post("/productos")
+        async def crear_producto(
+            producto: ProductoCreate,
+            ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+        ):
+            # Solo admin y operador del tenant pueden crear productos
+            # ctx.tenant_id contiene el UUID del tenant
+
+    Args:
+        *allowed_roles: Roles permitidos en el tenant (ej: 'admin', 'operador', 'vendedor')
+
+    Returns:
+        Función de dependencia que valida el rol del usuario en el tenant
+
+    Raises:
+        HTTPException 403: Si el usuario no tiene uno de los roles permitidos en el tenant
+    """
+
+    def tenant_role_checker(
+        request: Request,
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        db: Session = Depends(get_db)
+    ) -> UserContext:
+        ctx = get_current_user_with_tenant(request, credentials, db)
+
+        # Superadmin global tiene acceso a todo
+        if ctx.user.es_superadmin:
+            return ctx
+
+        # Validar rol en tenant
+        if ctx.rol_en_tenant not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permisos insuficientes en este tenant. Se requiere uno de los roles: {', '.join(allowed_roles)}"
+            )
+
+        return ctx
+
+    return tenant_role_checker
+
+
+def get_superadmin(
+    current_user: Usuarios = Depends(get_current_user)
+) -> Usuarios:
+    """
+    Dependencia para rutas que requieren ser superadmin del sistema.
+
+    Uso:
+        @router.get("/superadmin/tenants")
+        async def list_all_tenants(
+            superadmin: Usuarios = Depends(get_superadmin)
+        ):
+            # Solo superadmins pueden ver todos los tenants
+
+    Raises:
+        HTTPException 403: Si el usuario no es superadmin
+    """
+    if not current_user.es_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requiere ser SuperAdmin del sistema"
+        )
+    return current_user
 
 
 # ============================================================================
@@ -462,3 +656,45 @@ def is_token_expired(token: str) -> bool:
     if not expiration:
         return True
     return datetime.now(timezone.utc) > expiration
+
+
+def get_tenant_id_from_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> UUID:
+    """
+    Dependencia para extraer tenant_id directamente del token JWT.
+
+    Útil cuando solo se necesita el tenant_id sin cargar el usuario completo.
+
+    Uso:
+        @router.get("/data")
+        async def get_data(
+            tenant_id: UUID = Depends(get_tenant_id_from_token)
+        ):
+            # tenant_id disponible directamente
+
+    Returns:
+        UUID del tenant
+
+    Raises:
+        HTTPException 401: Si el token es inválido o no tiene tenant_id
+    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+
+    tenant_id_str = payload.get("tenant_id")
+    if not tenant_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token no contiene tenant_id. Seleccione un tenant primero.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    try:
+        return UUID(tenant_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: tenant_id malformado",
+            headers={"WWW-Authenticate": "Bearer"}
+        )

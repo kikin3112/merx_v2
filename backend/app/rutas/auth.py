@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -8,9 +9,14 @@ from ..datos.esquemas import (
     Token,
     LoginRequest,
     ChangePasswordRequest,
-    UsuarioResponse
+    UsuarioResponse,
+    TenantBriefResponse,
+    TokenWithTenants,
+    TokenWithTenant,
+    TenantSelectionRequest
 )
 from ..datos.modelos import Usuarios
+from ..servicios.servicio_tenants import ServicioTenants
 from ..utils.seguridad import (
     authenticate_user,
     create_access_token,
@@ -27,10 +33,15 @@ router = APIRouter()
 logger = setup_logger(__name__)
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenWithTenants)
 async def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
     """
-    Autentica usuario y devuelve tokens JWT.
+    Autentica usuario y devuelve tokens JWT junto con los tenants disponibles.
+
+    **Flujo Multi-Tenant:**
+    1. Login con email/password -> Retorna token + lista de tenants
+    2. Si solo tiene 1 tenant, puede usarlo directamente
+    3. Si tiene múltiples, debe llamar a /select-tenant para obtener token con tenant
 
     **Seguridad:**
     - Rate limited (configurar en middleware)
@@ -44,7 +55,8 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
         "refresh_token": "eyJ...",
         "token_type": "bearer",
         "expires_in": 1800,
-        "user": {...}
+        "user": {...},
+        "tenants": [{"id": "...", "nombre": "...", "slug": "...", "estado": "activo"}]
     }
     ```
     """
@@ -74,7 +86,17 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
             detail="Usuario inactivo. Contacte al administrador."
         )
 
-    # Generar tokens
+    # Obtener tenants del usuario
+    servicio_tenants = ServicioTenants(db)
+    usuarios_tenants = servicio_tenants.obtener_tenants_usuario(user.id)
+
+    tenants_response: List[TenantBriefResponse] = []
+    for ut in usuarios_tenants:
+        tenant = servicio_tenants.obtener_tenant_por_id(ut.tenant_id)
+        if tenant and tenant.esta_activo:
+            tenants_response.append(TenantBriefResponse.model_validate(tenant))
+
+    # Generar tokens (sin tenant_id aún)
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id), "email": user.email, "rol": user.rol},
@@ -94,16 +116,95 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
         extra={
             "user_id": str(user.id),
             "rol": user.rol,
+            "tenants_count": len(tenants_response),
             "ip": request.client.host if request.client else "unknown"
         }
     )
 
-    return Token(
+    return TokenWithTenants(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        user=UsuarioResponse.model_validate(user)
+        user=UsuarioResponse.model_validate(user),
+        tenants=tenants_response
+    )
+
+
+@router.post("/select-tenant", response_model=TokenWithTenant)
+async def select_tenant(
+    request: Request,
+    selection: TenantSelectionRequest,
+    current_user: Usuarios = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Selecciona un tenant y genera un nuevo token con contexto de tenant.
+
+    **Uso:**
+    1. Después del login, el usuario ve la lista de tenants
+    2. Selecciona uno y llama a este endpoint
+    3. Recibe un nuevo token con el tenant_id incluido
+
+    **Requiere:** Token de acceso válido (del login inicial)
+    """
+    servicio = ServicioTenants(db)
+
+    # Validar acceso al tenant
+    usuario_tenant = servicio.validar_acceso_tenant(current_user.id, selection.tenant_id)
+    if not usuario_tenant:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes acceso a este tenant"
+        )
+
+    # Obtener información del tenant
+    tenant = servicio.obtener_tenant_por_id(selection.tenant_id)
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant no encontrado"
+        )
+
+    # Verificar que el tenant esté activo
+    if not tenant.esta_activo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El tenant está suspendido o inactivo"
+        )
+
+    # Generar nuevos tokens CON tenant_id
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": str(current_user.id), "email": current_user.email, "rol": current_user.rol},
+        expires_delta=access_token_expires,
+        tenant_id=selection.tenant_id,
+        rol_en_tenant=usuario_tenant.rol
+    )
+
+    refresh_token = create_refresh_token(
+        data={"sub": str(current_user.id)},
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+
+    logger.info(
+        f"Tenant seleccionado: {tenant.slug} por {current_user.email}",
+        extra={
+            "user_id": str(current_user.id),
+            "tenant_id": str(tenant.id),
+            "rol_en_tenant": usuario_tenant.rol,
+            "ip": request.client.host if request.client else "unknown"
+        }
+    )
+
+    return TokenWithTenant(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=UsuarioResponse.model_validate(current_user),
+        tenant=TenantBriefResponse.model_validate(tenant),
+        rol_en_tenant=usuario_tenant.rol
     )
 
 
