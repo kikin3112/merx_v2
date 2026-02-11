@@ -413,6 +413,116 @@ class OrdenesProduccionResponse(BaseModel):
 
 
 # ============================================================================
+# RECETAS (BOM - Bill of Materials)
+# ============================================================================
+
+class RecetaIngredienteBase(BaseModel):
+    producto_id: UUID
+    cantidad: Decimal = Field(..., gt=0)
+    unidad: str = Field(
+        default="UNIDAD",
+        pattern="^(UNIDAD|GRAMO|KILOGRAMO|MILILITRO|LITRO|METRO|CENTIMETRO)$"
+    )
+    notas: Optional[str] = Field(None, max_length=200)
+
+
+class RecetaIngredienteCreate(RecetaIngredienteBase):
+    pass
+
+
+class RecetaIngredienteResponse(RecetaIngredienteBase):
+    id: UUID
+    receta_id: UUID
+    costo_linea: Optional[Decimal] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecetaBase(BaseModel):
+    nombre: str = Field(..., max_length=200)
+    descripcion: Optional[str] = None
+    producto_resultado_id: UUID
+    cantidad_resultado: Decimal = Field(default=Decimal("1.00"), gt=0)
+    costo_mano_obra: Decimal = Field(default=Decimal("0.00"), ge=0)
+    tiempo_produccion_minutos: Optional[int] = Field(None, ge=0)
+    notas: Optional[str] = None
+    estado: bool = True
+
+
+class RecetaCreate(RecetaBase):
+    ingredientes: List[RecetaIngredienteCreate] = Field(..., min_length=1)
+
+
+class RecetaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    cantidad_resultado: Optional[Decimal] = None
+    costo_mano_obra: Optional[Decimal] = None
+    tiempo_produccion_minutos: Optional[int] = None
+    notas: Optional[str] = None
+    estado: Optional[bool] = None
+
+
+class RecetaResponse(RecetaBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    costo_ingredientes: Optional[Decimal] = None
+    costo_total: Optional[Decimal] = None
+    costo_unitario: Optional[Decimal] = None
+    ingredientes: List[RecetaIngredienteResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# RECETAS - CALCULAR COSTO
+# ============================================================================
+
+class IngredienteCostoDetalle(BaseModel):
+    producto_id: str
+    producto_nombre: str
+    cantidad: float
+    unidad: str
+    costo_unitario: float
+    costo_linea: float
+
+
+class RecetaCostoResponse(BaseModel):
+    receta_id: str
+    receta_nombre: str
+    producto_resultado_id: str
+    cantidad_resultado: float
+    costo_ingredientes: float
+    costo_mano_obra: float
+    costo_total: float
+    costo_unitario: float
+    precio_venta_actual: float
+    margen_actual_porcentaje: float
+    detalle_ingredientes: List[IngredienteCostoDetalle]
+
+
+# ============================================================================
+# RECETAS - PRODUCCION
+# ============================================================================
+
+class ProduccionRequest(BaseModel):
+    cantidad: Decimal = Field(..., gt=0, description="Cantidad de lotes a producir")
+    observaciones: Optional[str] = None
+
+
+class ProduccionResponse(BaseModel):
+    receta_id: str
+    receta_nombre: str
+    producto_resultado_id: str
+    cantidad_producida: float
+    costo_ingredientes: float
+    costo_mano_obra: float
+    costo_total: float
+    costo_unitario: float
+    documento_referencia: str
+    movimiento_id: str
+
+
+# ============================================================================
 # COTIZACIONES
 # ============================================================================
 
@@ -698,3 +808,198 @@ class SecuenciaResponse(SecuenciaBase):
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# PLANES (Multi-Tenancy)
+# ============================================================================
+
+class PlanBase(BaseModel):
+    nombre: str = Field(..., max_length=100)
+    descripcion: Optional[str] = None
+    precio_mensual: Decimal = Field(default=Decimal("0.00"), ge=0)
+    precio_anual: Optional[Decimal] = Field(None, ge=0)
+    max_usuarios: int = Field(default=3, ge=1)
+    max_productos: int = Field(default=100, ge=1)
+    max_facturas_mes: int = Field(default=100, ge=1)
+    max_storage_mb: int = Field(default=500, ge=1)
+    esta_activo: bool = True
+    es_default: bool = False
+
+
+class PlanCreate(PlanBase):
+    pass
+
+
+class PlanUpdate(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    precio_mensual: Optional[Decimal] = None
+    precio_anual: Optional[Decimal] = None
+    max_usuarios: Optional[int] = None
+    max_productos: Optional[int] = None
+    max_facturas_mes: Optional[int] = None
+    max_storage_mb: Optional[int] = None
+    esta_activo: Optional[bool] = None
+
+
+class PlanResponse(PlanBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# TENANTS (Multi-Tenancy)
+# ============================================================================
+
+class TenantBase(BaseModel):
+    nombre: str = Field(..., max_length=200)
+    slug: str = Field(..., max_length=100, pattern=r'^[a-z0-9-]+$')
+    nit: Optional[str] = Field(None, max_length=50)
+    email_contacto: EmailStr
+    telefono: Optional[str] = Field(None, max_length=50)
+    direccion: Optional[str] = None
+    ciudad: Optional[str] = Field(None, max_length=100)
+    departamento: Optional[str] = Field(None, max_length=100)
+    url_logo: Optional[str] = Field(None, max_length=500)
+    color_primario: str = Field(default="#1976D2", max_length=20)
+    color_secundario: str = Field(default="#424242", max_length=20)
+
+
+class TenantCreate(TenantBase):
+    """Schema para crear un nuevo tenant (onboarding)"""
+    plan_id: UUID
+    # Datos del admin inicial
+    admin_nombre: str = Field(..., max_length=100)
+    admin_email: EmailStr
+    admin_password: str = Field(..., min_length=8)
+
+
+class TenantUpdate(BaseModel):
+    nombre: Optional[str] = None
+    nit: Optional[str] = None
+    email_contacto: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+    direccion: Optional[str] = None
+    ciudad: Optional[str] = None
+    departamento: Optional[str] = None
+    url_logo: Optional[str] = None
+    color_primario: Optional[str] = None
+    color_secundario: Optional[str] = None
+
+
+class TenantResponse(TenantBase):
+    id: UUID
+    plan_id: UUID
+    estado: str
+    fecha_inicio_suscripcion: Optional[datetime] = None
+    fecha_fin_suscripcion: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TenantBriefResponse(BaseModel):
+    """Respuesta simplificada de tenant para listados"""
+    id: UUID
+    nombre: str
+    slug: str
+    estado: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# USUARIOS-TENANTS (Multi-Tenancy)
+# ============================================================================
+
+class UsuarioTenantBase(BaseModel):
+    rol: str = Field(
+        default="operador",
+        pattern="^(superadmin|admin|operador|contador|vendedor|readonly)$"
+    )
+    esta_activo: bool = True
+    es_default: bool = False
+
+
+class UsuarioTenantCreate(UsuarioTenantBase):
+    usuario_id: UUID
+    tenant_id: UUID
+
+
+class UsuarioTenantUpdate(BaseModel):
+    rol: Optional[str] = None
+    esta_activo: Optional[bool] = None
+    es_default: Optional[bool] = None
+
+
+class UsuarioTenantResponse(UsuarioTenantBase):
+    id: UUID
+    usuario_id: UUID
+    tenant_id: UUID
+    fecha_ingreso: datetime
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# AUTENTICACIÓN CON MULTI-TENANT
+# ============================================================================
+
+class TenantSelectionRequest(BaseModel):
+    """Request para seleccionar un tenant después del login"""
+    tenant_id: UUID
+
+
+class TokenWithTenants(BaseModel):
+    """Respuesta de login con lista de tenants disponibles"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: "UsuarioResponse"
+    tenants: List[TenantBriefResponse] = []
+
+
+class TokenWithTenant(BaseModel):
+    """Respuesta después de seleccionar un tenant"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: "UsuarioResponse"
+    tenant: TenantBriefResponse
+    rol_en_tenant: str
+
+
+# ============================================================================
+# REGISTRO DE TENANT (Onboarding)
+# ============================================================================
+
+class TenantRegisterRequest(BaseModel):
+    """Request para registrar un nuevo tenant y su admin"""
+    # Datos del tenant
+    nombre_empresa: str = Field(..., max_length=200)
+    slug: str = Field(..., max_length=100, pattern=r'^[a-z0-9-]+$')
+    nit: Optional[str] = Field(None, max_length=50)
+    email_empresa: EmailStr
+    telefono: Optional[str] = Field(None, max_length=50)
+    ciudad: Optional[str] = Field(None, max_length=100)
+    departamento: Optional[str] = Field(None, max_length=100)
+
+    # Datos del admin
+    admin_nombre: str = Field(..., max_length=100)
+    admin_email: EmailStr
+    admin_password: str = Field(..., min_length=8)
+
+    # Plan (opcional, usa default si no se especifica)
+    plan_id: Optional[UUID] = None
+
+
+class TenantRegisterResponse(BaseModel):
+    """Respuesta del registro de tenant"""
+    tenant: TenantResponse
+    user: UsuarioResponse
+    message: str = "Tenant registrado exitosamente"

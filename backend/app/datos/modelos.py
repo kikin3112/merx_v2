@@ -155,6 +155,11 @@ class Productos(TenantMixin, SoftDeleteMixin, Base):
     # Relaciones
     inventarios = relationship("Inventarios", back_populates="producto", uselist=False)
     movimientos = relationship("MovimientosInventario", back_populates="producto")
+    recetas_como_resultado = relationship(
+        "Recetas",
+        foreign_keys="Recetas.producto_resultado_id",
+        back_populates="producto_resultado"
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -570,6 +575,127 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
 
 
 # ============================================================================
+# MODELO: Recetas (BOM - Bill of Materials para produccion de velas)
+# ============================================================================
+
+class Recetas(TenantMixin, SoftDeleteMixin, Base):
+    """
+    Recetas para produccion de velas.
+    Define los ingredientes necesarios para producir un producto terminado.
+    Modelo con multi-tenancy y soft delete.
+    """
+    __tablename__ = "recetas"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(200), nullable=False)
+    descripcion = Column(Text)
+    producto_resultado_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("productos.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
+    )
+    cantidad_resultado = Column(Numeric(10, 2), nullable=False, default=Decimal("1.00"))
+    costo_mano_obra = Column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    tiempo_produccion_minutos = Column(Integer, default=0)
+    estado = Column(Boolean, default=True, nullable=False)
+    notas = Column(Text)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relaciones
+    producto_resultado = relationship("Productos", foreign_keys=[producto_resultado_id])
+    ingredientes = relationship(
+        "RecetasIngredientes",
+        back_populates="receta",
+        cascade="all, delete-orphan"
+    )
+
+    @hybrid_property
+    def costo_ingredientes(self) -> Decimal:
+        """Suma del costo de todos los ingredientes"""
+        if not self.ingredientes:
+            return Decimal("0.00")
+        total = Decimal("0.00")
+        for ing in self.ingredientes:
+            if ing.producto and ing.producto.inventarios:
+                costo_unitario = ing.producto.inventarios.costo_promedio_ponderado or Decimal("0.00")
+                total += ing.cantidad * costo_unitario
+        return total
+
+    @hybrid_property
+    def costo_total(self) -> Decimal:
+        """Costo ingredientes + mano de obra"""
+        return self.costo_ingredientes + self.costo_mano_obra
+
+    @hybrid_property
+    def costo_unitario(self) -> Decimal:
+        """Costo total dividido entre cantidad resultado"""
+        if self.cantidad_resultado == 0:
+            return Decimal("0.00")
+        return self.costo_total / self.cantidad_resultado
+
+    __table_args__ = (
+        CheckConstraint("cantidad_resultado > 0", name="check_receta_cantidad_positiva"),
+        CheckConstraint("costo_mano_obra >= 0", name="check_receta_mano_obra_positiva"),
+        # Nombre unico por tenant
+        Index('idx_recetas_tenant_nombre', 'tenant_id', 'nombre', unique=True),
+        Index('idx_recetas_tenant_producto', 'tenant_id', 'producto_resultado_id'),
+    )
+
+
+# ============================================================================
+# MODELO: RecetasIngredientes
+# ============================================================================
+
+class RecetasIngredientes(Base):
+    """
+    Ingredientes de una receta.
+    No tiene TenantMixin porque hereda el tenant de la receta padre.
+    """
+    __tablename__ = "recetas_ingredientes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    receta_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("recetas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    producto_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("productos.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
+    )
+    cantidad = Column(Numeric(10, 4), nullable=False)
+    unidad = Column(String(20), nullable=False, default="UNIDAD")
+    notas = Column(String(200))
+
+    # Relaciones
+    receta = relationship("Recetas", back_populates="ingredientes")
+    producto = relationship("Productos")
+
+    @hybrid_property
+    def costo_linea(self) -> Decimal:
+        """Costo del ingrediente (cantidad * costo promedio)"""
+        if self.producto and self.producto.inventarios:
+            costo_unitario = self.producto.inventarios.costo_promedio_ponderado or Decimal("0.00")
+            return self.cantidad * costo_unitario
+        return Decimal("0.00")
+
+    __table_args__ = (
+        CheckConstraint("cantidad > 0", name="check_ingrediente_cantidad_positiva"),
+        CheckConstraint(
+            "unidad IN ('UNIDAD', 'GRAMO', 'KILOGRAMO', 'MILILITRO', 'LITRO', 'METRO', 'CENTIMETRO')",
+            name="check_ingrediente_unidad_valida"
+        ),
+        # Un producto solo puede estar una vez por receta
+        Index('idx_ingredientes_receta_producto', 'receta_id', 'producto_id', unique=True),
+    )
+
+
+# ============================================================================
 # MODELO: Cotizaciones
 # ============================================================================
 
@@ -854,7 +980,11 @@ class MediosPago(TenantMixin, Base):
 # MODELO: Cartera (Cuentas por Cobrar/Pagar)
 # ============================================================================
 
-class Cartera(Base):
+class Cartera(TenantMixin, Base):
+    """
+    Cuentas por cobrar y por pagar.
+    Modelo con multi-tenancy.
+    """
     __tablename__ = "cartera"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -875,8 +1005,9 @@ class Cartera(Base):
     pagos = relationship("PagosCartera", back_populates="cartera", cascade="all, delete-orphan")
 
     __table_args__ = (
-        Index('idx_cartera_tipo_estado', 'tipo_cartera', 'estado'),
-        Index('idx_cartera_tercero', 'tercero_id'),
+        Index('idx_cartera_tenant_tipo_estado', 'tenant_id', 'tipo_cartera', 'estado'),
+        Index('idx_cartera_tenant_tercero', 'tenant_id', 'tercero_id'),
+        Index('idx_cartera_tenant_documento', 'tenant_id', 'documento_referencia'),
         CheckConstraint(
             "tipo_cartera IN ('COBRAR', 'PAGAR')",
             name="check_tipo_cartera_valido"
@@ -894,7 +1025,11 @@ class Cartera(Base):
 # MODELO: PagosCartera
 # ============================================================================
 
-class PagosCartera(Base):
+class PagosCartera(TenantMixin, Base):
+    """
+    Pagos aplicados a cartera.
+    Modelo con multi-tenancy.
+    """
     __tablename__ = "pagos_cartera"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -911,8 +1046,8 @@ class PagosCartera(Base):
     medio_pago = relationship("MediosPago")
 
     __table_args__ = (
-        Index('idx_pagos_cartera', 'cartera_id'),
-        Index('idx_pagos_fecha', 'fecha_pago'),
+        Index('idx_pagos_cartera_tenant_cartera', 'tenant_id', 'cartera_id'),
+        Index('idx_pagos_cartera_tenant_fecha', 'tenant_id', 'fecha_pago'),
         CheckConstraint("valor_pago > 0", name="check_valor_pago_positivo"),
     )
 
@@ -921,11 +1056,15 @@ class PagosCartera(Base):
 # MODELO: Secuencias (Numeración automática)
 # ============================================================================
 
-class Secuencias(Base):
+class Secuencias(TenantMixin, Base):
+    """
+    Secuencias de numeración para documentos.
+    Modelo con multi-tenancy.
+    """
     __tablename__ = "secuencias"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    nombre = Column(String(50), nullable=False, unique=True, index=True)
+    nombre = Column(String(50), nullable=False, index=True)
     prefijo = Column(String(20), nullable=False)
     siguiente_numero = Column(Integer, nullable=False, default=1)
     longitud_numero = Column(Integer, nullable=False, default=6)
@@ -935,4 +1074,17 @@ class Secuencias(Base):
     __table_args__ = (
         CheckConstraint("siguiente_numero >= 1", name="check_siguiente_numero_positivo"),
         CheckConstraint("longitud_numero >= 1 AND longitud_numero <= 10", name="check_longitud_valida"),
+        # Nombre único por tenant
+        Index('idx_secuencias_tenant_nombre', 'tenant_id', 'nombre', unique=True),
     )
+
+
+# ============================================================================
+# IMPORTACIÓN DE MODELOS TENANT (después de Usuarios para evitar circular imports)
+# ============================================================================
+
+# Agregar la relación de usuario a UsuariosTenants
+from .modelos_tenant import UsuariosTenants
+
+# Completar la relación bidireccional
+UsuariosTenants.usuario = relationship("Usuarios", back_populates="tenants")
