@@ -201,7 +201,7 @@ class VentasDetalleBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
-    descuento: Decimal = Field(default=Decimal("0.00"), ge=0)
+    descuento: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Porcentaje de descuento (0-100)")
     porcentaje_iva: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
 
 
@@ -243,6 +243,7 @@ class VentasCreate(BaseModel):
     """
     tercero_id: UUID
     fecha_venta: date
+    descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Descuento global % (0-100)")
     observaciones: Optional[str] = None
     detalles: List[VentasDetalleCreate]
 
@@ -261,6 +262,7 @@ class VentasResponse(BaseModel):
     tercero_id: UUID
     fecha_venta: date
     estado: str
+    descuento_global: Decimal = Decimal("0.00")
     observaciones: Optional[str] = None
     url_pdf: Optional[str] = None
     created_at: datetime
@@ -287,7 +289,7 @@ class ComprasDetalleBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
-    descuento: Decimal = Field(default=Decimal("0.00"), ge=0)
+    descuento: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Porcentaje de descuento (0-100)")
     porcentaje_iva: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
 
 
@@ -318,6 +320,7 @@ class ComprasCreate(BaseModel):
     """NO requiere totales manuales"""
     tercero_id: UUID
     fecha_compra: date
+    descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
     observaciones: Optional[str] = None
     detalles: List[ComprasDetalleCreate]
 
@@ -333,6 +336,7 @@ class ComprasResponse(BaseModel):
     tercero_id: UUID
     fecha_compra: date
     estado: str
+    descuento_global: Decimal = Decimal("0.00")
     observaciones: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -534,7 +538,7 @@ class CotizacionesDetalleBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
-    descuento: Decimal = Field(default=Decimal("0.00"), ge=0)
+    descuento: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Porcentaje de descuento (0-100)")
     porcentaje_iva: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
 
 
@@ -564,6 +568,7 @@ class CotizacionesCreate(BaseModel):
     tercero_id: UUID
     fecha_cotizacion: date
     fecha_vencimiento: date
+    descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
     observaciones: Optional[str] = None
     detalles: List[CotizacionesDetalleCreate]
 
@@ -580,6 +585,7 @@ class CotizacionesResponse(BaseModel):
     fecha_cotizacion: date
     fecha_vencimiento: date
     estado: str
+    descuento_global: Decimal = Decimal("0.00")
     observaciones: Optional[str] = None
     url_pdf: Optional[str] = None
     created_at: datetime
@@ -672,6 +678,8 @@ class DetalleAsientoCreate(DetalleAsientoBase):
 class DetalleAsientoResponse(DetalleAsientoBase):
     id: UUID
     asiento_id: UUID
+    cuenta_codigo: Optional[str] = None
+    cuenta_nombre: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 

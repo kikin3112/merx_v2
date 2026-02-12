@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
+from decimal import Decimal
 import io
 
 from ..datos.db import get_db
@@ -72,6 +73,7 @@ def _generar_pdf_cotizacion(db: Session, cot: Cotizaciones, tenant_id: UUID) -> 
         total_iva=cot.total_iva,
         total=cot.total_cotizacion,
         observaciones=cot.observaciones,
+        descuento_global_pct=cot.descuento_global,
     )
 
 
@@ -116,6 +118,7 @@ async def crear(
         fecha_cotizacion=data.fecha_cotizacion,
         fecha_vencimiento=data.fecha_vencimiento,
         estado="PENDIENTE",
+        descuento_global=getattr(data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
         observaciones=data.observaciones
     )
     db.add(cot)
@@ -230,6 +233,7 @@ async def convertir_a_factura(
         tercero_id=cot.tercero_id,
         fecha_venta=date_type.today(),
         estado="PENDIENTE",
+        descuento_global=cot.descuento_global or Decimal("0.00"),
         observaciones=f"Generada desde cotización {cot.numero_cotizacion}"
     )
     db.add(factura)
