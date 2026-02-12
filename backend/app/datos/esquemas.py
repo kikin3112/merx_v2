@@ -37,7 +37,7 @@ class Token(BaseModel):
 class UsuarioBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     email: EmailStr
-    rol: str = Field(..., pattern="^(admin|operador|contador)$")
+    rol: str = Field(..., pattern="^(superadmin|admin|operador|contador|vendedor|readonly)$")
     estado: bool = True
 
 
@@ -55,6 +55,7 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     id: UUID
+    es_superadmin: bool = False
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

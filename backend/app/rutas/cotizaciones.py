@@ -4,7 +4,10 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..datos.db import get_db
-from ..datos.modelos import Cotizaciones, CotizacionesDetalle, Terceros, Productos, Usuarios
+from ..datos.modelos import (
+    Cotizaciones, CotizacionesDetalle, Terceros, Productos, Usuarios,
+    Ventas, VentasDetalle
+)
 from ..datos.esquemas import CotizacionesCreate, CotizacionesResponse
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.secuencia_helper import generar_numero_secuencia
@@ -93,3 +96,78 @@ async def obtener(
     if not cot:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
     return cot
+
+
+@router.post("/{cotizacion_id}/convertir")
+async def convertir_a_factura(
+        cotizacion_id: UUID,
+        db: Session = Depends(get_db),
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Convierte una cotización a factura (borrador).
+    1. Valida que la cotización está en estado VIGENTE o ACEPTADA
+    2. Crea una nueva Venta (factura borrador) con los mismos detalles
+    3. Marca la cotización como ACEPTADA
+    """
+    from datetime import date as date_type
+
+    cot = db.query(Cotizaciones).filter(
+        Cotizaciones.id == cotizacion_id,
+        Cotizaciones.tenant_id == tenant_id
+    ).first()
+    if not cot:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    if cot.estado not in ("VIGENTE", "ACEPTADA", "PENDIENTE"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Solo se pueden convertir cotizaciones en estado VIGENTE, ACEPTADA o PENDIENTE. Estado actual: {cot.estado}"
+        )
+
+    # Generar número de factura
+    numero_factura = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
+
+    # Crear factura (venta en borrador)
+    factura = Ventas(
+        tenant_id=tenant_id,
+        numero_venta=numero_factura,
+        tercero_id=cot.tercero_id,
+        fecha_venta=date_type.today(),
+        estado="PENDIENTE",
+        observaciones=f"Generada desde cotización {cot.numero_cotizacion}"
+    )
+    db.add(factura)
+    db.flush()
+
+    # Copiar detalles
+    for det in cot.detalles:
+        detalle_factura = VentasDetalle(
+            tenant_id=tenant_id,
+            venta_id=factura.id,
+            producto_id=det.producto_id,
+            cantidad=det.cantidad,
+            precio_unitario=det.precio_unitario,
+            descuento=det.descuento,
+            porcentaje_iva=det.porcentaje_iva
+        )
+        db.add(detalle_factura)
+
+    # Actualizar estado cotización
+    cot.estado = "ACEPTADA"
+
+    db.commit()
+    db.refresh(factura)
+
+    logger.info(
+        f"Cotización {cot.numero_cotizacion} convertida a factura {numero_factura}"
+    )
+
+    return {
+        "cotizacion_id": str(cotizacion_id),
+        "cotizacion_numero": cot.numero_cotizacion,
+        "factura_id": str(factura.id),
+        "factura_numero": factura.numero_venta,
+        "message": f"Cotización convertida a factura {numero_factura} (borrador)"
+    }
