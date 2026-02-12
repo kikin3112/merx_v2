@@ -5,27 +5,100 @@ Reutiliza el modelo Ventas con estados: borrador(PENDIENTE) -> emitida(FACTURADA
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 from datetime import date
+import io
 
 from ..datos.db import get_db
 from ..datos.modelos import (
     Ventas, VentasDetalle, Terceros, Productos, Usuarios, TipoMovimiento
 )
+from ..datos.modelos_tenant import Tenants
 from ..datos.esquemas import VentasCreate, VentasResponse
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_contabilidad import ServicioContabilidad
+from ..servicios.servicio_pdf import ServicioPDF
+from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..utils.logger import setup_logger
 
 router = APIRouter()
 logger = setup_logger(__name__)
 
 
-@router.get("/")
+def _get_tenant_info(db: Session, tenant_id: UUID) -> dict:
+    """Obtiene info del tenant para el PDF."""
+    tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+    if not tenant:
+        return {"nombre": "Empresa"}
+    return {
+        "nombre": tenant.nombre,
+        "nit": tenant.nit,
+        "email_contacto": tenant.email_contacto,
+        "telefono": tenant.telefono,
+        "direccion": tenant.direccion,
+        "ciudad": tenant.ciudad,
+        "departamento": tenant.departamento,
+    }
+
+
+def _get_cliente_info(tercero) -> dict:
+    """Extrae info del cliente para el PDF."""
+    return {
+        "nombre": tercero.nombre,
+        "tipo_documento": tercero.tipo_documento,
+        "numero_documento": tercero.numero_documento,
+        "direccion": tercero.direccion,
+        "telefono": tercero.telefono,
+        "email": tercero.email,
+    }
+
+
+def _get_detalles_pdf(detalles, db: Session, tenant_id: UUID) -> list:
+    """Prepara los detalles para el PDF con nombres de producto."""
+    result = []
+    for det in detalles:
+        producto = db.query(Productos).filter(
+            Productos.id == det.producto_id,
+            Productos.tenant_id == tenant_id
+        ).first()
+        result.append({
+            "producto_nombre": producto.nombre if producto else "Producto",
+            "cantidad": float(det.cantidad),
+            "precio_unitario": float(det.precio_unitario),
+            "descuento": float(det.descuento),
+            "porcentaje_iva": float(det.porcentaje_iva),
+        })
+    return result
+
+
+def _generar_pdf_factura(db: Session, factura: Ventas, tenant_id: UUID) -> bytes:
+    """Genera el PDF de una factura."""
+    tenant_info = _get_tenant_info(db, tenant_id)
+    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+    cliente_info = _get_cliente_info(tercero) if tercero else {"nombre": "Cliente"}
+    detalles_pdf = _get_detalles_pdf(factura.detalles, db, tenant_id)
+
+    servicio = ServicioPDF(tenant_info)
+    return servicio.generar_factura_pdf(
+        numero=factura.numero_venta,
+        fecha=str(factura.fecha_venta),
+        cliente=cliente_info,
+        detalles=detalles_pdf,
+        subtotal=factura.subtotal,
+        descuento=factura.total_descuento,
+        base_gravable=factura.base_gravable,
+        total_iva=factura.total_iva,
+        total=factura.total_venta,
+        observaciones=factura.observaciones,
+    )
+
+
+@router.get("/", response_model=List[VentasResponse])
 async def listar_facturas(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -68,7 +141,7 @@ async def listar_facturas(
     return items
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=VentasResponse, status_code=status.HTTP_201_CREATED)
 async def crear_factura(
     data: VentasCreate,
     db: Session = Depends(get_db),
@@ -140,7 +213,7 @@ async def crear_factura(
     return factura
 
 
-@router.get("/{factura_id}")
+@router.get("/{factura_id}", response_model=VentasResponse)
 async def obtener_factura(
     factura_id: UUID,
     db: Session = Depends(get_db),
@@ -169,7 +242,8 @@ async def emitir_factura(
     1. Valida estado = PENDIENTE
     2. Descuenta inventario de cada producto
     3. Crea asiento contable automático
-    4. Cambia estado a FACTURADA
+    4. Genera PDF
+    5. Cambia estado a FACTURADA
     """
     factura = db.query(Ventas).filter(
         Ventas.id == factura_id,
@@ -215,6 +289,20 @@ async def emitir_factura(
         documento_referencia=factura.numero_venta
     )
 
+    # Generar PDF y subir a S3 si está habilitado
+    try:
+        pdf_bytes = _generar_pdf_factura(db, factura, tenant_id)
+        storage = ServicioAlmacenamiento()
+        if storage.is_enabled:
+            key = storage.subir_pdf(
+                pdf_bytes, str(tenant_id),
+                "facturas", factura.numero_venta
+            )
+            if key:
+                factura.url_pdf = key
+    except Exception as e:
+        logger.warning(f"Error generando PDF para factura {factura.numero_venta}: {e}")
+
     factura.estado = "FACTURADA"
     db.commit()
     db.refresh(factura)
@@ -225,6 +313,46 @@ async def emitir_factura(
         "factura": factura,
         "message": f"Factura {factura.numero_venta} emitida exitosamente"
     }
+
+
+@router.get("/{factura_id}/pdf")
+async def descargar_pdf_factura(
+    factura_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Descarga el PDF de una factura.
+    Si hay S3 habilitado y url_pdf guardada, redirige a presigned URL.
+    Sino, genera el PDF on-the-fly.
+    """
+    factura = db.query(Ventas).filter(
+        Ventas.id == factura_id,
+        Ventas.tenant_id == tenant_id
+    ).first()
+    if not factura:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+
+    # Intentar S3 presigned URL
+    if factura.url_pdf:
+        storage = ServicioAlmacenamiento()
+        if storage.is_enabled:
+            url = storage.obtener_url_presigned(factura.url_pdf)
+            if url:
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(url=url)
+
+    # Generar on-the-fly
+    pdf_bytes = _generar_pdf_factura(db, factura, tenant_id)
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="factura-{factura.numero_venta}.pdf"'
+        }
+    )
 
 
 @router.post("/{factura_id}/anular")

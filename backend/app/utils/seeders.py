@@ -152,20 +152,9 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
         )
         db.add(rel)
 
-    # Relación superadmin-tenant
-    rel_sa = db.query(UsuariosTenants).filter(
-        UsuariosTenants.usuario_id == superadmin.id,
-        UsuariosTenants.tenant_id == tenant.id
-    ).first()
-    if not rel_sa:
-        rel_sa = UsuariosTenants(
-            usuario_id=superadmin.id,
-            tenant_id=tenant.id,
-            rol="superadmin",
-            esta_activo=True,
-            es_default=False
-        )
-        db.add(rel_sa)
+    # NOTA: El superadmin NO se asigna a ningún tenant.
+    # El rol superadmin es exclusivo del sistema (es_superadmin=True en Usuarios).
+    # El superadmin gestiona tenants sin pertenecer a ellos.
 
     # Operador de prueba
     operador = db.query(Usuarios).filter(Usuarios.email == "operador@velasaromaticas.com").first()

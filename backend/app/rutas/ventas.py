@@ -5,7 +5,7 @@ from uuid import UUID
 
 from ..datos.db import get_db
 from ..datos.esquemas import VentasCreate, VentasUpdate, VentasResponse
-from ..datos.modelos import Usuarios
+from ..datos.modelos import Usuarios, Terceros
 from ..servicios.servicio_ventas import (
     crear_venta,
     listar_ventas,
@@ -219,4 +219,52 @@ async def anular_venta_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al anular la venta"
+        )
+
+
+@router.post("/pos", response_model=VentasResponse, status_code=status.HTTP_201_CREATED)
+async def pos_venta_rapida(
+        venta_data: VentasCreate,
+        db: Session = Depends(get_db),
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    POS: Crea y confirma una venta en un solo paso.
+    Combina crear_venta() + confirmar_venta() para flujo rápido de punto de venta.
+    """
+    try:
+        nueva_venta = crear_venta(db, venta_data, tenant_id)
+        db.flush()
+
+        venta_confirmada = confirmar_venta(db, nueva_venta.id, tenant_id)
+        db.commit()
+
+        logger.info(
+            f"POS venta creada y confirmada: {venta_confirmada.numero_venta}",
+            extra={
+                "venta_id": str(venta_confirmada.id),
+                "total": float(venta_confirmada.total_venta),
+                "user_id": str(current_user.id)
+            }
+        )
+
+        return VentasResponse.model_validate(venta_confirmada)
+
+    except ValueError as e:
+        db.rollback()
+        logger.warning(f"POS validación fallida: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error("Error en POS venta", exc_info=e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al procesar la venta POS"
         )

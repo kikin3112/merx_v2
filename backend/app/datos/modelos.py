@@ -263,6 +263,7 @@ class Ventas(TenantMixin, SoftDeleteMixin, Base):
     fecha_venta = Column(Date, nullable=False, index=True)
     estado = Column(Enum(EstadoVenta), nullable=False, default=EstadoVenta.PENDIENTE)
     observaciones = Column(Text)
+    url_pdf = Column(String(500), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -713,6 +714,7 @@ class Cotizaciones(TenantMixin, SoftDeleteMixin, Base):
     fecha_vencimiento = Column(Date, nullable=False)
     estado = Column(String(50), nullable=False, default="VIGENTE")
     observaciones = Column(Text)
+    url_pdf = Column(String(500), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
