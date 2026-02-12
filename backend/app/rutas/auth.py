@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -212,24 +212,12 @@ async def select_tenant(
 async def refresh_access_token(
     request: Request,
     refresh_token: str = Body(..., embed=True),
+    tenant_id: Optional[str] = Body(None, embed=True),
     db: Session = Depends(get_db)
 ):
     """
     Renueva el access token usando un refresh token válido.
-
-    **Seguridad:**
-    - Rotación de refresh token (se invalida el anterior)
-    - Validación de usuario activo
-
-    **Uso:**
-    ```javascript
-    const response = await fetch('/api/v1/auth/refresh', {
-        method: 'POST',
-        body: JSON.stringify({ refresh_token: oldRefreshToken })
-    });
-    const { access_token, refresh_token } = await response.json();
-    // Guardar AMBOS tokens (el refresh_token es nuevo)
-    ```
+    Si se proporciona tenant_id, el nuevo token preserva el contexto de tenant.
     """
     try:
         # Decodificar y validar refresh token
@@ -267,11 +255,29 @@ async def refresh_access_token(
                 detail="Usuario inactivo"
             )
 
-        # Generar NUEVOS tokens (rotación)
+        # Validar tenant_id si se proporcionó (preservar contexto de tenant)
+        resolved_tenant_id = None
+        resolved_rol_tenant = None
+        if tenant_id:
+            try:
+                tenant_uuid = UUID(tenant_id)
+            except ValueError:
+                tenant_uuid = None
+
+            if tenant_uuid:
+                servicio = ServicioTenants(db)
+                usuario_tenant = servicio.validar_acceso_tenant(user.id, tenant_uuid)
+                if usuario_tenant:
+                    resolved_tenant_id = tenant_uuid
+                    resolved_rol_tenant = usuario_tenant.rol
+
+        # Generar NUEVOS tokens (rotación) con tenant_id preservado
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         new_access_token = create_access_token(
             data={"sub": str(user.id), "email": user.email, "rol": user.rol},
-            expires_delta=access_token_expires
+            expires_delta=access_token_expires,
+            tenant_id=resolved_tenant_id,
+            rol_en_tenant=resolved_rol_tenant
         )
 
         new_refresh_token = create_refresh_token(
@@ -279,7 +285,7 @@ async def refresh_access_token(
             expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         )
 
-        logger.info(f"Token renovado para: {user.email}")
+        logger.info(f"Token renovado para: {user.email}" + (f" (tenant: {tenant_id})" if tenant_id else ""))
 
         return Token(
             access_token=new_access_token,
