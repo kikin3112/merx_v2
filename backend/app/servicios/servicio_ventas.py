@@ -43,7 +43,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         raise ValueError("El tercero no está marcado como cliente")
 
     # Generar número de venta
-    numero_venta = generar_numero_secuencia(db, 'VENTAS', tenant_id)
+    numero_venta = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
 
     # Crear venta
     nueva_venta = Ventas(
@@ -52,6 +52,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         tercero_id=venta_data.tercero_id,
         fecha_venta=venta_data.fecha_venta,
         estado="PENDIENTE",
+        descuento_global=getattr(venta_data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
         observaciones=venta_data.observaciones
     )
     db.add(nueva_venta)

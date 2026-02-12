@@ -262,6 +262,7 @@ class Ventas(TenantMixin, SoftDeleteMixin, Base):
     tercero_id = Column(UUID(as_uuid=True), ForeignKey("terceros.id", ondelete="RESTRICT"), nullable=False)
     fecha_venta = Column(Date, nullable=False, index=True)
     estado = Column(Enum(EstadoVenta), nullable=False, default=EstadoVenta.PENDIENTE)
+    descuento_global = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     observaciones = Column(Text)
     url_pdf = Column(String(500), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -284,22 +285,33 @@ class Ventas(TenantMixin, SoftDeleteMixin, Base):
 
     @hybrid_property
     def total_descuento(self) -> Decimal:
-        """Suma de todos los descuentos de los detalles"""
+        """Descuentos de lineas + descuento global prorrateado"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.descuento for detalle in self.detalles)
+        desc_lineas = sum(detalle.monto_descuento for detalle in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return desc_lineas
+        base = self.subtotal - desc_lineas
+        desc_global = base * dg / Decimal("100")
+        return desc_lineas + desc_global
 
     @hybrid_property
     def base_gravable(self) -> Decimal:
-        """Subtotal menos descuentos"""
+        """Subtotal menos todos los descuentos"""
         return self.subtotal - self.total_descuento
 
     @hybrid_property
     def total_iva(self) -> Decimal:
-        """Suma de IVA de todos los detalles"""
+        """IVA de lineas, ajustado proporcionalmente por descuento global"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.valor_iva for detalle in self.detalles)
+        iva_lineas = sum(detalle.valor_iva for detalle in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return iva_lineas
+        factor = (Decimal("100") - dg) / Decimal("100")
+        return iva_lineas * factor
 
     @hybrid_property
     def total_venta(self) -> Decimal:
@@ -344,9 +356,14 @@ class VentasDetalle(TenantMixin, Base):
         return self.cantidad * self.precio_unitario
 
     @hybrid_property
+    def monto_descuento(self) -> Decimal:
+        """Monto del descuento = subtotal * descuento% / 100"""
+        return self.subtotal * self.descuento / Decimal("100")
+
+    @hybrid_property
     def base_gravable(self) -> Decimal:
-        """Subtotal - Descuento"""
-        return self.subtotal - self.descuento
+        """Subtotal - Monto Descuento"""
+        return self.subtotal - self.monto_descuento
 
     @hybrid_property
     def valor_iva(self) -> Decimal:
@@ -383,6 +400,7 @@ class Compras(TenantMixin, SoftDeleteMixin, Base):
     tercero_id = Column(UUID(as_uuid=True), ForeignKey("terceros.id", ondelete="RESTRICT"), nullable=False)
     fecha_compra = Column(Date, nullable=False, index=True)
     estado = Column(Enum(EstadoCompra), nullable=False, default=EstadoCompra.PENDIENTE)
+    descuento_global = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     observaciones = Column(Text)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -394,36 +412,38 @@ class Compras(TenantMixin, SoftDeleteMixin, Base):
     # Propiedades calculadas
     @hybrid_property
     def subtotal(self) -> Decimal:
-        """Suma de (cantidad * precio_unitario) de todos los detalles"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(
-            (detalle.cantidad * detalle.precio_unitario)
-            for detalle in self.detalles
-        )
+        return sum((d.cantidad * d.precio_unitario) for d in self.detalles)
 
     @hybrid_property
     def total_descuento(self) -> Decimal:
-        """Suma de todos los descuentos"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.descuento for detalle in self.detalles)
+        desc_lineas = sum(d.monto_descuento for d in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return desc_lineas
+        base = self.subtotal - desc_lineas
+        return desc_lineas + base * dg / Decimal("100")
 
     @hybrid_property
     def base_gravable(self) -> Decimal:
-        """Subtotal - Descuentos"""
         return self.subtotal - self.total_descuento
 
     @hybrid_property
     def total_iva(self) -> Decimal:
-        """Suma de IVA de todos los detalles"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.valor_iva for detalle in self.detalles)
+        iva_lineas = sum(d.valor_iva for d in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return iva_lineas
+        factor = (Decimal("100") - dg) / Decimal("100")
+        return iva_lineas * factor
 
     @hybrid_property
     def total_compra(self) -> Decimal:
-        """Base gravable + IVA"""
         return self.base_gravable + self.total_iva
 
     __table_args__ = (
@@ -464,9 +484,14 @@ class ComprasDetalle(TenantMixin, Base):
         return self.cantidad * self.precio_unitario
 
     @hybrid_property
+    def monto_descuento(self) -> Decimal:
+        """Monto del descuento = subtotal * descuento% / 100"""
+        return self.subtotal * self.descuento / Decimal("100")
+
+    @hybrid_property
     def base_gravable(self) -> Decimal:
-        """Subtotal - Descuento"""
-        return self.subtotal - self.descuento
+        """Subtotal - Monto Descuento"""
+        return self.subtotal - self.monto_descuento
 
     @hybrid_property
     def valor_iva(self) -> Decimal:
@@ -713,6 +738,7 @@ class Cotizaciones(TenantMixin, SoftDeleteMixin, Base):
     fecha_cotizacion = Column(Date, nullable=False, index=True)
     fecha_vencimiento = Column(Date, nullable=False)
     estado = Column(String(50), nullable=False, default="VIGENTE")
+    descuento_global = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     observaciones = Column(Text)
     url_pdf = Column(String(500), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -727,22 +753,29 @@ class Cotizaciones(TenantMixin, SoftDeleteMixin, Base):
     def subtotal(self) -> Decimal:
         if not self.detalles:
             return Decimal("0.00")
-        return sum(
-            (detalle.cantidad * detalle.precio_unitario)
-            for detalle in self.detalles
-        )
+        return sum((d.cantidad * d.precio_unitario) for d in self.detalles)
 
     @hybrid_property
     def total_descuento(self) -> Decimal:
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.descuento for detalle in self.detalles)
+        desc_lineas = sum(d.monto_descuento for d in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return desc_lineas
+        base = self.subtotal - desc_lineas
+        return desc_lineas + base * dg / Decimal("100")
 
     @hybrid_property
     def total_iva(self) -> Decimal:
         if not self.detalles:
             return Decimal("0.00")
-        return sum(detalle.valor_iva for detalle in self.detalles)
+        iva_lineas = sum(d.valor_iva for d in self.detalles)
+        dg = self.descuento_global or Decimal("0")
+        if dg == 0:
+            return iva_lineas
+        factor = (Decimal("100") - dg) / Decimal("100")
+        return iva_lineas * factor
 
     @hybrid_property
     def total_cotizacion(self) -> Decimal:
@@ -788,8 +821,13 @@ class CotizacionesDetalle(TenantMixin, Base):
         return self.cantidad * self.precio_unitario
 
     @hybrid_property
+    def monto_descuento(self) -> Decimal:
+        """Monto del descuento = subtotal * descuento% / 100"""
+        return self.subtotal * self.descuento / Decimal("100")
+
+    @hybrid_property
     def base_gravable(self) -> Decimal:
-        return self.subtotal - self.descuento
+        return self.subtotal - self.monto_descuento
 
     @hybrid_property
     def valor_iva(self) -> Decimal:
@@ -935,7 +973,15 @@ class DetallesAsiento(TenantMixin, Base):
 
     # Relaciones
     asiento = relationship("AsientosContables", back_populates="detalles")
-    cuenta = relationship("CuentasContables")
+    cuenta = relationship("CuentasContables", lazy="joined")
+
+    @hybrid_property
+    def cuenta_codigo(self) -> str:
+        return self.cuenta.codigo if self.cuenta else None
+
+    @hybrid_property
+    def cuenta_nombre(self) -> str:
+        return self.cuenta.nombre if self.cuenta else None
 
     __table_args__ = (
         Index('idx_detalles_asiento_tenant_asiento', 'tenant_id', 'asiento_id'),

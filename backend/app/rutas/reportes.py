@@ -20,30 +20,39 @@ logger = setup_logger(__name__)
 
 @router.get("/dashboard")
 async def dashboard_kpis(
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """KPIs principales del dashboard."""
-    ventas = db.query(Ventas).filter(
+    """KPIs principales del dashboard. Accepts optional date range filters."""
+    hoy = date.today()
+
+    query = db.query(Ventas).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"])
-    ).all()
+    )
+    if fecha_inicio:
+        query = query.filter(Ventas.fecha_venta >= fecha_inicio)
+    if fecha_fin:
+        query = query.filter(Ventas.fecha_venta <= fecha_fin)
+
+    ventas = query.all()
 
     total_ventas = sum(v.total_venta for v in ventas)
     cantidad_ventas = len(ventas)
 
-    # Ventas de hoy
-    hoy = date.today()
+    # Ventas de hoy (within filtered set)
     ventas_hoy = [v for v in ventas if v.fecha_venta == hoy]
     total_hoy = sum(v.total_venta for v in ventas_hoy)
 
-    # Ventas últimos 30 días
+    # Ventas últimos 30 días (within filtered set)
     hace_30 = hoy - timedelta(days=30)
     ventas_mes = [v for v in ventas if v.fecha_venta >= hace_30]
     total_mes = sum(v.total_venta for v in ventas_mes)
 
-    # Stock bajo
+    # Stock bajo (always current)
     alertas_stock = db.query(Inventarios).join(
         Productos, Productos.id == Inventarios.producto_id
     ).filter(
@@ -52,7 +61,7 @@ async def dashboard_kpis(
         Inventarios.cantidad_disponible <= Productos.stock_minimo
     ).count()
 
-    # Facturas pendientes de cobro (FACTURADA pero no pagadas)
+    # Facturas pendientes de cobro (always current)
     facturas_pendientes = db.query(Ventas).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado == "FACTURADA"
@@ -103,7 +112,9 @@ async def reporte_ventas(
 
 @router.get("/ventas-diarias")
 async def ventas_diarias(
-    dias: int = Query(30, ge=7, le=90),
+    dias: int = Query(30, ge=7, le=365),
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
@@ -111,15 +122,23 @@ async def ventas_diarias(
     """
     Ventas agrupadas por día para gráfico de línea.
     Retorna todos los días del período (incluyendo días sin ventas = 0).
+    Accepts fecha_inicio/fecha_fin or dias param.
     """
     hoy = date.today()
-    inicio = hoy - timedelta(days=dias - 1)
+    if fecha_inicio and fecha_fin:
+        inicio = fecha_inicio
+        fin = fecha_fin
+    else:
+        inicio = hoy - timedelta(days=dias - 1)
+        fin = hoy
+
+    num_dias = (fin - inicio).days + 1
 
     ventas = db.query(Ventas).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio,
-        Ventas.fecha_venta <= hoy
+        Ventas.fecha_venta <= fin
     ).all()
 
     # Agrupar por fecha
@@ -133,7 +152,7 @@ async def ventas_diarias(
 
     # Rellenar días sin ventas
     resultado = []
-    for i in range(dias):
+    for i in range(num_dias):
         dia = inicio + timedelta(days=i)
         info = por_dia.get(dia, {"total": Decimal("0"), "cantidad": 0})
         resultado.append({
@@ -181,17 +200,25 @@ async def productos_top(
 async def productos_mas_vendidos(
     limite: int = Query(10, ge=1, le=50),
     dias: int = Query(30, ge=1, le=365),
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Top productos por cantidad vendida en un período."""
-    inicio = date.today() - timedelta(days=dias)
+    if fecha_inicio and fecha_fin:
+        inicio = fecha_inicio
+        fin = fecha_fin
+    else:
+        inicio = date.today() - timedelta(days=dias)
+        fin = date.today()
 
     ventas_activas = db.query(Ventas.id).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio
+        Ventas.fecha_venta >= inicio,
+        Ventas.fecha_venta <= fin
     ).subquery()
 
     resultados = db.query(
@@ -227,17 +254,25 @@ async def productos_mas_vendidos(
 async def top_clientes(
     limite: int = Query(10, ge=1, le=50),
     dias: int = Query(90, ge=1, le=365),
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Top clientes por monto total de ventas."""
-    inicio = date.today() - timedelta(days=dias)
+    if fecha_inicio and fecha_fin:
+        inicio = fecha_inicio
+        fin = fecha_fin
+    else:
+        inicio = date.today() - timedelta(days=dias)
+        fin = date.today()
 
     ventas = db.query(Ventas).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio
+        Ventas.fecha_venta >= inicio,
+        Ventas.fecha_venta <= fin
     ).all()
 
     # Agrupar por tercero
@@ -429,6 +464,7 @@ async def rentabilidad_por_categoria(
 
 @router.get("/comparativa-mensual")
 async def comparativa_mensual(
+    fecha_referencia: Optional[date] = Query(None, description="Any date in the month to compare. Defaults to today."),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
@@ -436,23 +472,35 @@ async def comparativa_mensual(
     """
     Comparativa mes actual vs mes anterior.
     Retorna total ventas, cantidad, promedio con variación porcentual.
+    Use fecha_referencia to compare any month vs its previous.
     """
-    hoy = date.today()
-    inicio_mes_actual = hoy.replace(day=1)
+    ref = fecha_referencia or date.today()
+    inicio_mes_actual = ref.replace(day=1)
 
     # Mes anterior
-    if hoy.month == 1:
-        inicio_mes_anterior = hoy.replace(year=hoy.year - 1, month=12, day=1)
+    if ref.month == 1:
+        inicio_mes_anterior = ref.replace(year=ref.year - 1, month=12, day=1)
     else:
-        inicio_mes_anterior = hoy.replace(month=hoy.month - 1, day=1)
+        inicio_mes_anterior = ref.replace(month=ref.month - 1, day=1)
     fin_mes_anterior = inicio_mes_actual - timedelta(days=1)
+
+    # Fin del reference month (last day or ref date if current month)
+    hoy = date.today()
+    if ref.year == hoy.year and ref.month == hoy.month:
+        fin_mes_actual = hoy
+    else:
+        # Last day of the reference month
+        if ref.month == 12:
+            fin_mes_actual = ref.replace(year=ref.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            fin_mes_actual = ref.replace(month=ref.month + 1, day=1) - timedelta(days=1)
 
     # Ventas mes actual
     ventas_actual = db.query(Ventas).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio_mes_actual,
-        Ventas.fecha_venta <= hoy
+        Ventas.fecha_venta <= fin_mes_actual
     ).all()
 
     # Ventas mes anterior
@@ -481,7 +529,7 @@ async def comparativa_mensual(
             "total_ventas": float(total_actual),
             "cantidad_ventas": cant_actual,
             "promedio_venta": float(prom_actual),
-            "periodo": f"{inicio_mes_actual.isoformat()} a {hoy.isoformat()}"
+            "periodo": f"{inicio_mes_actual.isoformat()} a {fin_mes_actual.isoformat()}"
         },
         "mes_anterior": {
             "total_ventas": float(total_anterior),
@@ -554,6 +602,8 @@ async def proyeccion_flujo_caja(
 @router.get("/margenes-categoria")
 async def margenes_por_categoria(
     dias: int = Query(30, ge=7, le=365),
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
     tenant_id: UUID = Depends(get_tenant_id_from_token)
@@ -562,12 +612,18 @@ async def margenes_por_categoria(
     Márgenes basados en ventas reales por categoría.
     Calcula ingresos vs costo estimado por categoría en el período.
     """
-    inicio = date.today() - timedelta(days=dias)
+    if fecha_inicio and fecha_fin:
+        inicio = fecha_inicio
+        fin = fecha_fin
+    else:
+        inicio = date.today() - timedelta(days=dias)
+        fin = date.today()
 
     ventas_activas = db.query(Ventas.id).filter(
         Ventas.tenant_id == tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio
+        Ventas.fecha_venta >= inicio,
+        Ventas.fecha_venta <= fin
     ).subquery()
 
     # Detalles con info de producto e inventario

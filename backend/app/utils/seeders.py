@@ -205,7 +205,6 @@ def seed_secuencias(db: Session, tenant_id: UUID):
     logger.info("Creando secuencias...")
 
     secuencias = [
-        {"nombre": "VENTAS", "prefijo": "VEN-", "siguiente_numero": 1, "longitud_numero": 6},
         {"nombre": "COMPRAS", "prefijo": "CMP-", "siguiente_numero": 1, "longitud_numero": 6},
         {"nombre": "COTIZACIONES", "prefijo": "COT-", "siguiente_numero": 1, "longitud_numero": 6},
         {"nombre": "ORDENES_PRODUCCION", "prefijo": "OP-", "siguiente_numero": 1, "longitud_numero": 6},

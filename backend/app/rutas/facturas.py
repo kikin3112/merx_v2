@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 from datetime import date
+from decimal import Decimal
 import io
 
 from ..datos.db import get_db
@@ -95,7 +96,129 @@ def _generar_pdf_factura(db: Session, factura: Ventas, tenant_id: UUID) -> bytes
         total_iva=factura.total_iva,
         total=factura.total_venta,
         observaciones=factura.observaciones,
+        descuento_global_pct=factura.descuento_global,
     )
+
+
+@router.post("/pos", response_model=VentasResponse, status_code=status.HTTP_201_CREATED)
+async def pos_factura(
+    data: VentasCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    POS: Crea y emite una factura en un solo paso atómico.
+    PENDIENTE -> FACTURADA con inventario + contabilidad + PDF.
+    """
+    # Validar tercero
+    tercero = db.query(Terceros).filter(
+        Terceros.id == data.tercero_id,
+        Terceros.tenant_id == tenant_id
+    ).first()
+    if not tercero:
+        raise HTTPException(status_code=404, detail="Tercero no encontrado")
+
+    if tercero.tipo_tercero not in ('CLIENTE', 'AMBOS'):
+        raise HTTPException(
+            status_code=400,
+            detail="El tercero no está registrado como cliente"
+        )
+
+    # Generar número de factura (secuencia FACTURAS)
+    numero = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
+
+    # Crear venta en estado PENDIENTE (transitorio)
+    factura = Ventas(
+        tenant_id=tenant_id,
+        numero_venta=numero,
+        tercero_id=data.tercero_id,
+        fecha_venta=data.fecha_venta,
+        estado="PENDIENTE",
+        descuento_global=getattr(data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
+        observaciones=data.observaciones
+    )
+    db.add(factura)
+    db.flush()
+
+    for det in data.detalles:
+        producto = db.query(Productos).filter(
+            Productos.id == det.producto_id,
+            Productos.tenant_id == tenant_id
+        ).first()
+        if not producto:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Producto {det.producto_id} no encontrado"
+            )
+
+        precio = det.precio_unitario if det.precio_unitario > 0 else producto.precio_venta
+        iva = det.porcentaje_iva if det.porcentaje_iva > 0 else producto.porcentaje_iva
+
+        detalle = VentasDetalle(
+            tenant_id=tenant_id,
+            venta_id=factura.id,
+            producto_id=det.producto_id,
+            cantidad=det.cantidad,
+            precio_unitario=precio,
+            descuento=det.descuento,
+            porcentaje_iva=iva
+        )
+        db.add(detalle)
+
+    db.flush()
+
+    # Descontar inventario
+    servicio_inv = ServicioInventario(db, tenant_id)
+    for detalle in factura.detalles:
+        producto = db.query(Productos).filter(
+            Productos.id == detalle.producto_id
+        ).first()
+        if producto and producto.maneja_inventario:
+            try:
+                servicio_inv.crear_movimiento(
+                    producto_id=detalle.producto_id,
+                    tipo=TipoMovimiento.SALIDA,
+                    cantidad=detalle.cantidad,
+                    documento_referencia=f"FAC-{factura.numero_venta}",
+                    observaciones=f"POS Factura {factura.numero_venta}"
+                )
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Error de inventario para {producto.nombre}: {str(e)}"
+                )
+
+    # Crear asiento contable automático
+    servicio_cont = ServicioContabilidad(db, tenant_id)
+    servicio_cont.crear_asiento_venta(
+        fecha=factura.fecha_venta,
+        subtotal=factura.subtotal,
+        total_iva=factura.total_iva,
+        total=factura.total_venta,
+        documento_referencia=factura.numero_venta
+    )
+
+    # Generar PDF
+    try:
+        pdf_bytes = _generar_pdf_factura(db, factura, tenant_id)
+        storage = ServicioAlmacenamiento()
+        if storage.is_enabled:
+            key = storage.subir_pdf(
+                pdf_bytes, str(tenant_id),
+                "facturas", factura.numero_venta
+            )
+            if key:
+                factura.url_pdf = key
+    except Exception as e:
+        logger.warning(f"Error generando PDF para POS factura {factura.numero_venta}: {e}")
+
+    factura.estado = "FACTURADA"
+    db.commit()
+    db.refresh(factura)
+
+    logger.info(f"POS Factura {factura.numero_venta} creada y emitida en un paso")
+    return factura
 
 
 @router.get("/", response_model=List[VentasResponse])
@@ -152,8 +275,6 @@ async def crear_factura(
     Crea una nueva factura (venta en estado borrador/PENDIENTE).
     Usar POST /facturas/{id}/emitir para confirmar y descontar inventario.
     """
-    from decimal import Decimal
-
     # Validar tercero
     tercero = db.query(Terceros).filter(
         Terceros.id == data.tercero_id,
@@ -177,6 +298,7 @@ async def crear_factura(
         tercero_id=data.tercero_id,
         fecha_venta=data.fecha_venta,
         estado="PENDIENTE",
+        descuento_global=getattr(data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
         observaciones=data.observaciones
     )
     db.add(factura)
