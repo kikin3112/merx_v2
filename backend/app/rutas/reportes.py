@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from ..datos.db import get_db
 from ..datos.modelos import (
-    Ventas, VentasDetalle, Productos, Inventarios, Terceros, Usuarios
+    Ventas, VentasDetalle, Productos, Inventarios, Terceros, Usuarios, Cotizaciones
 )
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
@@ -384,3 +384,236 @@ async def abc_inventario(
         "resumen": conteo,
         "valor_total_inventario": valor_total
     }
+
+
+@router.get("/rentabilidad-categoria")
+async def rentabilidad_por_categoria(
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Rentabilidad agregada por categoría de producto.
+    Calcula precio promedio, costo promedio, margen promedio y valor de inventario por categoría.
+    """
+    resultados = db.query(
+        Productos.categoria,
+        func.count(Productos.id).label("cantidad_productos"),
+        func.avg(Productos.precio_venta).label("precio_promedio"),
+        func.avg(Inventarios.costo_promedio_ponderado).label("costo_promedio"),
+        func.sum(Inventarios.valor_total).label("valor_inventario"),
+        func.sum(Inventarios.cantidad_disponible).label("stock_total"),
+    ).join(
+        Inventarios, Productos.id == Inventarios.producto_id
+    ).filter(
+        Productos.tenant_id == tenant_id,
+        Productos.deleted_at.is_(None),
+        Productos.precio_venta > 0
+    ).group_by(Productos.categoria).all()
+
+    return [
+        {
+            "categoria": row.categoria,
+            "cantidad_productos": row.cantidad_productos,
+            "precio_promedio": round(float(row.precio_promedio or 0), 2),
+            "costo_promedio": round(float(row.costo_promedio or 0), 2),
+            "margen_promedio": round(
+                float((row.precio_promedio - row.costo_promedio) / row.precio_promedio * 100), 1
+            ) if row.precio_promedio and row.precio_promedio > 0 else 0,
+            "valor_inventario": round(float(row.valor_inventario or 0), 2),
+            "stock_total": round(float(row.stock_total or 0), 2),
+        }
+        for row in resultados
+    ]
+
+
+@router.get("/comparativa-mensual")
+async def comparativa_mensual(
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Comparativa mes actual vs mes anterior.
+    Retorna total ventas, cantidad, promedio con variación porcentual.
+    """
+    hoy = date.today()
+    inicio_mes_actual = hoy.replace(day=1)
+
+    # Mes anterior
+    if hoy.month == 1:
+        inicio_mes_anterior = hoy.replace(year=hoy.year - 1, month=12, day=1)
+    else:
+        inicio_mes_anterior = hoy.replace(month=hoy.month - 1, day=1)
+    fin_mes_anterior = inicio_mes_actual - timedelta(days=1)
+
+    # Ventas mes actual
+    ventas_actual = db.query(Ventas).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+        Ventas.fecha_venta >= inicio_mes_actual,
+        Ventas.fecha_venta <= hoy
+    ).all()
+
+    # Ventas mes anterior
+    ventas_anterior = db.query(Ventas).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+        Ventas.fecha_venta >= inicio_mes_anterior,
+        Ventas.fecha_venta <= fin_mes_anterior
+    ).all()
+
+    total_actual = sum(v.total_venta for v in ventas_actual)
+    cant_actual = len(ventas_actual)
+    prom_actual = total_actual / cant_actual if cant_actual > 0 else Decimal("0")
+
+    total_anterior = sum(v.total_venta for v in ventas_anterior)
+    cant_anterior = len(ventas_anterior)
+    prom_anterior = total_anterior / cant_anterior if cant_anterior > 0 else Decimal("0")
+
+    def variacion(actual, anterior):
+        if anterior == 0:
+            return 100.0 if actual > 0 else 0.0
+        return round(float((actual - anterior) / anterior * 100), 1)
+
+    return {
+        "mes_actual": {
+            "total_ventas": float(total_actual),
+            "cantidad_ventas": cant_actual,
+            "promedio_venta": float(prom_actual),
+            "periodo": f"{inicio_mes_actual.isoformat()} a {hoy.isoformat()}"
+        },
+        "mes_anterior": {
+            "total_ventas": float(total_anterior),
+            "cantidad_ventas": cant_anterior,
+            "promedio_venta": float(prom_anterior),
+            "periodo": f"{inicio_mes_anterior.isoformat()} a {fin_mes_anterior.isoformat()}"
+        },
+        "variacion": {
+            "total_ventas": variacion(total_actual, total_anterior),
+            "cantidad_ventas": variacion(cant_actual, cant_anterior),
+            "promedio_venta": variacion(prom_actual, prom_anterior),
+        }
+    }
+
+
+@router.get("/proyeccion-flujo-caja")
+async def proyeccion_flujo_caja(
+    dias_proyeccion: int = Query(30, ge=7, le=90),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Proyección de flujo de caja basada en histórico de 90 días + facturas pendientes.
+    """
+    hoy = date.today()
+    hace_90 = hoy - timedelta(days=90)
+
+    # Ventas históricas (90 días)
+    ventas = db.query(Ventas).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+        Ventas.fecha_venta >= hace_90,
+        Ventas.fecha_venta <= hoy
+    ).all()
+
+    total_historico = sum((v.total_venta for v in ventas), Decimal("0"))
+    dias_con_datos = (hoy - hace_90).days or 1
+    promedio_diario = total_historico / dias_con_datos
+
+    # Facturas pendientes (por cobrar)
+    facturas_pendientes = db.query(Ventas).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado == "FACTURADA"
+    ).all()
+    total_por_cobrar = sum((v.total_venta for v in facturas_pendientes), Decimal("0"))
+
+    # Proyección diaria
+    proyeccion = []
+    acumulado = Decimal("0")
+    for i in range(1, dias_proyeccion + 1):
+        dia = hoy + timedelta(days=i)
+        acumulado += promedio_diario
+        proyeccion.append({
+            "fecha": dia.isoformat(),
+            "proyectado_dia": float(promedio_diario),
+            "acumulado": float(acumulado),
+        })
+
+    return {
+        "promedio_diario": float(promedio_diario),
+        "total_por_cobrar": float(total_por_cobrar),
+        "cantidad_facturas_pendientes": len(facturas_pendientes),
+        "total_proyectado": float(promedio_diario * dias_proyeccion),
+        "dias_proyeccion": dias_proyeccion,
+        "proyeccion": proyeccion,
+    }
+
+
+@router.get("/margenes-categoria")
+async def margenes_por_categoria(
+    dias: int = Query(30, ge=7, le=365),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """
+    Márgenes basados en ventas reales por categoría.
+    Calcula ingresos vs costo estimado por categoría en el período.
+    """
+    inicio = date.today() - timedelta(days=dias)
+
+    ventas_activas = db.query(Ventas.id).filter(
+        Ventas.tenant_id == tenant_id,
+        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+        Ventas.fecha_venta >= inicio
+    ).subquery()
+
+    # Detalles con info de producto e inventario
+    detalles = db.query(
+        Productos.categoria,
+        VentasDetalle.cantidad,
+        VentasDetalle.precio_unitario,
+        VentasDetalle.descuento,
+        Inventarios.costo_promedio_ponderado,
+    ).join(
+        Productos, VentasDetalle.producto_id == Productos.id
+    ).outerjoin(
+        Inventarios, Productos.id == Inventarios.producto_id
+    ).filter(
+        VentasDetalle.venta_id.in_(ventas_activas),
+        Productos.tenant_id == tenant_id
+    ).all()
+
+    # Agrupar por categoría
+    por_categoria: dict = {}
+    for row in detalles:
+        cat = row.categoria
+        if cat not in por_categoria:
+            por_categoria[cat] = {"ingresos": Decimal("0"), "costo": Decimal("0"), "cantidad_items": 0}
+
+        ingreso_linea = row.cantidad * row.precio_unitario - row.descuento
+        costo_linea = row.cantidad * (row.costo_promedio_ponderado or Decimal("0"))
+
+        por_categoria[cat]["ingresos"] += ingreso_linea
+        por_categoria[cat]["costo"] += costo_linea
+        por_categoria[cat]["cantidad_items"] += 1
+
+    resultado = []
+    for cat, data in sorted(por_categoria.items()):
+        ingresos = float(data["ingresos"])
+        costo = float(data["costo"])
+        margen = ingresos - costo
+        margen_pct = (margen / ingresos * 100) if ingresos > 0 else 0
+
+        resultado.append({
+            "categoria": cat,
+            "ingresos": round(ingresos, 2),
+            "costo": round(costo, 2),
+            "margen": round(margen, 2),
+            "margen_porcentaje": round(margen_pct, 1),
+            "cantidad_items": data["cantidad_items"],
+        })
+
+    return resultado

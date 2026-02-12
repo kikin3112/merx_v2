@@ -1,23 +1,81 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
+import io
 
 from ..datos.db import get_db
 from ..datos.modelos import (
     Cotizaciones, CotizacionesDetalle, Terceros, Productos, Usuarios,
     Ventas, VentasDetalle
 )
+from ..datos.modelos_tenant import Tenants
 from ..datos.esquemas import CotizacionesCreate, CotizacionesResponse
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.secuencia_helper import generar_numero_secuencia
+from ..servicios.servicio_pdf import ServicioPDF
+from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..utils.logger import setup_logger
 
 router = APIRouter()
 logger = setup_logger(__name__)
 
 
-@router.get("/")
+def _generar_pdf_cotizacion(db: Session, cot: Cotizaciones, tenant_id: UUID) -> bytes:
+    """Genera el PDF de una cotización."""
+    tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+    tenant_info = {
+        "nombre": tenant.nombre if tenant else "Empresa",
+        "nit": getattr(tenant, 'nit', None),
+        "email_contacto": getattr(tenant, 'email_contacto', None),
+        "telefono": getattr(tenant, 'telefono', None),
+        "direccion": getattr(tenant, 'direccion', None),
+        "ciudad": getattr(tenant, 'ciudad', None),
+        "departamento": getattr(tenant, 'departamento', None),
+    }
+
+    tercero = db.query(Terceros).filter(Terceros.id == cot.tercero_id).first()
+    cliente_info = {
+        "nombre": tercero.nombre if tercero else "Cliente",
+        "tipo_documento": getattr(tercero, 'tipo_documento', ''),
+        "numero_documento": getattr(tercero, 'numero_documento', ''),
+        "direccion": getattr(tercero, 'direccion', None),
+        "telefono": getattr(tercero, 'telefono', None),
+        "email": getattr(tercero, 'email', None),
+    }
+
+    detalles_pdf = []
+    for det in cot.detalles:
+        producto = db.query(Productos).filter(
+            Productos.id == det.producto_id,
+            Productos.tenant_id == tenant_id
+        ).first()
+        detalles_pdf.append({
+            "producto_nombre": producto.nombre if producto else "Producto",
+            "cantidad": float(det.cantidad),
+            "precio_unitario": float(det.precio_unitario),
+            "descuento": float(det.descuento),
+            "porcentaje_iva": float(det.porcentaje_iva),
+        })
+
+    servicio = ServicioPDF(tenant_info)
+    return servicio.generar_cotizacion_pdf(
+        numero=cot.numero_cotizacion,
+        fecha=str(cot.fecha_cotizacion),
+        fecha_vencimiento=str(cot.fecha_vencimiento),
+        cliente=cliente_info,
+        detalles=detalles_pdf,
+        subtotal=cot.subtotal,
+        descuento=cot.total_descuento,
+        base_gravable=cot.subtotal - cot.total_descuento,
+        total_iva=cot.total_iva,
+        total=cot.total_cotizacion,
+        observaciones=cot.observaciones,
+    )
+
+
+@router.get("/", response_model=List[CotizacionesResponse])
 async def listar(
         skip: int = Query(0, ge=0),
         limit: int = Query(100, ge=1, le=500),
@@ -34,7 +92,7 @@ async def listar(
     return items
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CotizacionesResponse, status_code=status.HTTP_201_CREATED)
 async def crear(
         data: CotizacionesCreate,
         db: Session = Depends(get_db),
@@ -81,7 +139,7 @@ async def crear(
     return cot
 
 
-@router.get("/{cotizacion_id}")
+@router.get("/{cotizacion_id}", response_model=CotizacionesResponse)
 async def obtener(
         cotizacion_id: UUID,
         db: Session = Depends(get_db),
@@ -96,6 +154,42 @@ async def obtener(
     if not cot:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
     return cot
+
+
+@router.get("/{cotizacion_id}/pdf")
+async def descargar_pdf_cotizacion(
+        cotizacion_id: UUID,
+        db: Session = Depends(get_db),
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """Descarga el PDF de una cotización."""
+    cot = db.query(Cotizaciones).filter(
+        Cotizaciones.id == cotizacion_id,
+        Cotizaciones.tenant_id == tenant_id
+    ).first()
+    if not cot:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    # Intentar S3 presigned URL
+    if cot.url_pdf:
+        storage = ServicioAlmacenamiento()
+        if storage.is_enabled:
+            url = storage.obtener_url_presigned(cot.url_pdf)
+            if url:
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(url=url)
+
+    # Generar on-the-fly
+    pdf_bytes = _generar_pdf_cotizacion(db, cot, tenant_id)
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="cotizacion-{cot.numero_cotizacion}.pdf"'
+        }
+    )
 
 
 @router.post("/{cotizacion_id}/convertir")

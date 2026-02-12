@@ -30,10 +30,17 @@ async def crear_usuario(
     **Permisos:** Solo admin puede crear usuarios
     """
     # Solo admin puede crear usuarios
-    if current_user.rol != 'admin':
+    if current_user.rol != 'admin' and not current_user.es_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores pueden crear usuarios"
+        )
+
+    # El rol superadmin NO se puede asignar via API
+    if usuario_data.rol == 'superadmin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El rol superadmin es exclusivo del sistema y no puede asignarse via API"
         )
 
     # Validar email único
@@ -203,7 +210,7 @@ async def actualizar_usuario(
         update_data = usuario_data.model_dump(exclude_unset=True)
 
         # Si no es admin, no puede cambiar rol ni estado
-        if not is_admin:
+        if not is_admin and not current_user.es_superadmin:
             if 'rol' in update_data:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -214,6 +221,20 @@ async def actualizar_usuario(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Solo administradores pueden activar/desactivar usuarios"
                 )
+
+        # No permitir asignar rol superadmin via API
+        if 'rol' in update_data and update_data['rol'] == 'superadmin':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="El rol superadmin es exclusivo del sistema y no puede asignarse via API"
+            )
+
+        # No permitir modificar un superadmin (a menos que sea otro superadmin)
+        if usuario.es_superadmin and not current_user.es_superadmin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene permisos para modificar un superadmin del sistema"
+            )
 
         # Validar email único (si se está cambiando)
         if 'email' in update_data:
@@ -276,8 +297,8 @@ async def eliminar_usuario(
     - No se puede auto-eliminar
     - Solo admin puede eliminar usuarios
     """
-    # Solo admin puede eliminar
-    if current_user.rol != 'admin':
+    # Solo admin o superadmin puede eliminar
+    if current_user.rol != 'admin' and not current_user.es_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores pueden eliminar usuarios"
@@ -296,6 +317,13 @@ async def eliminar_usuario(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Usuario con ID {usuario_id} no encontrado"
+        )
+
+    # No permitir desactivar superadmins del sistema
+    if usuario.es_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No se puede desactivar un superadmin del sistema"
         )
 
     try:

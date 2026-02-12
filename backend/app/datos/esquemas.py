@@ -42,13 +42,15 @@ class UsuarioBase(BaseModel):
 
 
 class UsuarioCreate(UsuarioBase):
+    """Creación de usuario. El rol 'superadmin' NO es asignable via API."""
+    rol: str = Field(..., pattern="^(admin|operador|contador|vendedor|readonly)$")
     password: str = Field(..., min_length=8)
 
 
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
-    rol: Optional[str] = None
+    rol: Optional[str] = Field(None, pattern="^(admin|operador|contador|vendedor|readonly)$")
     estado: Optional[bool] = None
     password: Optional[str] = None
 
@@ -260,6 +262,7 @@ class VentasResponse(BaseModel):
     fecha_venta: date
     estado: str
     observaciones: Optional[str] = None
+    url_pdf: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -578,6 +581,7 @@ class CotizacionesResponse(BaseModel):
     fecha_vencimiento: date
     estado: str
     observaciones: Optional[str] = None
+    url_pdf: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -918,7 +922,7 @@ class TenantBriefResponse(BaseModel):
 class UsuarioTenantBase(BaseModel):
     rol: str = Field(
         default="operador",
-        pattern="^(superadmin|admin|operador|contador|vendedor|readonly)$"
+        pattern="^(admin|operador|contador|vendedor|readonly)$"
     )
     esta_activo: bool = True
     es_default: bool = False

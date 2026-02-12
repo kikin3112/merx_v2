@@ -11,7 +11,7 @@ from pydantic import (
     field_validator,
     ValidationError
 )
-from typing import List, Literal
+from typing import List, Literal, Optional
 import secrets
 
 
@@ -178,6 +178,46 @@ class Settings(BaseSettings):
         ge=10,
         le=1000,
         description="Requests máximos por minuto por IP"
+    )
+
+    # ============================================================================
+    # S3 / ALMACENAMIENTO
+    # ============================================================================
+
+    S3_ENABLED: bool = Field(
+        default=False,
+        description="Habilitar almacenamiento S3/R2"
+    )
+
+    S3_BUCKET: str = Field(
+        default="chandelier-documents",
+        description="Nombre del bucket S3"
+    )
+
+    S3_REGION: str = Field(
+        default="us-east-1",
+        description="Región del bucket S3"
+    )
+
+    AWS_ACCESS_KEY_ID: Optional[str] = Field(
+        default=None,
+        description="AWS Access Key ID"
+    )
+
+    AWS_SECRET_ACCESS_KEY: Optional[str] = Field(
+        default=None,
+        description="AWS Secret Access Key"
+    )
+
+    S3_ENDPOINT_URL: Optional[str] = Field(
+        default=None,
+        description="URL del endpoint S3 (para R2, Spaces, etc.)"
+    )
+
+    S3_PRESIGNED_URL_EXPIRY: int = Field(
+        default=86400,
+        ge=3600,
+        description="Expiración de URLs presignadas en segundos (default: 24h)"
     )
 
     # ============================================================================
