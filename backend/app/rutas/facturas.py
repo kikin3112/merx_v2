@@ -15,7 +15,7 @@ import io
 
 from ..datos.db import get_db
 from ..datos.modelos import (
-    Ventas, VentasDetalle, Terceros, Productos, Usuarios, TipoMovimiento
+    Ventas, VentasDetalle, Terceros, Productos, Usuarios, TipoMovimiento, Cartera
 )
 from ..datos.modelos_tenant import Tenants
 from ..datos.esquemas import VentasCreate, VentasResponse
@@ -27,8 +27,44 @@ from ..servicios.servicio_pdf import ServicioPDF
 from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..utils.logger import setup_logger
 
+from datetime import timedelta
+
 router = APIRouter()
 logger = setup_logger(__name__)
+
+
+def _crear_cartera_cobrar(db: Session, factura: Ventas, tenant_id: UUID):
+    """Crea un registro de cartera (cuenta por cobrar) para una factura emitida."""
+    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+    plazo = tercero.plazo_pago_dias if tercero and tercero.plazo_pago_dias else 30
+    fecha_venc = factura.fecha_venta + timedelta(days=plazo)
+
+    cartera = Cartera(
+        tenant_id=tenant_id,
+        tipo_cartera="COBRAR",
+        documento_referencia=factura.numero_venta,
+        tercero_id=factura.tercero_id,
+        fecha_emision=factura.fecha_venta,
+        fecha_vencimiento=fecha_venc,
+        valor_total=factura.total_venta,
+        saldo_pendiente=factura.total_venta,
+        estado="PENDIENTE",
+        observaciones=f"Factura {factura.numero_venta}",
+    )
+    db.add(cartera)
+    logger.info(f"Cartera COBRAR creada para factura {factura.numero_venta}")
+
+
+def _anular_cartera(db: Session, factura: Ventas, tenant_id: UUID):
+    """Anula la cartera asociada a una factura."""
+    cartera = db.query(Cartera).filter(
+        Cartera.tenant_id == tenant_id,
+        Cartera.documento_referencia == factura.numero_venta
+    ).first()
+    if cartera and cartera.estado != "ANULADA":
+        cartera.estado = "ANULADA"
+        cartera.saldo_pendiente = 0
+        logger.info(f"Cartera anulada para factura {factura.numero_venta}")
 
 
 def _get_tenant_info(db: Session, tenant_id: UUID) -> dict:
@@ -214,6 +250,10 @@ async def pos_factura(
         logger.warning(f"Error generando PDF para POS factura {factura.numero_venta}: {e}")
 
     factura.estado = "FACTURADA"
+
+    # Crear cuenta por cobrar
+    _crear_cartera_cobrar(db, factura, tenant_id)
+
     db.commit()
     db.refresh(factura)
 
@@ -374,6 +414,13 @@ async def emitir_factura(
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
+    # Idempotente: si ya está facturada, retornar sin error
+    if factura.estado == "FACTURADA":
+        return {
+            "factura": factura,
+            "message": f"Factura {factura.numero_venta} ya estaba emitida"
+        }
+
     if factura.estado != "PENDIENTE":
         raise HTTPException(
             status_code=400,
@@ -426,6 +473,10 @@ async def emitir_factura(
         logger.warning(f"Error generando PDF para factura {factura.numero_venta}: {e}")
 
     factura.estado = "FACTURADA"
+
+    # Crear cuenta por cobrar
+    _crear_cartera_cobrar(db, factura, tenant_id)
+
     db.commit()
     db.refresh(factura)
 
@@ -498,8 +549,12 @@ async def anular_factura(
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
+    # Idempotente: si ya está anulada, retornar sin error
     if factura.estado == "ANULADA":
-        raise HTTPException(status_code=400, detail="La factura ya está anulada")
+        return {
+            "factura": factura,
+            "message": f"Factura {factura.numero_venta} ya estaba anulada"
+        }
 
     # Si estaba facturada, revertir inventario y contabilidad
     if factura.estado == "FACTURADA":
@@ -532,6 +587,9 @@ async def anular_factura(
     if motivo:
         obs = f"ANULADA: {motivo}"
         factura.observaciones = f"{factura.observaciones}\n{obs}" if factura.observaciones else obs
+
+    # Anular cartera asociada
+    _anular_cartera(db, factura, tenant_id)
 
     db.commit()
     db.refresh(factura)

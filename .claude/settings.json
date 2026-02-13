@@ -1,0 +1,95 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "MultiEdit",
+      "Write",
+      "Bash(python:*)",
+      "Bash(pip:*)",
+      "Bash(pytest:*)",
+      "Bash(black:*)",
+      "Bash(isort:*)",
+      "Bash(flake8:*)",
+      "Bash(mypy:*)",
+      "Bash(uvicorn:*)",
+      "Bash(gunicorn:*)",
+      "Bash(git:*)",
+      "Bash(curl:*)",
+      "Bash(uv:*)",
+      "Bash(alembic:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "60000",
+    "BASH_MAX_OUTPUT_LENGTH": "20000",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "PYTHONPATH": "."
+  },
+  "includeCoAuthoredBy": true,
+  "cleanupPeriodDays": 30,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '\"\\(.tool_input.command) - \\(.tool_input.description // \"No description\")\"' >> ~/.claude/bash-command-log.txt"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" =~ \\.py$ ]]; then black \"$FILE\" 2>/dev/null || true; isort \"$FILE\" 2>/dev/null || true; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Claude Code notification: $(date)\" >> ~/.claude/notifications.log"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CHANGED=$(git diff --name-only --diff-filter=ACMR 2>/dev/null | grep '\\.py$' || true); if [ -n \"$CHANGED\" ]; then echo 'Linting changed Python files...'; flake8 $CHANGED 2>/dev/null || true; mypy $CHANGED 2>/dev/null || true; fi",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 C:/Users/luisr/PycharmProjects/merx_v2/.claude/hooks/carl-hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

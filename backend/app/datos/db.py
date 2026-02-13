@@ -8,6 +8,7 @@ from sqlalchemy.pool import Pool
 # IMPORTANTE: Import relativo para hacer el módulo portable
 from ..config import settings
 from ..utils.logger import setup_logger
+from ..middleware.tenant_context import get_current_tenant_id
 
 logger = setup_logger(__name__)
 
@@ -30,6 +31,25 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+# ============================================================================
+# AUTO-SET TENANT CONTEXT ON TRANSACTION BEGIN (RLS)
+# ============================================================================
+
+@event.listens_for(Session, "after_begin")
+def _set_tenant_on_transaction_begin(session, transaction, connection):
+    """
+    Cada vez que una sesión inicia una transacción (incluyendo después de commit),
+    establece SET LOCAL app.tenant_id_actual si el ContextVar tiene valor.
+    Esto garantiza que RLS funcione automáticamente sin cambios en los servicios.
+    """
+    tenant_id = get_current_tenant_id()
+    if tenant_id:
+        connection.execute(
+            text("SET LOCAL app.tenant_id_actual = :tid"),
+            {"tid": str(tenant_id)}
+        )
 
 
 # ============================================================================

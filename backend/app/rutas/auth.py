@@ -1,8 +1,9 @@
 from typing import List, Optional
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from sqlalchemy.orm import Session
-from datetime import timedelta
-from uuid import UUID
 
 from ..datos.db import get_db
 from ..datos.esquemas import (
@@ -17,6 +18,7 @@ from ..datos.esquemas import (
 )
 from ..datos.modelos import Usuarios
 from ..servicios.servicio_tenants import ServicioTenants
+from ..servicios.servicio_audit import ServicioAuditLog
 from ..utils.seguridad import (
     authenticate_user,
     create_access_token,
@@ -27,6 +29,7 @@ from ..utils.seguridad import (
     verify_password
 )
 from ..config import settings
+from ..utils.rate_limiter import limiter
 from ..utils.logger import setup_logger, set_request_context
 
 router = APIRouter()
@@ -34,6 +37,7 @@ logger = setup_logger(__name__)
 
 
 @router.post("/login", response_model=TokenWithTenants)
+@limiter.limit("5/minute")
 async def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
     """
     Autentica usuario y devuelve tokens JWT junto con los tenants disponibles.
@@ -44,27 +48,16 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     3. Si tiene múltiples, debe llamar a /select-tenant para obtener token con tenant
 
     **Seguridad:**
-    - Rate limited (configurar en middleware)
+    - Rate limited: 5 intentos por minuto por IP
     - Logs sin exponer información sensible
     - Refresh token con rotación
-
-    **Respuesta:**
-    ```json
-    {
-        "access_token": "eyJ...",
-        "refresh_token": "eyJ...",
-        "token_type": "bearer",
-        "expires_in": 1800,
-        "user": {...},
-        "tenants": [{"id": "...", "nombre": "...", "slug": "...", "estado": "activo"}]
-    }
-    ```
     """
+    audit = ServicioAuditLog(db)
+
     # Intentar autenticar
     user = authenticate_user(credentials.email, credentials.password, db)
 
     if not user:
-        # Log genérico sin exponer email (previene enumeración de usuarios)
         logger.warning(
             "Intento de login fallido",
             extra={
@@ -72,6 +65,8 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
                 "user_agent": request.headers.get("user-agent", "unknown")
             }
         )
+        # Audit: login fallido
+        audit.registrar_login(request, credentials.email, exitoso=False)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",
@@ -81,10 +76,15 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     # Verificar que el usuario esté activo
     if not user.estado:
         logger.warning(f"Intento de login con usuario inactivo: {user.email}")
+        audit.registrar_login(request, user.email, exitoso=False, user_id=user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario inactivo. Contacte al administrador."
         )
+
+    # Actualizar ultimo_acceso
+    user.ultimo_acceso = datetime.now(timezone.utc)
+    db.commit()
 
     # Obtener tenants del usuario
     servicio_tenants = ServicioTenants(db)
@@ -121,6 +121,9 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
         }
     )
 
+    # Audit: login exitoso
+    audit.registrar_login(request, user.email, exitoso=True, user_id=user.id)
+
     return TokenWithTenants(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -140,11 +143,6 @@ async def select_tenant(
 ):
     """
     Selecciona un tenant y genera un nuevo token con contexto de tenant.
-
-    **Uso:**
-    1. Después del login, el usuario ve la lista de tenants
-    2. Selecciona uno y llama a este endpoint
-    3. Recibe un nuevo token con el tenant_id incluido
 
     **Requiere:** Token de acceso válido (del login inicial)
     """
@@ -209,6 +207,7 @@ async def select_tenant(
 
 
 @router.post("/refresh", response_model=Token)
+@limiter.limit("10/minute")
 async def refresh_access_token(
     request: Request,
     refresh_token: str = Body(..., embed=True),
@@ -320,6 +319,7 @@ async def get_me(current_user: Usuarios = Depends(get_current_user)):
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("3/minute")
 async def change_password(
     request: Request,
     password_data: ChangePasswordRequest,
@@ -329,14 +329,11 @@ async def change_password(
     """
     Cambia la contraseña del usuario autenticado.
 
-    **Validaciones:**
-    - Contraseña actual correcta
-    - Nueva contraseña cumple requisitos (validado en schema)
-
     **Seguridad:**
-    - Rate limited (configurar en middleware)
-    - Log de cambio de contraseña
+    - Rate limited: 3 intentos por minuto por IP
     """
+    audit = ServicioAuditLog(db)
+
     # Validar contraseña actual
     if not verify_password(password_data.current_password, current_user.password_hash):
         logger.warning(
@@ -360,21 +357,33 @@ async def change_password(
         }
     )
 
+    # Audit: cambio de contraseña
+    audit.registrar_desde_request(
+        request=request,
+        user=current_user,
+        action="auth.password_change",
+        resource_type="auth",
+    )
+
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(current_user: Usuarios = Depends(get_current_user)):
+async def logout(request: Request, current_user: Usuarios = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Cierra sesión del usuario.
 
     **Nota:** Con JWT stateless, el logout es del lado del cliente.
     El cliente debe eliminar los tokens de su almacenamiento.
-
-    Este endpoint existe para:
-    1. Logging/auditoría de cierre de sesión
-    2. Futuras implementaciones de blacklist de tokens
     """
     logger.info(
         f"Logout: {current_user.email}",
         extra={"user_id": str(current_user.id)}
     )
-    # TODO: Si implementas blacklist de tokens, agregar lógica aquí
+
+    # Audit: logout
+    audit = ServicioAuditLog(db)
+    audit.registrar_desde_request(
+        request=request,
+        user=current_user,
+        action="auth.logout",
+        resource_type="auth",
+    )

@@ -58,6 +58,7 @@ class UsuarioUpdate(BaseModel):
 class UsuarioResponse(UsuarioBase):
     id: UUID
     es_superadmin: bool = False
+    ultimo_acceso: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -76,6 +77,13 @@ class TerceroBase(BaseModel):
     telefono: Optional[str] = Field(None, max_length=50)
     email: Optional[str] = Field(None, max_length=100)
     estado: bool = True
+    # CRM fields
+    notas: Optional[str] = None
+    limite_credito: Decimal = Field(default=Decimal("0.00"), ge=0)
+    plazo_pago_dias: int = Field(default=0, ge=0)
+    persona_contacto: Optional[str] = Field(None, max_length=200)
+    sector_economico: Optional[str] = Field(None, max_length=100)
+    grupo_cliente: Optional[str] = Field(None, max_length=100)
 
 
 class TerceroCreate(TerceroBase):
@@ -89,6 +97,12 @@ class TerceroUpdate(BaseModel):
     telefono: Optional[str] = None
     email: Optional[str] = None
     estado: Optional[bool] = None
+    notas: Optional[str] = None
+    limite_credito: Optional[Decimal] = None
+    plazo_pago_dias: Optional[int] = None
+    persona_contacto: Optional[str] = None
+    sector_economico: Optional[str] = None
+    grupo_cliente: Optional[str] = None
 
 
 class TerceroResponse(TerceroBase):
@@ -863,6 +877,11 @@ class PlanResponse(PlanBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PlanWithStats(PlanResponse):
+    """Plan con estadísticas de uso."""
+    tenant_count: int = 0
+
+
 # ============================================================================
 # TENANTS (Multi-Tenancy)
 # ============================================================================
@@ -1016,3 +1035,110 @@ class TenantRegisterResponse(BaseModel):
     tenant: TenantResponse
     user: UsuarioResponse
     message: str = "Tenant registrado exitosamente"
+
+
+# ============================================================================
+# TENANT ACCIONES (Superadmin)
+# ============================================================================
+
+class TenantChangePlanRequest(BaseModel):
+    """Request para cambiar el plan de un tenant."""
+    plan_id: UUID
+
+
+class TenantExtendTrialRequest(BaseModel):
+    """Request para extender el periodo trial de un tenant."""
+    dias_adicionales: int = Field(..., ge=1, le=90)
+
+
+class TenantMetricas(BaseModel):
+    """Métricas de uso de un tenant."""
+    tenant_id: UUID
+    usuarios_count: int = 0
+    productos_count: int = 0
+    facturas_mes_count: int = 0
+    ventas_total_mes: float = 0.0
+    terceros_count: int = 0
+    max_usuarios: int = 0
+    max_productos: int = 0
+    max_facturas_mes: int = 0
+
+
+class SaaSDashboardKPIs(BaseModel):
+    """KPIs del dashboard SaaS para superadmin."""
+    total_tenants: int = 0
+    tenants_activos: int = 0
+    tenants_trial: int = 0
+    tenants_suspendidos: int = 0
+    tenants_cancelados: int = 0
+    mrr: float = 0.0
+    nuevos_ultimos_30_dias: int = 0
+    churn_rate: float = 0.0
+    revenue_por_plan: list = []
+
+
+class SuscripcionResponse(BaseModel):
+    """Respuesta de suscripción."""
+    id: UUID
+    tenant_id: UUID
+    plan_id: UUID
+    periodo_inicio: datetime
+    periodo_fin: datetime
+    estado: str
+    proveedor_pago: Optional[str] = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PagoHistorialResponse(BaseModel):
+    """Respuesta de historial de pagos."""
+    id: UUID
+    suscripcion_id: UUID
+    monto: Decimal
+    moneda: str = "COP"
+    estado: str
+    id_transaccion_externa: Optional[str] = None
+    fecha_pago: Optional[datetime] = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsuarioTenantDetailResponse(BaseModel):
+    """Respuesta de usuario en tenant con detalle de usuario."""
+    id: UUID
+    usuario_id: UUID
+    tenant_id: UUID
+    rol: str
+    esta_activo: bool = True
+    fecha_ingreso: datetime
+    usuario_nombre: str = ""
+    usuario_email: str = ""
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# AUDIT LOGS
+# ============================================================================
+
+class AuditLogResponse(BaseModel):
+    """Respuesta de un registro de auditoría."""
+    id: UUID
+    actor_id: Optional[UUID] = None
+    actor_email: str
+    tenant_id: Optional[UUID] = None
+    action: str
+    resource_type: str
+    resource_id: Optional[UUID] = None
+    changes: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuditLogListResponse(BaseModel):
+    """Respuesta paginada de audit logs."""
+    items: List[AuditLogResponse]
+    total: int
+    page: int
+    limit: int

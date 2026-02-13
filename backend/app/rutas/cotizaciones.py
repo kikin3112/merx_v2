@@ -117,7 +117,7 @@ async def crear(
         tercero_id=data.tercero_id,
         fecha_cotizacion=data.fecha_cotizacion,
         fecha_vencimiento=data.fecha_vencimiento,
-        estado="PENDIENTE",
+        estado="VIGENTE",
         descuento_global=getattr(data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
         observaciones=data.observaciones
     )
@@ -217,10 +217,26 @@ async def convertir_a_factura(
     if not cot:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
 
-    if cot.estado not in ("VIGENTE", "ACEPTADA", "PENDIENTE"):
+    # Idempotente: si ya fue convertida/aceptada previamente, retornar info existente
+    if cot.estado == "ACEPTADA":
+        # Buscar factura ya generada desde esta cotización
+        factura_existente = db.query(Ventas).filter(
+            Ventas.tenant_id == tenant_id,
+            Ventas.observaciones.contains(cot.numero_cotizacion)
+        ).first()
+        if factura_existente:
+            return {
+                "cotizacion_id": str(cotizacion_id),
+                "cotizacion_numero": cot.numero_cotizacion,
+                "factura_id": str(factura_existente.id),
+                "factura_numero": factura_existente.numero_venta,
+                "message": f"Cotización ya fue convertida a factura {factura_existente.numero_venta}"
+            }
+
+    if cot.estado not in ("VIGENTE",):
         raise HTTPException(
             status_code=400,
-            detail=f"Solo se pueden convertir cotizaciones en estado VIGENTE, ACEPTADA o PENDIENTE. Estado actual: {cot.estado}"
+            detail=f"Solo se pueden convertir cotizaciones en estado VIGENTE. Estado actual: {cot.estado}"
         )
 
     # Generar número de factura
