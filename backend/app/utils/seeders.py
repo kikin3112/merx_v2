@@ -584,6 +584,79 @@ def seed_inventarios_iniciales(db: Session, tenant_id: UUID):
 
 
 # ============================================================================
+# SEED: CRM DEFAULTS
+# ============================================================================
+
+def seed_crm_defaults():
+    """Crea pipeline default 'Ventas General' con 5 etapas estándar para todos los tenants activos."""
+    from ..datos.modelos_crm import CrmPipeline, CrmStage
+
+    db = SessionLocal()
+    logger.info("=" * 60)
+    logger.info("SEED CRM: Creando pipelines y stages default...")
+    logger.info("=" * 60)
+
+    try:
+        # Obtener todos los tenants activos
+        tenants = db.query(Tenants).filter(Tenants.estado.in_(['activo', 'trial'])).all()
+
+        for tenant in tenants:
+            # Verificar si ya tiene pipeline default
+            existing = db.query(CrmPipeline).filter(
+                CrmPipeline.tenant_id == tenant.id,
+                CrmPipeline.es_default == True
+            ).first()
+
+            if existing:
+                logger.info(f"  Tenant '{tenant.nombre}' ya tiene pipeline default. Skipping.")
+                continue
+
+            # Crear pipeline default
+            pipeline = CrmPipeline(
+                tenant_id=tenant.id,
+                nombre="Ventas General",
+                descripcion="Pipeline por defecto para gestión de oportunidades de venta",
+                es_default=True,
+                color="#3B82F6"
+            )
+            db.add(pipeline)
+            db.flush()  # Para obtener el ID del pipeline
+
+            # Crear 5 stages estándar
+            stages_data = [
+                {"nombre": "Lead", "orden": 1, "probabilidad": 10},
+                {"nombre": "Calificado", "orden": 2, "probabilidad": 25},
+                {"nombre": "Propuesta", "orden": 3, "probabilidad": 50},
+                {"nombre": "Negociación", "orden": 4, "probabilidad": 75},
+                {"nombre": "Ganado", "orden": 5, "probabilidad": 100},
+            ]
+
+            for stage_data in stages_data:
+                stage = CrmStage(
+                    tenant_id=tenant.id,
+                    pipeline_id=pipeline.id,
+                    nombre=stage_data["nombre"],
+                    orden=stage_data["orden"],
+                    probabilidad=stage_data["probabilidad"]
+                )
+                db.add(stage)
+
+            logger.info(f"  ✓ Pipeline 'Ventas General' creado para '{tenant.nombre}' con 5 etapas")
+
+        db.commit()
+        logger.info("=" * 60)
+        logger.info("SEED CRM COMPLETADO")
+        logger.info("=" * 60)
+
+    except Exception as e:
+        logger.error(f"Error ejecutando seed CRM: {str(e)}", exc_info=True)
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# ============================================================================
 # FUNCIÓN PRINCIPAL
 # ============================================================================
 

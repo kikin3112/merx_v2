@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -1064,6 +1064,17 @@ class TenantMetricas(BaseModel):
     max_facturas_mes: int = 0
 
 
+class TenantPulse(BaseModel):
+    """Health Score de un tenant para predecir churn."""
+    tenant_id: UUID
+    score: int = Field(..., ge=0, le=100)        # 0-100
+    estado_salud: str                             # 'saludable', 'en_riesgo', 'critico'
+    logins_recientes: int = 0                     # usuarios activos últimos 7 días
+    ventas_mes: int = 0                           # facturas/ventas último mes
+    dias_activo: int = 0                          # antigüedad del tenant
+    calculado_en: datetime
+
+
 class SaaSDashboardKPIs(BaseModel):
     """KPIs del dashboard SaaS para superadmin."""
     total_tenants: int = 0
@@ -1142,3 +1153,207 @@ class AuditLogListResponse(BaseModel):
     total: int
     page: int
     limit: int
+
+
+# ============================================================================
+# GHOST MODE (IMPERSONACIÓN)
+# ============================================================================
+
+class ImpersonationResponse(BaseModel):
+    """Respuesta al impersonar un usuario. Token de corta duración (15 min)."""
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int = 900  # 15 minutos
+    impersonated_user: "UsuarioResponse"
+    tenant_id: UUID
+    rol_en_tenant: str
+
+
+# ============================================================================
+# USER GOVERNANCE (GOD MODE)
+# ============================================================================
+
+class GlobalUserCreate(BaseModel):
+    """Crear usuario global sin asociación a tenant."""
+    nombre: str = Field(..., max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    rol: str = Field(default="operador", pattern="^(admin|operador|contador|vendedor|readonly)$")
+    estado: bool = True
+
+
+class GlobalUserUpdate(BaseModel):
+    """Actualizar datos globales de un usuario."""
+    nombre: Optional[str] = Field(None, max_length=100)
+    email: Optional[EmailStr] = None
+    rol: Optional[str] = Field(None, pattern="^(admin|operador|contador|vendedor|readonly)$")
+    estado: Optional[bool] = None
+
+
+class GlobalUserResponse(UsuarioResponse):
+    """Usuario global con count de tenants."""
+    tenant_count: int = 0
+
+
+class GlobalUserListResponse(BaseModel):
+    """Respuesta paginada de usuarios globales."""
+    items: List[GlobalUserResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class ForcePasswordRequest(BaseModel):
+    """Request para forzar reset de contraseña (superadmin)."""
+    new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
+
+
+# ============================================================================
+# CRM SCHEMAS
+# ============================================================================
+
+# Pipelines
+class CrmPipelineBase(BaseModel):
+    """Base schema para CRM Pipeline."""
+    nombre: str = Field(..., max_length=100)
+    descripcion: Optional[str] = None
+    es_default: bool = False
+    color: str = Field(default="#3B82F6", max_length=7)
+
+
+class CrmPipelineCreate(CrmPipelineBase):
+    """Schema para crear Pipeline."""
+    pass
+
+
+class CrmPipelineUpdate(BaseModel):
+    """Schema para actualizar Pipeline."""
+    nombre: Optional[str] = Field(None, max_length=100)
+    descripcion: Optional[str] = None
+    color: Optional[str] = Field(None, max_length=7)
+
+
+class CrmStageBase(BaseModel):
+    """Base schema para CRM Stage."""
+    nombre: str = Field(..., max_length=100)
+    orden: int
+    probabilidad: int = Field(default=10, ge=0, le=100)
+
+
+class CrmStageResponse(CrmStageBase):
+    """Schema de respuesta para Stage."""
+    id: UUID
+    pipeline_id: UUID
+    requiere_motivo_perdida: bool = False
+    dias_estancamiento_alerta: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class CrmPipelineResponse(CrmPipelineBase):
+    """Schema de respuesta para Pipeline con stages."""
+    id: UUID
+    tenant_id: UUID
+    created_at: datetime
+    etapas: List[CrmStageResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+# Stages
+class CrmStageCreate(CrmStageBase):
+    """Schema para crear Stage."""
+    pipeline_id: UUID
+
+
+# Deals
+class CrmDealBase(BaseModel):
+    """Base schema para CRM Deal."""
+    nombre: str = Field(..., max_length=200)
+    tercero_id: UUID
+    valor_estimado: Decimal = Field(default=Decimal("0"), decimal_places=2)
+    fecha_cierre_estimada: Optional[date] = None
+    origen: Optional[str] = Field(None, max_length=100)
+
+
+class CrmDealCreate(CrmDealBase):
+    """Schema para crear Deal."""
+    pipeline_id: UUID
+    stage_id: UUID
+    usuario_id: Optional[UUID] = None
+
+
+class CrmDealUpdate(BaseModel):
+    """Schema para actualizar Deal."""
+    nombre: Optional[str] = Field(None, max_length=200)
+    valor_estimado: Optional[Decimal] = None
+    fecha_cierre_estimada: Optional[date] = None
+    usuario_id: Optional[UUID] = None
+
+
+class CrmDealResponse(CrmDealBase):
+    """Schema de respuesta para Deal."""
+    id: UUID
+    stage_id: UUID
+    pipeline_id: UUID
+    usuario_id: Optional[UUID] = None
+    estado_cierre: str
+    moneda: str = "COP"
+    created_at: datetime
+    updated_at: datetime
+    fecha_ultimo_contacto: Optional[datetime] = None
+    # Campos computados (populate desde service)
+    tercero_nombre: Optional[str] = None
+    usuario_nombre: Optional[str] = None
+    stage_nombre: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CrmDealMoveRequest(BaseModel):
+    """Request para mover deal a otro stage."""
+    stage_id: UUID
+
+
+class CrmDealCloseRequest(BaseModel):
+    """Request para cerrar deal."""
+    estado_cierre: str = Field(..., pattern="^(GANADO|PERDIDO|ABANDONADO)$")
+    motivo: Optional[str] = None
+
+
+# Activities
+class CrmActivityCreate(BaseModel):
+    """Schema para crear Activity."""
+    deal_id: UUID
+    tipo: str = Field(..., pattern="^(NOTA|LLAMADA|EMAIL|REUNION|WHATSAPP|TAREA)$")
+    asunto: Optional[str] = Field(None, max_length=200)
+    contenido: Optional[str] = None
+    fecha_actividad: Optional[datetime] = None
+    duracion_minutos: int = Field(default=0, ge=0)
+
+    @field_validator('fecha_actividad', mode='before')
+    @classmethod
+    def set_default_fecha(cls, v):
+        return v or datetime.now(timezone.utc)
+
+
+class CrmActivityResponse(BaseModel):
+    """Schema de respuesta para Activity."""
+    id: UUID
+    deal_id: UUID
+    usuario_id: Optional[UUID] = None
+    tipo: str
+    asunto: Optional[str] = None
+    contenido: Optional[str] = None
+    fecha_actividad: datetime
+    duracion_minutos: int = 0
+    es_automatica: bool = False
+    created_at: datetime
+    # Campo computado
+    usuario_nombre: Optional[str] = None
+
+    class Config:
+        from_attributes = True

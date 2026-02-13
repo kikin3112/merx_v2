@@ -3,16 +3,59 @@ Middleware para contexto de tenant en PostgreSQL RLS.
 Establece la variable de sesión app.tenant_id_actual para Row Level Security.
 """
 
+import time
 from contextvars import ContextVar
 from typing import Optional
 from uuid import UUID
 
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..utils.logger import setup_logger
+
+# ---------------------------------------------------------------------------
+# Maintenance Mode cache — {str(tenant_id): (estado: str, timestamp: float)}
+# TTL: 60 seconds to avoid DB hit on every write request
+# ---------------------------------------------------------------------------
+_MAINTENANCE_CACHE: dict = {}
+_MAINTENANCE_CACHE_TTL = 60.0  # seconds
+
+
+def _is_tenant_in_maintenance(tenant_id: UUID) -> bool:
+    """
+    Checks if a tenant is in 'mantenimiento' state.
+    Results are cached for 60 seconds to avoid a DB hit per request.
+    """
+    key = str(tenant_id)
+    now = time.monotonic()
+
+    if key in _MAINTENANCE_CACHE:
+        estado, ts = _MAINTENANCE_CACHE[key]
+        if now - ts < _MAINTENANCE_CACHE_TTL:
+            return estado == 'mantenimiento'
+
+    # Cache miss — query DB synchronously (short query, acceptable latency)
+    try:
+        from ..datos.db import SessionLocal
+        from ..datos.modelos_tenant import Tenants
+        db = SessionLocal()
+        try:
+            row = db.query(Tenants.estado).filter(Tenants.id == tenant_id).first()
+            estado = row[0] if row else 'activo'
+            _MAINTENANCE_CACHE[key] = (estado, now)
+            return estado == 'mantenimiento'
+        finally:
+            db.close()
+    except Exception:
+        return False  # On error, allow request through
+
+
+def invalidate_maintenance_cache(tenant_id: UUID) -> None:
+    """Call this when tenant estado changes to ensure fresh reads."""
+    _MAINTENANCE_CACHE.pop(str(tenant_id), None)
 
 logger = setup_logger(__name__)
 
@@ -110,6 +153,19 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
         # Guardar en request.state para acceso fácil
         request.state.tenant_id = tenant_id
+
+        # --- Maintenance Mode: block writes ---
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            if _is_tenant_in_maintenance(tenant_id):
+                clear_current_tenant_id()
+                logger.info(f"Escritura bloqueada por mantenimiento: {request.method} {path} tenant={tenant_id}")
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "detail": "El tenant está en modo mantenimiento. "
+                                  "Las escrituras están temporalmente bloqueadas. Intente más tarde."
+                    }
+                )
 
         try:
             logger.debug(f"Tenant context establecido: {tenant_id}")

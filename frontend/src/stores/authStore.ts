@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Tenant } from '../types';
+import type { User, Tenant, ImpersonationResponse } from '../types';
 import { auth } from '../api/endpoints';
+
+interface ImpersonationState {
+  token: string;            // token de impersonación (15 min)
+  originalToken: string;    // token original del superadmin
+  originalRefresh: string;  // refresh token del superadmin
+  userName: string;         // nombre del usuario impersonado
+  userEmail: string;
+  tenantId: string;
+  tenantName: string;
+  rolEnTenant: string;
+}
 
 interface AuthState {
   token: string | null;
@@ -10,12 +21,15 @@ interface AuthState {
   tenants: Tenant[];
   tenantId: string | null;
   tenantName: string | null;
+  impersonation: ImpersonationState | null;
 
   login: (email: string, password: string) => Promise<Tenant[]>;
   selectTenant: (tenantId: string) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
+  startImpersonation: (data: ImpersonationResponse, tenantName: string) => void;
+  endImpersonation: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -27,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
       tenants: [],
       tenantId: null,
       tenantName: null,
+      impersonation: null,
 
       login: async (email: string, password: string) => {
         const { data } = await auth.login(email, password);
@@ -35,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: data.refresh_token,
           user: data.user,
           tenants: data.tenants,
+          impersonation: null,
         });
         // Auto-select if only one tenant
         if (data.tenants.length === 1) {
@@ -59,6 +75,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refresh: async () => {
+        // No refrescar durante impersonación (token de 15 min, sin refresh)
+        const { impersonation } = get();
+        if (impersonation) return;
+
         const rt = get().refreshToken;
         const tid = get().tenantId;
         if (!rt) throw new Error('No refresh token');
@@ -77,12 +97,46 @@ export const useAuthStore = create<AuthState>()(
           tenants: [],
           tenantId: null,
           tenantName: null,
+          impersonation: null,
         });
       },
 
       fetchUser: async () => {
         const { data } = await auth.me();
         set({ user: data });
+      },
+
+      startImpersonation: (data: ImpersonationResponse, tenantName: string) => {
+        const state = get();
+        set({
+          impersonation: {
+            token: data.access_token,
+            originalToken: state.token ?? '',
+            originalRefresh: state.refreshToken ?? '',
+            userName: data.impersonated_user.nombre,
+            userEmail: data.impersonated_user.email,
+            tenantId: data.tenant_id,
+            tenantName,
+            rolEnTenant: data.rol_en_tenant,
+          },
+          // Reemplazar token activo con el de impersonación
+          token: data.access_token,
+          tenantId: data.tenant_id,
+          tenantName,
+        });
+      },
+
+      endImpersonation: () => {
+        const { impersonation } = get();
+        if (!impersonation) return;
+        // Restaurar tokens originales del superadmin
+        set({
+          token: impersonation.originalToken,
+          refreshToken: impersonation.originalRefresh,
+          tenantId: null,
+          tenantName: null,
+          impersonation: null,
+        });
       },
     }),
     {
@@ -94,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
         tenants: state.tenants,
         tenantId: state.tenantId,
         tenantName: state.tenantName,
+        impersonation: state.impersonation,
       }),
     }
   )

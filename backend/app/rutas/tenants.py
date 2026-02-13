@@ -9,20 +9,25 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
+from datetime import timedelta
+
 from ..datos.esquemas import (
     TenantCreate, TenantUpdate, TenantResponse, TenantBriefResponse,
     TenantRegisterRequest, TenantRegisterResponse,
     PlanResponse, PlanCreate, PlanUpdate, PlanWithStats,
     UsuarioTenantResponse, UsuarioTenantDetailResponse,
     TenantChangePlanRequest, TenantExtendTrialRequest,
-    TenantMetricas, SaaSDashboardKPIs,
+    TenantMetricas, TenantPulse, SaaSDashboardKPIs,
     SuscripcionResponse, PagoHistorialResponse,
-    AuditLogResponse, AuditLogListResponse
+    AuditLogResponse, AuditLogListResponse,
+    ImpersonationResponse, UsuarioResponse,
+    GlobalUserCreate, GlobalUserUpdate, GlobalUserResponse, GlobalUserListResponse,
+    ForcePasswordRequest
 )
 from ..datos.modelos import Usuarios
 from ..servicios.servicio_tenants import ServicioTenants
 from ..servicios.servicio_audit import ServicioAuditLog
-from ..utils.seguridad import get_current_user, get_superadmin
+from ..utils.seguridad import get_current_user, get_superadmin, create_access_token
 from ..utils.logger import setup_logger
 
 router = APIRouter()
@@ -338,6 +343,236 @@ async def listar_audit_logs_globales(
 
 
 # ============================================================================
+# USER GOVERNANCE (Superadmin) - MUST be before /{tenant_id}
+# ============================================================================
+
+@router.get(
+    "/usuarios/",
+    response_model=GlobalUserListResponse,
+    summary="Listar todos los usuarios globales",
+    dependencies=[Depends(get_superadmin)]
+)
+async def listar_usuarios_global(
+    busqueda: Optional[str] = Query(None, description="Buscar por nombre o email"),
+    estado: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
+    es_superadmin: Optional[bool] = Query(None, description="Filtrar por superadmin"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db)
+):
+    """Lista todos los usuarios del sistema. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    items, total = servicio.listar_usuarios_global(
+        busqueda=busqueda, estado=estado, es_superadmin=es_superadmin,
+        page=page, limit=limit
+    )
+    return GlobalUserListResponse(
+        items=[
+            GlobalUserResponse(**UsuarioResponse.model_validate(i["usuario"]).model_dump(), tenant_count=i["tenant_count"])
+            for i in items
+        ],
+        total=total, page=page, limit=limit
+    )
+
+
+@router.post(
+    "/usuarios/",
+    response_model=GlobalUserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear usuario global",
+    dependencies=[Depends(get_superadmin)]
+)
+async def crear_usuario_global(
+    request: Request,
+    datos: GlobalUserCreate,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """Crea un usuario global sin asociación a tenant. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    try:
+        usuario = servicio.crear_usuario_global(datos)
+        audit.registrar_desde_request(request, superadmin, "user.create", "user", resource_id=usuario.id, changes={"email": usuario.email, "rol": usuario.rol})
+        return GlobalUserResponse(**UsuarioResponse.model_validate(usuario).model_dump(), tenant_count=0)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/usuarios/{user_id}",
+    response_model=GlobalUserResponse,
+    summary="Obtener usuario global",
+    dependencies=[Depends(get_superadmin)]
+)
+async def obtener_usuario_global(user_id: UUID, db: Session = Depends(get_db)):
+    """Obtiene un usuario por su ID. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    usuario = servicio.obtener_usuario_por_id(user_id)
+    if not usuario:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    tenants = servicio.obtener_tenants_de_usuario(user_id)
+    return GlobalUserResponse(**UsuarioResponse.model_validate(usuario).model_dump(), tenant_count=len(tenants))
+
+
+@router.put(
+    "/usuarios/{user_id}",
+    response_model=GlobalUserResponse,
+    summary="Actualizar usuario global",
+    dependencies=[Depends(get_superadmin)]
+)
+async def actualizar_usuario_global(
+    request: Request,
+    user_id: UUID,
+    datos: GlobalUserUpdate,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """Actualiza datos de un usuario. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    try:
+        usuario = servicio.actualizar_usuario_global(user_id, datos)
+        if not usuario:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        audit.registrar_desde_request(request, superadmin, "user.update", "user", resource_id=user_id, changes=datos.model_dump(exclude_unset=True))
+        tenants = servicio.obtener_tenants_de_usuario(user_id)
+        return GlobalUserResponse(**UsuarioResponse.model_validate(usuario).model_dump(), tenant_count=len(tenants))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/usuarios/{user_id}/reset-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Forzar reset de contraseña",
+    dependencies=[Depends(get_superadmin)]
+)
+async def force_reset_password(
+    request: Request,
+    user_id: UUID,
+    datos: ForcePasswordRequest,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """Fuerza el cambio de contraseña de cualquier usuario. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    usuario = servicio.force_reset_password(user_id, datos.new_password)
+    if not usuario:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    audit.registrar_desde_request(request, superadmin, "user.force_password_reset", "user", resource_id=user_id)
+
+
+@router.post(
+    "/usuarios/{user_id}/toggle-status",
+    response_model=GlobalUserResponse,
+    summary="Activar/desactivar usuario",
+    dependencies=[Depends(get_superadmin)]
+)
+async def toggle_user_status(
+    request: Request,
+    user_id: UUID,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """Activa o desactiva un usuario globalmente. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    try:
+        usuario = servicio.toggle_user_status(user_id)
+        if not usuario:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        audit.registrar_desde_request(request, superadmin, "user.toggle_status", "user", resource_id=user_id, changes={"nuevo_estado": usuario.estado})
+        tenants = servicio.obtener_tenants_de_usuario(user_id)
+        return GlobalUserResponse(**UsuarioResponse.model_validate(usuario).model_dump(), tenant_count=len(tenants))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/usuarios/{user_id}/tenants",
+    summary="Tenants del usuario",
+    dependencies=[Depends(get_superadmin)]
+)
+async def obtener_tenants_de_usuario(user_id: UUID, db: Session = Depends(get_db)):
+    """Lista todos los tenants a los que pertenece un usuario. **Requiere ser SuperAdmin.**"""
+    servicio = ServicioTenants(db)
+    usuario = servicio.obtener_usuario_por_id(user_id)
+    if not usuario:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    return servicio.obtener_tenants_de_usuario(user_id)
+
+
+# ============================================================================
+# GHOST MODE - IMPERSONACIÓN (Superadmin) - MUST be before generic /{tenant_id}
+# ============================================================================
+
+@router.post(
+    "/{tenant_id}/impersonate/{user_id}",
+    response_model=ImpersonationResponse,
+    summary="Impersonar usuario en tenant",
+)
+async def impersonar_usuario(
+    request: Request,
+    tenant_id: UUID,
+    user_id: UUID,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Genera un token de 15 minutos que actúa como el usuario especificado en el tenant.
+    El token de impersonación NO permite: acceso superadmin, cambio de contraseña, ni re-impersonación.
+    **Requiere ser SuperAdmin.**
+    """
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+
+    # Validar usuario existe y está activo
+    usuario = servicio.obtener_usuario_por_id(user_id)
+    if not usuario:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    if not usuario.estado:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede impersonar a un usuario inactivo")
+
+    # Validar que el usuario pertenece al tenant
+    ut = servicio.validar_acceso_tenant(user_id, tenant_id)
+    if not ut:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El usuario no pertenece a este tenant"
+        )
+
+    # Generar token de impersonación (15 minutos, sin refresh)
+    token = create_access_token(
+        data={
+            "sub": str(user_id),
+            "email": usuario.email,
+            "rol": ut.rol,
+            "impersonating": True,
+            "impersonator_id": str(superadmin.id),
+        },
+        expires_delta=timedelta(minutes=15),
+        tenant_id=tenant_id,
+        rol_en_tenant=ut.rol,
+    )
+
+    audit.registrar_desde_request(
+        request, superadmin, "user.impersonate", "user",
+        resource_id=user_id, tenant_id=tenant_id,
+        changes={"impersonated_user": usuario.email, "tenant_id": str(tenant_id), "rol": ut.rol}
+    )
+
+    return ImpersonationResponse(
+        access_token=token,
+        expires_in=900,
+        impersonated_user=UsuarioResponse.model_validate(usuario),
+        tenant_id=tenant_id,
+        rol_en_tenant=ut.rol,
+    )
+
+
+# ============================================================================
 # SUPERADMIN - GESTIÓN DE TENANTS
 # ============================================================================
 
@@ -455,6 +690,103 @@ async def actualizar_tenant(
 
     audit.registrar_desde_request(request, superadmin, "tenant.update", "tenant", resource_id=tenant_id, tenant_id=tenant_id, changes=datos.model_dump(exclude_unset=True))
     return TenantResponse.model_validate(tenant)
+
+
+# ============================================================================
+# PULSE (Health Score)
+# ============================================================================
+
+@router.get(
+    "/{tenant_id}/pulse",
+    response_model=TenantPulse,
+    summary="Calcular health score de tenant",
+    dependencies=[Depends(get_superadmin)]
+)
+async def get_tenant_pulse(
+    tenant_id: UUID,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Calcula el Health Score (0-100) de un tenant.
+    Basado en: logins recientes, actividad de ventas, estado de suscripción y antigüedad.
+    **Requiere ser SuperAdmin.**
+    """
+    servicio = ServicioTenants(db)
+    try:
+        pulse_data = servicio.calcular_pulse_tenant(tenant_id)
+        return TenantPulse(**pulse_data)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+# ============================================================================
+# MAINTENANCE MODE
+# ============================================================================
+
+@router.post(
+    "/{tenant_id}/mantenimiento",
+    response_model=TenantResponse,
+    summary="Poner tenant en modo mantenimiento",
+    dependencies=[Depends(get_superadmin)]
+)
+async def poner_mantenimiento(
+    request: Request,
+    tenant_id: UUID,
+    motivo: Optional[str] = Query(None, description="Motivo del mantenimiento"),
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Pone un tenant en modo mantenimiento.
+    Los usuarios pueden leer pero no realizar escrituras (POST/PUT/PATCH/DELETE devuelven 503).
+    **Requiere ser SuperAdmin.**
+    """
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    try:
+        tenant = servicio.poner_mantenimiento(tenant_id, motivo)
+        if not tenant:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+        audit.registrar_desde_request(
+            request, superadmin, "tenant.maintenance_on", "tenant",
+            resource_id=tenant_id, tenant_id=tenant_id,
+            changes={"motivo": motivo}
+        )
+        return TenantResponse.model_validate(tenant)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/{tenant_id}/salir-mantenimiento",
+    response_model=TenantResponse,
+    summary="Sacar tenant del modo mantenimiento",
+    dependencies=[Depends(get_superadmin)]
+)
+async def salir_mantenimiento(
+    request: Request,
+    tenant_id: UUID,
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Restaura un tenant del modo mantenimiento al estado 'activo'.
+    **Requiere ser SuperAdmin.**
+    """
+    servicio = ServicioTenants(db)
+    audit = ServicioAuditLog(db)
+    try:
+        tenant = servicio.salir_mantenimiento(tenant_id)
+        if not tenant:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+        audit.registrar_desde_request(
+            request, superadmin, "tenant.maintenance_off", "tenant",
+            resource_id=tenant_id, tenant_id=tenant_id
+        )
+        return TenantResponse.model_validate(tenant)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post(

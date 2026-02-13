@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tenants } from '../api/endpoints';
+import { tenants, usuariosAdmin } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
+import { useAuthStore } from '../stores/authStore';
 import type {
   TenantDetail,
   PlanWithStats,
@@ -10,9 +11,14 @@ import type {
   PlanUpdate,
   SaaSDashboardKPIs,
   TenantMetricas,
+  TenantPulse,
   Suscripcion,
   PagoHistorial,
   UsuarioTenantDetail,
+  GlobalUserResponse,
+  GlobalUserListResponse,
+  UserTenantMembership,
+  ImpersonationResponse,
 } from '../types';
 
 // ============================================================================
@@ -25,6 +31,7 @@ const estadoColor: Record<string, string> = {
   suspendido: 'bg-red-100 text-red-700',
   cancelado: 'bg-gray-200 text-gray-600',
   pendiente: 'bg-yellow-100 text-yellow-700',
+  mantenimiento: 'bg-orange-100 text-orange-700',
 };
 
 const pagoEstadoColor: Record<string, string> = {
@@ -60,17 +67,32 @@ export default function TenantsPage() {
   const qc = useQueryClient();
 
   // --- State ---
-  const [activeTab, setActiveTab] = useState<'tenants' | 'planes'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios'>('tenants');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
   // Tenant detail modal
   const [selectedTenant, setSelectedTenant] = useState<TenantDetail | null>(null);
-  const [detailTab, setDetailTab] = useState<'info' | 'usuarios' | 'suscripcion' | 'metricas'>('info');
+  const [detailTab, setDetailTab] = useState<'info' | 'usuarios' | 'suscripcion' | 'metricas' | 'pulso'>('info');
+
+  // Create tenant modal
+  const [createTenantModal, setCreateTenantModal] = useState(false);
 
   // Plan modal
   const [planModal, setPlanModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlanWithStats | null>(null);
+
+  // User governance state
+  const [busquedaUsuario, setBusquedaUsuario] = useState('');
+  const [filtroEstadoUsuario, setFiltroEstadoUsuario] = useState<string>('');
+  const [selectedUser, setSelectedUser] = useState<GlobalUserResponse | null>(null);
+  const [userModalTab, setUserModalTab] = useState<'info' | 'tenants' | 'password'>('info');
+  const [editUserNombre, setEditUserNombre] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserRol, setEditUserRol] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  const startImpersonation = useAuthStore((s) => s.startImpersonation);
 
   // Error banner
   const [error, setError] = useState<string | null>(null);
@@ -125,12 +147,35 @@ export default function TenantsPage() {
     enabled: !!selectedTenant && detailTab === 'suscripcion',
   });
 
+  // User governance queries
+  const { data: usuariosList, isLoading: loadingUsuariosList } = useQuery<GlobalUserListResponse>({
+    queryKey: ['usuarios-global', busquedaUsuario, filtroEstadoUsuario],
+    queryFn: () =>
+      usuariosAdmin.list({
+        ...(busquedaUsuario ? { busqueda: busquedaUsuario } : {}),
+        ...(filtroEstadoUsuario === 'activo' ? { estado: true } : filtroEstadoUsuario === 'inactivo' ? { estado: false } : {}),
+      }).then((r) => r.data),
+    enabled: activeTab === 'usuarios',
+  });
+
+  const { data: userTenants, isLoading: loadingUserTenants } = useQuery<UserTenantMembership[]>({
+    queryKey: ['user-tenants', selectedUser?.id],
+    queryFn: () => usuariosAdmin.tenants(selectedUser!.id).then((r) => r.data),
+    enabled: !!selectedUser && userModalTab === 'tenants',
+  });
+
   // --- Mutations ---
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: ['tenants'] });
     qc.invalidateQueries({ queryKey: ['saas-dashboard'] });
     qc.invalidateQueries({ queryKey: ['planes-admin'] });
   };
+
+  const crearTenantMut = useMutation({
+    mutationFn: (data: unknown) => tenants.create(data),
+    onSuccess: () => { invalidateAll(); setCreateTenantModal(false); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al crear tenant'),
+  });
 
   const suspenderMut = useMutation({
     mutationFn: (id: string) => tenants.suspender(id),
@@ -171,6 +216,19 @@ export default function TenantsPage() {
     onError: (e: any) => showError(e?.response?.data?.detail || 'Error al actualizar'),
   });
 
+  const mantenimientoMut = useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo?: string }) =>
+      tenants.mantenimiento(id, motivo),
+    onSuccess: () => { invalidateAll(); setSelectedTenant(null); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al poner en mantenimiento'),
+  });
+
+  const salirMantenimientoMut = useMutation({
+    mutationFn: (id: string) => tenants.salirMantenimiento(id),
+    onSuccess: () => { invalidateAll(); setSelectedTenant(null); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al salir de mantenimiento'),
+  });
+
   const cambiarRolMut = useMutation({
     mutationFn: ({ tid, uid, rol }: { tid: string; uid: string; rol: string }) =>
       tenants.cambiarRolUsuario(tid, uid, rol),
@@ -203,6 +261,40 @@ export default function TenantsPage() {
     mutationFn: (id: string) => tenants.planes.delete(id),
     onSuccess: () => { invalidateAll(); },
     onError: (e: any) => showError(e?.response?.data?.detail || 'Error al desactivar plan'),
+  });
+
+  // User governance mutations
+  const invalidateUsers = () => qc.invalidateQueries({ queryKey: ['usuarios-global'] });
+
+  const updateUserMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => usuariosAdmin.update(id, data),
+    onSuccess: () => { invalidateUsers(); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al actualizar usuario'),
+  });
+
+  const resetPasswordMut = useMutation({
+    mutationFn: ({ id, pwd }: { id: string; pwd: string }) => usuariosAdmin.resetPassword(id, pwd),
+    onSuccess: () => { setNewPassword(''); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al resetear contraseña'),
+  });
+
+  const toggleStatusMut = useMutation({
+    mutationFn: (id: string) => usuariosAdmin.toggleStatus(id),
+    onSuccess: () => { invalidateUsers(); },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al cambiar estado'),
+  });
+
+  const impersonateMut = useMutation({
+    mutationFn: ({ tenantId, userId }: { tenantId: string; userId: string }) =>
+      tenants.impersonate(tenantId, userId),
+    onSuccess: (res, vars) => {
+      const data: ImpersonationResponse = res.data;
+      const membership = userTenants?.find((t) => t.tenant_id === vars.tenantId);
+      startImpersonation(data, membership?.tenant_nombre || vars.tenantId);
+      setSelectedUser(null);
+      window.location.href = '/dashboard';
+    },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al iniciar impersonación'),
   });
 
   // --- Helpers ---
@@ -261,7 +353,7 @@ export default function TenantsPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
-        {(['tenants', 'planes'] as const).map((tab) => (
+        {(['tenants', 'planes', 'usuarios'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -271,7 +363,7 @@ export default function TenantsPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'tenants' ? 'Tenants' : 'Planes'}
+            {tab === 'tenants' ? 'Tenants' : tab === 'planes' ? 'Planes' : 'Usuarios'}
           </button>
         ))}
       </div>
@@ -287,7 +379,7 @@ export default function TenantsPage() {
               onChange={(e) => setBusqueda(e.target.value)}
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               {['', 'activo', 'trial', 'suspendido', 'cancelado'].map((estado) => (
                 <button
                   key={estado}
@@ -301,6 +393,12 @@ export default function TenantsPage() {
                   {estado || 'Todos'}
                 </button>
               ))}
+              <button
+                onClick={() => setCreateTenantModal(true)}
+                className="rounded-lg bg-primary-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-600 transition-colors"
+              >
+                + Nuevo Tenant
+              </button>
             </div>
           </div>
 
@@ -457,6 +555,106 @@ export default function TenantsPage() {
         </>
       )}
 
+      {/* TAB: Usuarios */}
+      {activeTab === 'usuarios' && (
+        <>
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o email..."
+              value={busquedaUsuario}
+              onChange={(e) => setBusquedaUsuario(e.target.value)}
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            <div className="flex gap-2">
+              {[['', 'Todos'], ['activo', 'Activos'], ['inactivo', 'Inactivos']].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setFiltroEstadoUsuario(val)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    filtroEstadoUsuario === val
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loadingUsuariosList ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-14 bg-gray-200 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Usuario</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Rol</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-500 hidden sm:table-cell">Tenants</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">Último acceso</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuariosList?.items?.map((u) => (
+                    <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900">{u.nombre}</p>
+                        <p className="text-xs text-gray-500">{u.email}</p>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <span className="text-xs font-mono bg-gray-100 rounded px-1.5 py-0.5">{u.rol}</span>
+                        {u.es_superadmin && (
+                          <span className="ml-1 text-xs font-medium text-purple-700 bg-purple-100 rounded px-1.5 py-0.5">superadmin</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center hidden sm:table-cell">
+                        <span className="text-sm font-medium">{u.tenant_count}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">
+                        {u.ultimo_acceso ? formatDate(u.ultimo_acceso) : 'Nunca'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${u.estado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                          {u.estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setUserModalTab('info');
+                            setEditUserNombre(u.nombre);
+                            setEditUserEmail(u.email);
+                            setEditUserRol(u.rol);
+                            setNewPassword('');
+                          }}
+                          className="rounded px-2 py-1 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          Gestionar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(!usuariosList?.items || usuariosList.items.length === 0) && (
+                <div className="text-center py-12 text-gray-400">
+                  <p>No se encontraron usuarios</p>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
       {/* ================================================================== */}
       {/* TENANT DETAIL MODAL */}
       {/* ================================================================== */}
@@ -487,9 +685,31 @@ export default function TenantsPage() {
             onRemoveUsuario={(uid) => {
               if (confirm('Remover usuario del tenant?')) removeUsuarioMut.mutate({ tid: selectedTenant.id, uid });
             }}
-            isPending={suspenderMut.isPending || reactivarMut.isPending || cancelarMut.isPending}
+            onMantenimiento={() => {
+              if (confirm('Poner este tenant en modo mantenimiento? Los usuarios no podrán escribir.')) {
+                mantenimientoMut.mutate({ id: selectedTenant.id });
+              }
+            }}
+            onSalirMantenimiento={() => salirMantenimientoMut.mutate(selectedTenant.id)}
+            isPending={suspenderMut.isPending || reactivarMut.isPending || cancelarMut.isPending || mantenimientoMut.isPending || salirMantenimientoMut.isPending}
           />
         )}
+      </Modal>
+
+      {/* ================================================================== */}
+      {/* CREATE TENANT MODAL */}
+      {/* ================================================================== */}
+      <Modal
+        open={createTenantModal}
+        onClose={() => setCreateTenantModal(false)}
+        title="Nuevo Tenant"
+        maxWidth="max-w-lg"
+      >
+        <TenantCreateForm
+          planes={planes || []}
+          onSubmit={(data) => crearTenantMut.mutate(data)}
+          isPending={crearTenantMut.isPending}
+        />
       </Modal>
 
       {/* ================================================================== */}
@@ -512,6 +732,191 @@ export default function TenantsPage() {
           }}
           isPending={crearPlanMut.isPending || updatePlanMut.isPending}
         />
+      </Modal>
+
+      {/* ================================================================== */}
+      {/* USER DETAIL MODAL */}
+      {/* ================================================================== */}
+      <Modal
+        open={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        title={selectedUser?.nombre || 'Usuario'}
+        maxWidth="max-w-2xl"
+      >
+        {selectedUser && (
+          <div>
+            {/* Header info */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${selectedUser.estado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                {selectedUser.estado ? 'Activo' : 'Inactivo'}
+              </span>
+              <span className="text-sm text-gray-500">{selectedUser.email}</span>
+              {selectedUser.es_superadmin && (
+                <span className="text-xs font-medium text-purple-700 bg-purple-100 rounded px-1.5 py-0.5">superadmin</span>
+              )}
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex border-b border-gray-200 mb-4">
+              {([
+                { key: 'info', label: 'Info' },
+                { key: 'tenants', label: 'Tenants / Impersonar' },
+                { key: 'password', label: 'Contraseña' },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setUserModalTab(tab.key)}
+                  className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                    userModalTab === tab.key
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Info tab */}
+            {userModalTab === 'info' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                    <input
+                      value={editUserNombre}
+                      onChange={(e) => setEditUserNombre(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                    <input
+                      value={editUserEmail}
+                      onChange={(e) => setEditUserEmail(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Rol global</label>
+                    <select
+                      value={editUserRol}
+                      onChange={(e) => setEditUserRol(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => updateUserMut.mutate({
+                      id: selectedUser.id,
+                      data: { nombre: editUserNombre, email: editUserEmail, rol: editUserRol },
+                    })}
+                    disabled={updateUserMut.isPending}
+                    className="rounded-lg bg-primary-500 text-white px-4 py-2 text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
+                  >
+                    {updateUserMut.isPending ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (confirm(`${selectedUser.estado ? 'Desactivar' : 'Activar'} usuario ${selectedUser.email}?`)) {
+                        toggleStatusMut.mutate(selectedUser.id);
+                      }
+                    }}
+                    disabled={toggleStatusMut.isPending}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                      selectedUser.estado
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                    }`}
+                  >
+                    {selectedUser.estado ? 'Desactivar' : 'Activar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Tenants / Impersonar tab */}
+            {userModalTab === 'tenants' && (
+              <div>
+                {loadingUserTenants ? (
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+                    ))}
+                  </div>
+                ) : userTenants && userTenants.length > 0 ? (
+                  <div className="space-y-2">
+                    {userTenants.map((t) => (
+                      <div key={t.tenant_id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{t.tenant_nombre}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs font-mono bg-gray-100 rounded px-1.5 py-0.5">{t.rol}</span>
+                            <span className={`text-xs rounded px-1.5 py-0.5 ${estadoColor[t.tenant_estado] || 'bg-gray-100 text-gray-500'}`}>
+                              {t.tenant_estado}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Impersonar a ${selectedUser.nombre} en ${t.tenant_nombre}?`)) {
+                              impersonateMut.mutate({ tenantId: t.tenant_id, userId: selectedUser.id });
+                            }
+                          }}
+                          disabled={impersonateMut.isPending || !t.esta_activo}
+                          className="rounded px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                          title={!t.esta_activo ? 'Usuario inactivo en este tenant' : ''}
+                        >
+                          {impersonateMut.isPending ? '...' : 'Impersonar'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-400 py-6">Este usuario no tiene tenants asociados</p>
+                )}
+              </div>
+            )}
+
+            {/* Password tab */}
+            {userModalTab === 'password' && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500">
+                  Fuerza un cambio de contraseña para <strong>{selectedUser.email}</strong>.
+                  El usuario deberá usar esta contraseña en su próximo login.
+                </p>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Nueva contraseña</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={8}
+                    placeholder="Mínimo 8 caracteres"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (newPassword.length < 8) { showError('La contraseña debe tener al menos 8 caracteres'); return; }
+                    if (confirm(`Cambiar contraseña de ${selectedUser.email}?`)) {
+                      resetPasswordMut.mutate({ id: selectedUser.id, pwd: newPassword });
+                    }
+                  }}
+                  disabled={resetPasswordMut.isPending || newPassword.length < 8}
+                  className="rounded-lg bg-orange-500 text-white px-4 py-2 text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+                >
+                  {resetPasswordMut.isPending ? 'Cambiando...' : 'Cambiar Contraseña'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
@@ -555,11 +960,13 @@ function TenantDetailPanel({
   onUpdateTenant,
   onCambiarRol,
   onRemoveUsuario,
+  onMantenimiento,
+  onSalirMantenimiento,
   isPending,
 }: {
   tenant: TenantDetail;
   detailTab: string;
-  setDetailTab: (t: 'info' | 'usuarios' | 'suscripcion' | 'metricas') => void;
+  setDetailTab: (t: 'info' | 'usuarios' | 'suscripcion' | 'metricas' | 'pulso') => void;
   planes: PlanWithStats[];
   usuarios?: UsuarioTenantDetail[];
   loadingUsuarios: boolean;
@@ -574,8 +981,11 @@ function TenantDetailPanel({
   onUpdateTenant: (data: any) => void;
   onCambiarRol: (uid: string, rol: string) => void;
   onRemoveUsuario: (uid: string) => void;
+  onMantenimiento: () => void;
+  onSalirMantenimiento: () => void;
   isPending: boolean;
 }) {
+  const qc = useQueryClient();
   const [trialDias, setTrialDias] = useState(7);
 
   // Editable info
@@ -584,11 +994,19 @@ function TenantDetailPanel({
   const [editTelefono, setEditTelefono] = useState(tenant.telefono || '');
   const [editCiudad, setEditCiudad] = useState(tenant.ciudad || '');
 
+  // Pulse query (lazy — only when tab is active)
+  const { data: pulse, isLoading: loadingPulse } = useQuery<TenantPulse>({
+    queryKey: ['tenant-pulse', tenant.id],
+    queryFn: () => tenants.pulse(tenant.id).then((r) => r.data),
+    enabled: detailTab === 'pulso',
+  });
+
   const tabs = [
     { key: 'info', label: 'Info' },
     { key: 'usuarios', label: 'Usuarios' },
     { key: 'suscripcion', label: 'Suscripcion' },
     { key: 'metricas', label: 'Metricas' },
+    { key: 'pulso', label: 'Pulso' },
   ] as const;
 
   return (
@@ -756,6 +1174,28 @@ function TenantDetailPanel({
                   Cancelar
                 </button>
               )}
+
+              {/* Modo Mantenimiento */}
+              {(tenant.estado === 'activo' || tenant.estado === 'trial') && (
+                <button
+                  onClick={onMantenimiento}
+                  disabled={isPending}
+                  className="rounded px-3 py-1.5 text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                >
+                  Modo Mantenimiento
+                </button>
+              )}
+
+              {/* Salir de Mantenimiento */}
+              {tenant.estado === 'mantenimiento' && (
+                <button
+                  onClick={onSalirMantenimiento}
+                  disabled={isPending}
+                  className="rounded px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
+                >
+                  Salir Mantenimiento
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -899,7 +1339,312 @@ function TenantDetailPanel({
           )}
         </div>
       )}
+
+      {/* ---- PULSO TAB ---- */}
+      {detailTab === 'pulso' && (
+        <div>
+          {loadingPulse ? (
+            <div className="space-y-4">
+              <div className="h-28 bg-gray-200 rounded-xl animate-pulse" />
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ) : pulse ? (
+            <div className="space-y-4">
+              {/* Score principal */}
+              <div className="flex items-center gap-6 rounded-xl border border-gray-200 p-5">
+                {/* Número grande */}
+                <div className="flex-shrink-0 text-center">
+                  <span
+                    className={`text-5xl font-black ${
+                      pulse.estado_salud === 'saludable'
+                        ? 'text-green-600'
+                        : pulse.estado_salud === 'en_riesgo'
+                        ? 'text-yellow-500'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {pulse.score}
+                  </span>
+                  <p className="text-xs text-gray-400 mt-0.5">/ 100</p>
+                </div>
+
+                {/* Barra de score */}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold text-gray-700">Health Score</span>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        pulse.estado_salud === 'saludable'
+                          ? 'bg-green-100 text-green-700'
+                          : pulse.estado_salud === 'en_riesgo'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {pulse.estado_salud === 'saludable'
+                        ? 'Saludable'
+                        : pulse.estado_salud === 'en_riesgo'
+                        ? 'En Riesgo'
+                        : 'Critico'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className={`h-3 rounded-full transition-all ${
+                        pulse.estado_salud === 'saludable'
+                          ? 'bg-green-500'
+                          : pulse.estado_salud === 'en_riesgo'
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                      }`}
+                      style={{ width: `${pulse.score}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>Critico</span>
+                    <span>En Riesgo</span>
+                    <span>Saludable</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metricas del score */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Logins (7d)</p>
+                  <p className="text-2xl font-bold text-gray-900">{pulse.logins_recientes}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">usuarios activos</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Ventas (30d)</p>
+                  <p className="text-2xl font-bold text-gray-900">{pulse.ventas_mes}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">transacciones</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Antigüedad</p>
+                  <p className="text-2xl font-bold text-gray-900">{pulse.dias_activo}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">días</p>
+                </div>
+              </div>
+
+              {/* Descripcion del estado */}
+              <div className={`rounded-lg px-4 py-3 text-sm ${
+                pulse.estado_salud === 'saludable'
+                  ? 'bg-green-50 text-green-700'
+                  : pulse.estado_salud === 'en_riesgo'
+                  ? 'bg-yellow-50 text-yellow-700'
+                  : 'bg-red-50 text-red-700'
+              }`}>
+                {pulse.estado_salud === 'saludable' && 'El tenant está activo y en buen estado. Sin señales de churn.'}
+                {pulse.estado_salud === 'en_riesgo' && 'El tenant muestra señales de bajo engagement. Considerar seguimiento proactivo.'}
+                {pulse.estado_salud === 'critico' && 'Riesgo alto de churn. Se recomienda contacto inmediato con el cliente.'}
+              </div>
+
+              <p className="text-xs text-gray-400 text-right">
+                Calculado: {new Date(pulse.calculado_en).toLocaleString('es-CO')}
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p>No se pudo calcular el Pulso</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ============================================================================
+// TENANT CREATE FORM
+// ============================================================================
+
+function TenantCreateForm({ planes, onSubmit, isPending }: {
+  planes: PlanWithStats[];
+  onSubmit: (data: unknown) => void;
+  isPending: boolean;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [slug, setSlug] = useState('');
+  const [slugManual, setSlugManual] = useState(false);
+  const [emailContacto, setEmailContacto] = useState('');
+  const [nit, setNit] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [planId, setPlanId] = useState(planes.find(p => p.esta_activo)?.id || '');
+  const [adminNombre, setAdminNombre] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
+  // Auto-generate slug from nombre
+  function toSlug(s: string) {
+    return s
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+  }
+
+  function handleNombreChange(v: string) {
+    setNombre(v);
+    if (!slugManual) setSlug(toSlug(v));
+  }
+
+  function handleSlugChange(v: string) {
+    setSlugManual(true);
+    setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onSubmit({
+      nombre,
+      slug,
+      email_contacto: emailContacto,
+      plan_id: planId,
+      nit: nit || null,
+      telefono: telefono || null,
+      ciudad: ciudad || null,
+      admin_nombre: adminNombre,
+      admin_email: adminEmail,
+      admin_password: adminPassword,
+    });
+  }
+
+  const activePlanes = planes.filter(p => p.esta_activo);
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Datos del tenant */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Datos del Tenant</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
+            <input
+              required
+              value={nombre}
+              onChange={(e) => handleNombreChange(e.target.value)}
+              placeholder="Ej: Velas Aromáticas S.A.S."
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Slug * <span className="text-gray-400 font-normal">(solo minúsculas, números y guiones)</span>
+            </label>
+            <input
+              required
+              value={slug}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              pattern="^[a-z0-9-]+$"
+              placeholder="ej: velas-aromaticas"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email de contacto *</label>
+            <input
+              required
+              type="email"
+              value={emailContacto}
+              onChange={(e) => setEmailContacto(e.target.value)}
+              placeholder="contacto@empresa.com"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">NIT</label>
+            <input
+              value={nit}
+              onChange={(e) => setNit(e.target.value)}
+              placeholder="900123456-7"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Ciudad</label>
+            <input
+              value={ciudad}
+              onChange={(e) => setCiudad(e.target.value)}
+              placeholder="Bogotá"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Plan *</label>
+            <select
+              required
+              value={planId}
+              onChange={(e) => setPlanId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Seleccionar plan...</option>
+              {activePlanes.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre} — {formatCurrency(p.precio_mensual)}/mes
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Datos del admin */}
+      <div className="border-t border-gray-100 pt-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admin Inicial</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
+            <input
+              required
+              value={adminNombre}
+              onChange={(e) => setAdminNombre(e.target.value)}
+              placeholder="Juan Pérez"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
+            <input
+              required
+              type="email"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="admin@empresa.com"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Contraseña *</label>
+            <input
+              required
+              type="password"
+              minLength={8}
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          type="submit"
+          disabled={isPending || !nombre || !slug || !emailContacto || !planId || !adminNombre || !adminEmail || adminPassword.length < 8}
+          className="rounded-lg bg-primary-500 text-white px-4 py-2 text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
+        >
+          {isPending ? 'Creando...' : 'Crear Tenant'}
+        </button>
+      </div>
+    </form>
   );
 }
 

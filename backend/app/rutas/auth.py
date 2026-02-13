@@ -26,7 +26,8 @@ from ..utils.seguridad import (
     decode_refresh_token,
     get_current_user,
     hash_password,
-    verify_password
+    verify_password,
+    require_not_impersonating
 )
 from ..config import settings
 from ..utils.rate_limiter import limiter
@@ -323,6 +324,7 @@ async def get_me(current_user: Usuarios = Depends(get_current_user)):
 async def change_password(
     request: Request,
     password_data: ChangePasswordRequest,
+    _: None = Depends(require_not_impersonating),
     current_user: Usuarios = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
