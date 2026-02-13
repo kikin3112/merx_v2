@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from ..datos.db import get_db
 from ..datos.esquemas import VentasCreate, VentasUpdate, VentasResponse
-from ..datos.modelos import Usuarios, Terceros, Ventas, VentasDetalle, Productos
+from ..datos.modelos import Usuarios, Terceros, Ventas, VentasDetalle, Productos, Cartera
 from ..servicios.servicio_ventas import (
     crear_venta,
     listar_ventas,
@@ -227,6 +227,10 @@ async def confirmar_venta_endpoint(
 ):
     """Confirma una venta (PENDIENTE -> CONFIRMADA). Descuenta inventario."""
     try:
+        venta = obtener_venta(db, venta_id, tenant_id)
+        # Idempotente: si ya está confirmada o facturada, retornar sin error
+        if venta.estado in ("CONFIRMADA", "FACTURADA"):
+            return VentasResponse.model_validate(venta)
         venta = confirmar_venta(db, venta_id, tenant_id)
         db.commit()
 
@@ -266,6 +270,11 @@ async def anular_venta_endpoint(
 ):
     """Anula una venta. Revierte inventario si estaba confirmada."""
     try:
+        # Idempotente: si ya está anulada, retornar sin error
+        venta_check = obtener_venta(db, venta_id, tenant_id)
+        if venta_check.estado == "ANULADA":
+            return VentasResponse.model_validate(venta_check)
+
         venta = anular_venta(db, venta_id, tenant_id, motivo)
         db.commit()
 
@@ -304,16 +313,26 @@ async def facturar_venta_endpoint(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """
-    Factura una venta confirmada (CONFIRMADA -> FACTURADA).
-    Agrega contabilidad + PDF. NO descuenta inventario (ya se hizo al confirmar).
+    Factura una venta (PENDIENTE|CONFIRMADA -> FACTURADA).
+    Si está PENDIENTE, auto-confirma primero (descuenta inventario).
+    Luego agrega contabilidad + PDF.
     """
     venta = obtener_venta(db, venta_id, tenant_id)
 
-    if venta.estado != "CONFIRMADA":
+    # Idempotente: si ya está facturada, retornar sin error
+    if venta.estado == "FACTURADA":
+        return VentasResponse.model_validate(venta)
+
+    if venta.estado not in ("PENDIENTE", "CONFIRMADA"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Solo se pueden facturar ventas en estado CONFIRMADA. Estado actual: {venta.estado}"
+            detail=f"Solo se pueden facturar ventas en estado PENDIENTE o CONFIRMADA. Estado actual: {venta.estado}"
         )
+
+    # Auto-confirmar si está PENDIENTE (descuenta inventario)
+    if venta.estado == "PENDIENTE":
+        venta = confirmar_venta(db, venta.id, tenant_id)
+        db.flush()
 
     # Crear asiento contable automático
     servicio_cont = ServicioContabilidad(db, tenant_id)
@@ -341,6 +360,11 @@ async def facturar_venta_endpoint(
         logger.warning(f"Error generando PDF para venta {venta.numero_venta}: {e}")
 
     venta.estado = "FACTURADA"
+
+    # Crear cuenta por cobrar
+    from ..rutas.facturas import _crear_cartera_cobrar
+    _crear_cartera_cobrar(db, venta, tenant_id)
+
     db.commit()
     db.refresh(venta)
 

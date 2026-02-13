@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sqlfunc
 from typing import List, Optional
 from uuid import UUID
+from datetime import date
 
 from ..datos.db import get_db
-from ..datos.modelos import Cartera, PagosCartera, Usuarios
+from ..datos.modelos import Cartera, PagosCartera, Usuarios, MediosPago
 from ..datos.esquemas import CarteraCreate, CarteraResponse, PagoCarteraCreate, PagoCarteraResponse
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
@@ -46,6 +48,63 @@ async def crear_cartera(
     return CarteraResponse.model_validate(cartera)
 
 
+@router.get("/resumen/totales")
+async def resumen_cartera(
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """Resumen de totales de cartera por cobrar."""
+    hoy = date.today()
+
+    total_pendiente = db.query(sqlfunc.coalesce(sqlfunc.sum(Cartera.saldo_pendiente), 0)).filter(
+        Cartera.tenant_id == tenant_id,
+        Cartera.tipo_cartera == "COBRAR",
+        Cartera.estado.in_(["PENDIENTE", "PARCIAL"])
+    ).scalar()
+
+    total_vencido = db.query(sqlfunc.coalesce(sqlfunc.sum(Cartera.saldo_pendiente), 0)).filter(
+        Cartera.tenant_id == tenant_id,
+        Cartera.tipo_cartera == "COBRAR",
+        Cartera.estado.in_(["PENDIENTE", "PARCIAL"]),
+        Cartera.fecha_vencimiento < hoy
+    ).scalar()
+
+    cantidad_pendientes = db.query(sqlfunc.count(Cartera.id)).filter(
+        Cartera.tenant_id == tenant_id,
+        Cartera.tipo_cartera == "COBRAR",
+        Cartera.estado.in_(["PENDIENTE", "PARCIAL"])
+    ).scalar()
+
+    cantidad_vencidas = db.query(sqlfunc.count(Cartera.id)).filter(
+        Cartera.tenant_id == tenant_id,
+        Cartera.tipo_cartera == "COBRAR",
+        Cartera.estado.in_(["PENDIENTE", "PARCIAL"]),
+        Cartera.fecha_vencimiento < hoy
+    ).scalar()
+
+    return {
+        "total_por_cobrar": float(total_pendiente),
+        "total_vencido": float(total_vencido),
+        "cantidad_pendientes": cantidad_pendientes,
+        "cantidad_vencidas": cantidad_vencidas,
+    }
+
+
+@router.get("/medios-pago/list")
+async def listar_medios_pago(
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """Lista medios de pago del tenant para el formulario de registro de pagos."""
+    medios = db.query(MediosPago).filter(
+        MediosPago.tenant_id == tenant_id,
+        MediosPago.estado == True
+    ).order_by(MediosPago.nombre).all()
+    return [{"id": str(m.id), "nombre": m.nombre, "tipo": m.tipo} for m in medios]
+
+
 @router.get("/{cartera_id}", response_model=CarteraResponse)
 async def obtener_cartera(
     cartera_id: UUID,
@@ -75,6 +134,12 @@ async def registrar_pago(
     if not cartera:
         raise HTTPException(status_code=404, detail="Registro de cartera no encontrado")
 
+    if cartera.estado in ("PAGADA", "ANULADA"):
+        raise HTTPException(status_code=400, detail=f"No se pueden registrar pagos en cartera con estado {cartera.estado}")
+
+    if data.valor_pago > cartera.saldo_pendiente:
+        raise HTTPException(status_code=400, detail=f"El valor del pago ({data.valor_pago}) excede el saldo pendiente ({cartera.saldo_pendiente})")
+
     pago = PagosCartera(
         tenant_id=tenant_id,
         cartera_id=cartera_id,
@@ -96,3 +161,22 @@ async def registrar_pago(
     db.commit()
     db.refresh(pago)
     return PagoCarteraResponse.model_validate(pago)
+
+
+@router.get("/{cartera_id}/pagos", response_model=List[PagoCarteraResponse])
+async def listar_pagos_cartera(
+    cartera_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    cartera = db.query(Cartera).filter(
+        Cartera.id == cartera_id, Cartera.tenant_id == tenant_id
+    ).first()
+    if not cartera:
+        raise HTTPException(status_code=404, detail="Registro de cartera no encontrado")
+    pagos = db.query(PagosCartera).filter(
+        PagosCartera.cartera_id == cartera_id,
+        PagosCartera.tenant_id == tenant_id
+    ).order_by(PagosCartera.fecha_pago.desc()).all()
+    return [PagoCarteraResponse.model_validate(p) for p in pagos]

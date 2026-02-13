@@ -65,6 +65,7 @@ class Usuarios(Base):
     rol = Column(String(50), nullable=False, default="operador")  # Rol global
     estado = Column(Boolean, default=True, nullable=False)
     es_superadmin = Column(Boolean, default=False, nullable=False)  # SuperAdmin del sistema
+    ultimo_acceso = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -103,6 +104,13 @@ class Terceros(TenantMixin, SoftDeleteMixin, Base):
     telefono = Column(String(50))
     email = Column(String(100))
     estado = Column(Boolean, default=True, nullable=False)
+    # CRM fields
+    notas = Column(Text)
+    limite_credito = Column(Numeric(15, 2), default=Decimal("0.00"), server_default="0.00")
+    plazo_pago_dias = Column(Integer, default=0, server_default="0")
+    persona_contacto = Column(String(200))
+    sector_economico = Column(String(100))
+    grupo_cliente = Column(String(100))
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 

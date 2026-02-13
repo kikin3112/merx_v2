@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..datos.db import get_db
-from ..datos.modelos import Terceros, Usuarios
+from ..datos.modelos import Terceros, Usuarios, Ventas, Cotizaciones
 from ..datos.esquemas import TerceroCreate, TerceroUpdate, TerceroResponse
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
@@ -138,3 +138,60 @@ async def eliminar_tercero(
     tercero.estado = False
     db.commit()
     logger.warning(f"Tercero eliminado: {tercero.nombre}")
+
+
+@router.get("/{tercero_id}/historial")
+async def obtener_historial(
+        tercero_id: UUID,
+        skip: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+        db: Session = Depends(get_db),
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
+):
+    """Obtiene historial de ventas y cotizaciones de un tercero."""
+    tercero = db.query(Terceros).filter(
+        Terceros.id == tercero_id,
+        Terceros.tenant_id == tenant_id
+    ).first()
+    if not tercero:
+        raise HTTPException(status_code=404, detail="Tercero no encontrado")
+
+    ventas_list = (
+        db.query(Ventas)
+        .filter(Ventas.tercero_id == tercero_id, Ventas.tenant_id == tenant_id)
+        .order_by(Ventas.fecha_venta.desc())
+        .offset(skip).limit(limit)
+        .all()
+    )
+
+    cotizaciones_list = (
+        db.query(Cotizaciones)
+        .filter(Cotizaciones.tercero_id == tercero_id, Cotizaciones.tenant_id == tenant_id)
+        .order_by(Cotizaciones.fecha_cotizacion.desc())
+        .offset(skip).limit(limit)
+        .all()
+    )
+
+    return {
+        "ventas": [
+            {
+                "id": str(v.id),
+                "numero": v.numero_venta,
+                "fecha": str(v.fecha_venta),
+                "total": float(v.total_venta),
+                "estado": v.estado,
+            }
+            for v in ventas_list
+        ],
+        "cotizaciones": [
+            {
+                "id": str(c.id),
+                "numero": c.numero_cotizacion,
+                "fecha": str(c.fecha_cotizacion),
+                "total": float(c.total_cotizacion),
+                "estado": c.estado,
+            }
+            for c in cotizaciones_list
+        ],
+    }
