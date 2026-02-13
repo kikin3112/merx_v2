@@ -43,6 +43,21 @@ import type {
   Suscripcion,
   PagoHistorial,
   UsuarioTenantDetail,
+  ImpersonationResponse,
+  GlobalUserResponse,
+  GlobalUserListResponse,
+  GlobalUserCreate,
+  GlobalUserUpdate,
+  UserTenantMembership,
+  TenantPulse,
+  CrmPipeline,
+  CrmPipelineCreate,
+  CrmPipelineUpdate,
+  CrmDeal,
+  CrmDealCreate,
+  CrmDealUpdate,
+  CrmActivity,
+  CrmActivityCreate,
 } from '../types';
 
 // Auth
@@ -190,6 +205,14 @@ export const tenants = {
     client.put(`/tenants/${tenantId}/usuarios/${usuarioId}/rol`, null, { params: { rol } }),
   removeUsuario: (tenantId: string, usuarioId: string) =>
     client.delete(`/tenants/${tenantId}/usuarios/${usuarioId}`),
+  impersonate: (tenantId: string, userId: string) =>
+    client.post<ImpersonationResponse>(`/tenants/${tenantId}/impersonate/${userId}`),
+  pulse: (id: string) =>
+    client.get<TenantPulse>(`/tenants/${id}/pulse`),
+  mantenimiento: (id: string, motivo?: string) =>
+    client.post<TenantDetail>(`/tenants/${id}/mantenimiento`, null, { params: motivo ? { motivo } : {} }),
+  salirMantenimiento: (id: string) =>
+    client.post<TenantDetail>(`/tenants/${id}/salir-mantenimiento`),
   dashboard: () =>
     client.get<SaaSDashboardKPIs>('/tenants/dashboard/'),
   planes: {
@@ -199,6 +222,24 @@ export const tenants = {
     update: (id: string, data: PlanUpdate) => client.put<PlanWithStats>(`/tenants/planes/admin/${id}`, data),
     delete: (id: string) => client.delete(`/tenants/planes/admin/${id}`),
   },
+};
+
+// Usuarios admin (superadmin - user governance)
+export const usuariosAdmin = {
+  list: (params?: Record<string, unknown>) =>
+    client.get<GlobalUserListResponse>('/tenants/usuarios/', { params }),
+  create: (data: GlobalUserCreate) =>
+    client.post<GlobalUserResponse>('/tenants/usuarios/', data),
+  get: (id: string) =>
+    client.get<GlobalUserResponse>(`/tenants/usuarios/${id}`),
+  update: (id: string, data: GlobalUserUpdate) =>
+    client.put<GlobalUserResponse>(`/tenants/usuarios/${id}`, data),
+  resetPassword: (id: string, new_password: string) =>
+    client.post(`/tenants/usuarios/${id}/reset-password`, { new_password }),
+  toggleStatus: (id: string) =>
+    client.post<GlobalUserResponse>(`/tenants/usuarios/${id}/toggle-status`),
+  tenants: (id: string) =>
+    client.get<UserTenantMembership[]>(`/tenants/usuarios/${id}/tenants`),
 };
 
 // Reportes
@@ -246,4 +287,41 @@ export const cartera = {
   }) => client.post<PagoCartera>(`/cartera/${carteraId}/pagos`, data),
   pagos: (carteraId: string) =>
     client.get<PagoCartera[]>(`/cartera/${carteraId}/pagos`),
+};
+
+// CRM
+export const crm = {
+  // Pipelines
+  pipelines: {
+    list: () => client.get<CrmPipeline[]>('/crm/pipelines/'),
+    create: (data: CrmPipelineCreate) => client.post<CrmPipeline>('/crm/pipelines/', data),
+    update: (id: string, data: CrmPipelineUpdate) =>
+      client.patch<CrmPipeline>(`/crm/pipelines/${id}`, data),
+    delete: (id: string) => client.delete(`/crm/pipelines/${id}`),
+  },
+
+  // Deals
+  deals: {
+    list: (filters?: { pipeline_id?: string; stage_id?: string; usuario_id?: string; estado_cierre?: string }) =>
+      client.get<CrmDeal[]>('/crm/deals/', { params: filters }),
+    get: (id: string) => client.get<CrmDeal>(`/crm/deals/${id}`),
+    create: (data: CrmDealCreate) => client.post<CrmDeal>('/crm/deals/', data),
+    update: (id: string, data: CrmDealUpdate) =>
+      client.put<CrmDeal>(`/crm/deals/${id}`, data),
+    moveStage: (id: string, stage_id: string) =>
+      client.patch<CrmDeal>(`/crm/deals/${id}/stage`, null, { params: { stage_id } }),
+    close: (id: string, estado: string, motivo?: string) =>
+      client.post<CrmDeal>(`/crm/deals/${id}/cerrar`, null, { params: { estado, motivo } }),
+    delete: (id: string) => client.delete(`/crm/deals/${id}`),
+  },
+
+  // Activities
+  activities: {
+    list: (dealId: string) =>
+      client.get<CrmActivity[]>(`/crm/deals/${dealId}/activities/`),
+    create: (dealId: string, data: CrmActivityCreate) =>
+      client.post<CrmActivity>(`/crm/deals/${dealId}/activities/`, data),
+    delete: (activityId: string) =>
+      client.delete(`/crm/activities/${activityId}`),
+  },
 };

@@ -550,10 +550,12 @@ def require_tenant_roles(*allowed_roles: str) -> Callable:
 
 
 def get_superadmin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: Usuarios = Depends(get_current_user)
 ) -> Usuarios:
     """
     Dependencia para rutas que requieren ser superadmin del sistema.
+    Bloquea automáticamente tokens de impersonación.
 
     Uso:
         @router.get("/superadmin/tenants")
@@ -563,14 +565,56 @@ def get_superadmin(
             # Solo superadmins pueden ver todos los tenants
 
     Raises:
-        HTTPException 403: Si el usuario no es superadmin
+        HTTPException 403: Si el usuario no es superadmin o está en modo impersonación
     """
+    # Bloquear tokens de impersonación en rutas superadmin
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            options={"verify_exp": False}
+        )
+        if payload.get("impersonating"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acceso a rutas de superadmin no permitido en modo impersonación"
+            )
+    except JWTError:
+        pass  # Si no se puede decodificar, get_current_user ya falló antes
+
     if not current_user.es_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Se requiere ser SuperAdmin del sistema"
         )
     return current_user
+
+
+def require_not_impersonating(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> None:
+    """
+    Dependencia que bloquea acciones sensibles durante impersonación.
+    Usar en endpoints donde el usuario no debe poder actuar como otro (ej: change-password).
+
+    Raises:
+        HTTPException 403: Si el token es de impersonación
+    """
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            options={"verify_exp": False}
+        )
+        if payload.get("impersonating"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acción no permitida en modo impersonación"
+            )
+    except JWTError:
+        pass  # Token inválido/expirado: get_current_user ya manejará el error
 
 
 # ============================================================================

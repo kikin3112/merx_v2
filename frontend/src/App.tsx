@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import AppShell from './components/layout/AppShell';
+import ImpersonationBanner from './components/ImpersonationBanner';
 import LoginPage from './pages/LoginPage';
 import SelectTenantPage from './pages/SelectTenantPage';
 import DashboardPage from './pages/DashboardPage';
@@ -18,6 +19,7 @@ import TenantsPage from './pages/TenantsPage';
 import ReportesPage from './pages/ReportesPage';
 import POSPage from './pages/POSPage';
 import CarteraPage from './pages/CarteraPage';
+import CRMPage from './pages/CRMPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +60,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ImpersonationBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
@@ -71,6 +74,7 @@ export default function App() {
               <Route path="/ventas" element={<VentasPage />} />
               <Route path="/facturas" element={<FacturasPage />} />
               <Route path="/cotizaciones" element={<CotizacionesPage />} />
+              <Route path="/crm" element={<CRMPage />} />
               <Route path="/productos" element={<ProductosPage />} />
               <Route path="/terceros" element={<TercerosPage />} />
               <Route path="/inventario" element={<InventarioPage />} />

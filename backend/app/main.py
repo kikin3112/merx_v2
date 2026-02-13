@@ -31,6 +31,7 @@ from .rutas import (
     compras,
     contabilidad,
     cotizaciones,
+    crm,
     cuentas_contables,
     facturas,
     inventarios,
@@ -442,6 +443,9 @@ app.include_router(ventas.router, prefix=f"{prefix}/ventas", tags=["Ventas"])
 app.include_router(compras.router, prefix=f"{prefix}/compras", tags=["Compras"])
 app.include_router(cotizaciones.router, prefix=f"{prefix}/cotizaciones", tags=["Cotizaciones"])
 app.include_router(ordenes_produccion.router, prefix=f"{prefix}/ordenes-produccion", tags=["Producción"])
+
+# CRM
+app.include_router(crm.router, prefix=f"{prefix}")
 
 # Inventarios
 app.include_router(inventarios.router, prefix=f"{prefix}/inventarios", tags=["Inventarios"])

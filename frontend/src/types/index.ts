@@ -648,3 +648,185 @@ export interface UsuarioTenantDetail {
   usuario_nombre: string;
   usuario_email: string;
 }
+
+// Ghost Mode (Impersonation)
+export interface ImpersonationResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  impersonated_user: User;
+  tenant_id: string;
+  rol_en_tenant: string;
+}
+
+// User Governance (God Mode)
+export interface GlobalUserResponse {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  estado: boolean;
+  es_superadmin: boolean;
+  ultimo_acceso: string | null;
+  tenant_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GlobalUserListResponse {
+  items: GlobalUserResponse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface GlobalUserCreate {
+  nombre: string;
+  email: string;
+  password: string;
+  rol?: string;
+  estado?: boolean;
+}
+
+export interface GlobalUserUpdate {
+  nombre?: string;
+  email?: string;
+  rol?: string;
+  estado?: boolean;
+}
+
+export interface UserTenantMembership {
+  usuario_tenant_id: string;
+  tenant_id: string;
+  tenant_nombre: string;
+  tenant_slug: string;
+  tenant_estado: string;
+  rol: string;
+  esta_activo: boolean;
+  fecha_ingreso: string;
+}
+
+export interface TenantPulse {
+  tenant_id: string;
+  score: number;
+  estado_salud: 'saludable' | 'en_riesgo' | 'critico';
+  logins_recientes: number;
+  ventas_mes: number;
+  dias_activo: number;
+  calculado_en: string;
+}
+
+// ---- CRM ----
+
+export interface CrmPipeline {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  es_default: boolean;
+  color: string;
+  tenant_id: string;
+  created_at: string;
+  etapas: CrmStage[];
+}
+
+export interface CrmPipelineCreate {
+  nombre: string;
+  descripcion?: string | null;
+  es_default?: boolean;
+  color?: string;
+}
+
+export interface CrmPipelineUpdate {
+  nombre?: string;
+  descripcion?: string | null;
+  es_default?: boolean;
+  color?: string;
+}
+
+export interface CrmStage {
+  id: string;
+  pipeline_id: string;
+  nombre: string;
+  orden: number;
+  probabilidad: number;
+}
+
+export interface CrmStageCreate {
+  pipeline_id: string;
+  nombre: string;
+  orden: number;
+  probabilidad?: number;
+}
+
+export interface CrmStageUpdate {
+  nombre?: string;
+  orden?: number;
+  probabilidad?: number;
+}
+
+export type EstadoDeal = 'ABIERTO' | 'GANADO' | 'PERDIDO' | 'ABANDONADO';
+
+export interface CrmDeal {
+  id: string;
+  nombre: string;
+  tercero_id: string;
+  tercero_nombre: string | null;
+  stage_id: string;
+  stage_nombre: string | null;
+  pipeline_id: string;
+  usuario_id: string | null;
+  usuario_nombre: string | null;
+  valor_estimado: number;
+  moneda: string;
+  fecha_cierre_estimada: string | null;
+  origen: string | null;
+  estado_cierre: EstadoDeal;
+  motivo_perdida: string | null;
+  fecha_ultimo_contacto: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmDealCreate {
+  nombre: string;
+  tercero_id: string;
+  pipeline_id: string;
+  stage_id: string;
+  usuario_id?: string | null;
+  valor_estimado?: number;
+  moneda?: string;
+  fecha_cierre_estimada?: string | null;
+  origen?: string | null;
+}
+
+export interface CrmDealUpdate {
+  nombre?: string;
+  valor_estimado?: number;
+  fecha_cierre_estimada?: string | null;
+  usuario_id?: string | null;
+}
+
+export type TipoActividadCRM = 'NOTA' | 'LLAMADA' | 'EMAIL' | 'REUNION' | 'WHATSAPP' | 'TAREA';
+
+export interface CrmActivity {
+  id: string;
+  deal_id: string;
+  usuario_id: string | null;
+  usuario_nombre: string | null;
+  tipo: TipoActividadCRM;
+  asunto: string | null;
+  contenido: string | null;
+  fecha_actividad: string;
+  duracion_minutos: number;
+  es_automatica: boolean;
+  created_at: string;
+}
+
+export interface CrmActivityCreate {
+  deal_id: string;
+  tipo: TipoActividadCRM;
+  asunto?: string | null;
+  contenido?: string | null;
+  fecha_actividad?: string | null;
+  duracion_minutos?: number;
+}

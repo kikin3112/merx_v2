@@ -14,6 +14,7 @@ from backend.app.datos.db import Base
 # Import ALL models so Alembic can detect them
 from backend.app.datos.modelos import *  # noqa: F401, F403
 from backend.app.datos.modelos_tenant import *  # noqa: F401, F403
+from backend.app.datos.modelos_crm import *  # noqa: F401, F403
 
 config = context.config
 

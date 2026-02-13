@@ -18,7 +18,8 @@ from ..datos.modelos_tenant import (
 from ..datos.esquemas import (
     TenantCreate, TenantUpdate, TenantRegisterRequest,
     UsuarioTenantCreate, UsuarioTenantUpdate,
-    PlanCreate, PlanUpdate
+    PlanCreate, PlanUpdate,
+    GlobalUserCreate, GlobalUserUpdate
 )
 from ..datos.db import set_tenant_context
 from ..utils.seguridad import hash_password
@@ -898,3 +899,288 @@ class ServicioTenants:
         return self.db.query(HistorialPagos).filter(
             HistorialPagos.suscripcion_id.in_(suscripcion_ids)
         ).order_by(HistorialPagos.created_at.desc()).all()
+
+    # ========================================================================
+    # USER GOVERNANCE (GOD MODE)
+    # ========================================================================
+
+    def listar_usuarios_global(
+        self,
+        busqueda: Optional[str] = None,
+        estado: Optional[bool] = None,
+        es_superadmin: Optional[bool] = None,
+        page: int = 1,
+        limit: int = 50
+    ) -> tuple:
+        """Lista todos los usuarios del sistema con count de tenants."""
+        query = self.db.query(
+            Usuarios,
+            sqla_func.count(UsuariosTenants.id).label("tenant_count")
+        ).outerjoin(
+            UsuariosTenants, Usuarios.id == UsuariosTenants.usuario_id
+        ).group_by(Usuarios.id)
+
+        if busqueda:
+            term = f"%{busqueda}%"
+            query = query.filter(
+                or_(Usuarios.nombre.ilike(term), Usuarios.email.ilike(term))
+            )
+        if estado is not None:
+            query = query.filter(Usuarios.estado == estado)
+        if es_superadmin is not None:
+            query = query.filter(Usuarios.es_superadmin == es_superadmin)
+
+        total = query.count()
+        offset = (page - 1) * limit
+        resultados = query.order_by(Usuarios.created_at.desc()).offset(offset).limit(limit).all()
+
+        items = [
+            {"usuario": u, "tenant_count": tc}
+            for u, tc in resultados
+        ]
+        return items, total
+
+    def obtener_usuario_por_id(self, user_id: UUID) -> Optional[Usuarios]:
+        """Obtiene un usuario global por ID."""
+        return self.db.query(Usuarios).filter(Usuarios.id == user_id).first()
+
+    def crear_usuario_global(self, datos: GlobalUserCreate) -> Usuarios:
+        """Crea un usuario global sin asociación a tenant.
+
+        Raises:
+            ValueError: Si el email ya está registrado.
+        """
+        existing = self.db.query(Usuarios).filter(Usuarios.email == datos.email).first()
+        if existing:
+            raise ValueError(f"El email '{datos.email}' ya está registrado")
+
+        usuario = Usuarios(
+            nombre=datos.nombre,
+            email=datos.email,
+            password_hash=hash_password(datos.password),
+            rol=datos.rol,
+            estado=datos.estado,
+            es_superadmin=False,
+        )
+        self.db.add(usuario)
+        self.db.commit()
+        self.db.refresh(usuario)
+        return usuario
+
+    def actualizar_usuario_global(
+        self, user_id: UUID, datos: GlobalUserUpdate
+    ) -> Optional[Usuarios]:
+        """Actualiza datos globales de un usuario.
+
+        Raises:
+            ValueError: Si el email ya está en uso por otro usuario.
+        """
+        usuario = self.db.query(Usuarios).filter(Usuarios.id == user_id).first()
+        if not usuario:
+            return None
+
+        update_data = datos.model_dump(exclude_unset=True)
+
+        if "email" in update_data:
+            existing = self.db.query(Usuarios).filter(
+                Usuarios.email == update_data["email"],
+                Usuarios.id != user_id
+            ).first()
+            if existing:
+                raise ValueError(f"El email '{update_data['email']}' ya está en uso")
+
+        for field, value in update_data.items():
+            setattr(usuario, field, value)
+
+        self.db.commit()
+        self.db.refresh(usuario)
+        return usuario
+
+    def force_reset_password(self, user_id: UUID, new_password: str) -> Optional[Usuarios]:
+        """Fuerza el cambio de contraseña de cualquier usuario (superadmin)."""
+        usuario = self.db.query(Usuarios).filter(Usuarios.id == user_id).first()
+        if not usuario:
+            return None
+        usuario.password_hash = hash_password(new_password)
+        self.db.commit()
+        self.db.refresh(usuario)
+        return usuario
+
+    def toggle_user_status(self, user_id: UUID) -> Optional[Usuarios]:
+        """Activa/desactiva un usuario globalmente.
+
+        Raises:
+            ValueError: Si se intenta desactivar al único superadmin.
+        """
+        usuario = self.db.query(Usuarios).filter(Usuarios.id == user_id).first()
+        if not usuario:
+            return None
+
+        # No permitir desactivar al último superadmin activo
+        if usuario.es_superadmin and usuario.estado:
+            activos_count = self.db.query(sqla_func.count(Usuarios.id)).filter(
+                Usuarios.es_superadmin == True,
+                Usuarios.estado == True
+            ).scalar() or 0
+            if activos_count <= 1:
+                raise ValueError("No se puede desactivar al único superadmin activo")
+
+        usuario.estado = not usuario.estado
+        self.db.commit()
+        self.db.refresh(usuario)
+        return usuario
+
+    def obtener_tenants_de_usuario(self, user_id: UUID) -> list:
+        """Lista todos los tenants+roles de un usuario con nombre del tenant."""
+        resultados = self.db.query(
+            UsuariosTenants, Tenants
+        ).join(
+            Tenants, UsuariosTenants.tenant_id == Tenants.id
+        ).filter(
+            UsuariosTenants.usuario_id == user_id
+        ).order_by(Tenants.nombre).all()
+
+        return [
+            {
+                "usuario_tenant_id": ut.id,
+                "tenant_id": t.id,
+                "tenant_nombre": t.nombre,
+                "tenant_slug": t.slug,
+                "tenant_estado": t.estado,
+                "rol": ut.rol,
+                "esta_activo": ut.esta_activo,
+                "fecha_ingreso": ut.fecha_ingreso,
+            }
+            for ut, t in resultados
+        ]
+
+    # =========================================================================
+    # PULSE (Health Score)
+    # =========================================================================
+
+    def calcular_pulse_tenant(self, tenant_id: UUID) -> dict:
+        """
+        Calcula el Health Score (0-100) de un tenant para predecir churn.
+
+        Score components:
+        - Logins recientes (7d):  30 pts
+        - Actividad ventas (30d): 30 pts
+        - Estado suscripción:     25 pts
+        - Antigüedad:             15 pts
+        """
+        tenant = self.obtener_tenant_por_id(tenant_id)
+        if not tenant:
+            raise ValueError(f"Tenant {tenant_id} no encontrado")
+
+        now = datetime.now(timezone.utc)
+        score = 0
+
+        # --- Logins recientes (últimos 7 días) ---
+        siete_dias = now - timedelta(days=7)
+        logins_recientes = self.db.query(sqla_func.count(Usuarios.id)).join(
+            UsuariosTenants, UsuariosTenants.usuario_id == Usuarios.id
+        ).filter(
+            UsuariosTenants.tenant_id == tenant_id,
+            Usuarios.ultimo_acceso >= siete_dias
+        ).scalar() or 0
+
+        # 0 logins=0, 1=15, 2=22, 3+=30
+        if logins_recientes >= 3:
+            score += 30
+        elif logins_recientes == 2:
+            score += 22
+        elif logins_recientes == 1:
+            score += 15
+
+        # --- Actividad de ventas (últimos 30 días) ---
+        treinta_dias = now - timedelta(days=30)
+        ventas_mes = self.db.query(sqla_func.count(Ventas.id)).filter(
+            Ventas.tenant_id == tenant_id,
+            Ventas.created_at >= treinta_dias,
+            Ventas.deleted_at.is_(None)
+        ).scalar() or 0
+
+        # 0 ventas=0, 1-4=10, 5-14=20, 15+=30
+        if ventas_mes >= 15:
+            score += 30
+        elif ventas_mes >= 5:
+            score += 20
+        elif ventas_mes >= 1:
+            score += 10
+
+        # --- Estado suscripción ---
+        estado_pts = {
+            'activo': 25, 'trial': 15, 'pendiente': 10,
+            'suspendido': 0, 'cancelado': 0, 'mantenimiento': 10,
+        }
+        score += estado_pts.get(tenant.estado, 0)
+
+        # --- Antigüedad ---
+        created = tenant.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        dias_activo = (now - created).days
+
+        if dias_activo >= 90:
+            score += 15
+        elif dias_activo >= 30:
+            score += 8
+        else:
+            score += 3
+
+        # Determinar estado de salud
+        if score >= 70:
+            estado_salud = 'saludable'
+        elif score >= 40:
+            estado_salud = 'en_riesgo'
+        else:
+            estado_salud = 'critico'
+
+        return {
+            "tenant_id": tenant_id,
+            "score": min(score, 100),
+            "estado_salud": estado_salud,
+            "logins_recientes": logins_recientes,
+            "ventas_mes": ventas_mes,
+            "dias_activo": dias_activo,
+            "calculado_en": now,
+        }
+
+    # =========================================================================
+    # MAINTENANCE MODE
+    # =========================================================================
+
+    def poner_mantenimiento(self, tenant_id: UUID, motivo: Optional[str] = None) -> Optional[Tenants]:
+        """
+        Pone un tenant en modo mantenimiento.
+        Los usuarios pueden leer pero no escribir (bloqueado en middleware).
+        """
+        from ..middleware.tenant_context import invalidate_maintenance_cache
+        tenant = self.obtener_tenant_por_id(tenant_id)
+        if not tenant:
+            return None
+        if tenant.estado == 'mantenimiento':
+            raise ValueError("El tenant ya está en modo mantenimiento")
+        if tenant.estado in ('cancelado',):
+            raise ValueError(f"No se puede poner en mantenimiento un tenant '{tenant.estado}'")
+        tenant.estado = 'mantenimiento'
+        self.db.commit()
+        self.db.refresh(tenant)
+        invalidate_maintenance_cache(tenant_id)
+        return tenant
+
+    def salir_mantenimiento(self, tenant_id: UUID) -> Optional[Tenants]:
+        """
+        Saca un tenant del modo mantenimiento, restaurando estado 'activo'.
+        """
+        from ..middleware.tenant_context import invalidate_maintenance_cache
+        tenant = self.obtener_tenant_por_id(tenant_id)
+        if not tenant:
+            return None
+        if tenant.estado != 'mantenimiento':
+            raise ValueError("El tenant no está en modo mantenimiento")
+        tenant.estado = 'activo'
+        self.db.commit()
+        self.db.refresh(tenant)
+        invalidate_maintenance_cache(tenant_id)
+        return tenant
