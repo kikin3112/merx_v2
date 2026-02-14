@@ -6,6 +6,7 @@ import type { Factura } from '../types';
 import DocumentForm from '../components/DocumentForm';
 import type { DocumentFormData } from '../components/DocumentForm';
 import DocumentDetail from '../components/DocumentDetail';
+import DataCard from '../components/ui/DataCard';
 
 export default function FacturasPage() {
   const queryClient = useQueryClient();
@@ -88,12 +89,12 @@ export default function FacturasPage() {
       )}
 
       {/* Filtros */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {['', 'PENDIENTE', 'CONFIRMADA', 'FACTURADA', 'ANULADA'].map((estado) => (
           <button
             key={estado}
             onClick={() => setFiltroEstado(estado)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               filtroEstado === estado
                 ? 'bg-primary-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -111,100 +112,169 @@ export default function FacturasPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Subtotal</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">IVA</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.map((f) => (
-                <tr
-                  key={f.id}
-                  onClick={() => setSelectedDoc(f)}
-                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">
-                    {f.numero_venta}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(f.fecha_venta)}</td>
-                  <td className="px-4 py-3 text-right text-gray-600">
-                    {formatCurrency(f.subtotal)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600">
-                    {formatCurrency(f.total_iva)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                    {formatCurrency(f.total_venta)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(f.estado)}`}
-                    >
-                      {f.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-center gap-1">
-                      {f.estado === 'PENDIENTE' && (
-                        <button
-                          onClick={() => emitirMutation.mutate(f.id)}
-                          disabled={emitirMutation.isPending}
-                          className="rounded px-2 py-1 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-                        >
-                          Emitir
-                        </button>
-                      )}
-                      {f.estado === 'FACTURADA' && (
-                        <button
-                          onClick={() => {
-                            facturas.descargarPdf(f.id).then((res) => {
-                              const url = window.URL.createObjectURL(new Blob([res.data]));
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `factura-${f.numero_venta}.pdf`;
-                              a.click();
-                              window.URL.revokeObjectURL(url);
-                            });
-                          }}
-                          className="rounded px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
-                        >
-                          PDF
-                        </button>
-                      )}
-                      {f.estado !== 'ANULADA' && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Anular esta factura?')) {
-                              anularMutation.mutate(f.id);
-                            }
-                          }}
-                          disabled={anularMutation.isPending}
-                          className="rounded px-2 py-1 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                        >
-                          Anular
-                        </button>
-                      )}
-                    </div>
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">Subtotal</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">IVA</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {data?.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-lg mb-2">Sin facturas</p>
-              <p className="text-sm">Crea tu primera factura o emite una venta</p>
-            </div>
-          )}
-        </div>
+              </thead>
+              <tbody>
+                {data?.map((f) => (
+                  <tr
+                    key={f.id}
+                    onClick={() => setSelectedDoc(f)}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">
+                      {f.numero_venta}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{formatDate(f.fecha_venta)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">
+                      {formatCurrency(f.subtotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-600">
+                      {formatCurrency(f.total_iva)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                      {formatCurrency(f.total_venta)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(f.estado)}`}
+                      >
+                        {f.estado}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1">
+                        {f.estado === 'PENDIENTE' && (
+                          <button
+                            onClick={() => emitirMutation.mutate(f.id)}
+                            disabled={emitirMutation.isPending}
+                            className="rounded px-2 py-1 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                          >
+                            Emitir
+                          </button>
+                        )}
+                        {f.estado === 'FACTURADA' && (
+                          <button
+                            onClick={() => {
+                              facturas.descargarPdf(f.id).then((res) => {
+                                const url = window.URL.createObjectURL(new Blob([res.data]));
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `factura-${f.numero_venta}.pdf`;
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                              });
+                            }}
+                            className="rounded px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                          >
+                            PDF
+                          </button>
+                        )}
+                        {f.estado !== 'ANULADA' && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Anular esta factura?')) {
+                                anularMutation.mutate(f.id);
+                              }
+                            }}
+                            disabled={anularMutation.isPending}
+                            className="rounded px-2 py-1 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                          >
+                            Anular
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin facturas</p>
+                <p className="text-sm">Crea tu primera factura o emite una venta</p>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {data?.map((f) => (
+              <DataCard
+                key={f.id}
+                title={f.numero_venta}
+                subtitle={formatDate(f.fecha_venta)}
+                badge={
+                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(f.estado)}`}>
+                    {f.estado}
+                  </span>
+                }
+                fields={[
+                  { label: 'Total', value: formatCurrency(f.total_venta) },
+                  { label: 'IVA', value: formatCurrency(f.total_iva) },
+                ]}
+                onClick={() => setSelectedDoc(f)}
+                actions={
+                  <>
+                    {f.estado === 'PENDIENTE' && (
+                      <button
+                        onClick={() => emitirMutation.mutate(f.id)}
+                        disabled={emitirMutation.isPending}
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 active:bg-green-100"
+                      >
+                        Emitir
+                      </button>
+                    )}
+                    {f.estado === 'FACTURADA' && (
+                      <button
+                        onClick={() => {
+                          facturas.descargarPdf(f.id).then((res) => {
+                            const url = window.URL.createObjectURL(new Blob([res.data]));
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `factura-${f.numero_venta}.pdf`;
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                          });
+                        }}
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 active:bg-purple-100"
+                      >
+                        PDF
+                      </button>
+                    )}
+                    {f.estado !== 'ANULADA' && (
+                      <button
+                        onClick={() => { if (confirm('Anular esta factura?')) anularMutation.mutate(f.id); }}
+                        disabled={anularMutation.isPending}
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 active:bg-red-100"
+                      >
+                        Anular
+                      </button>
+                    )}
+                  </>
+                }
+              />
+            ))}
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin facturas</p>
+                <p className="text-sm">Crea tu primera factura o emite una venta</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <DocumentForm

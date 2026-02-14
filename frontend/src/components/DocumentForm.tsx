@@ -174,15 +174,15 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
+      <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-3xl md:mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{titulos[tipo]}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          <button onClick={onClose} className="p-2 -mr-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-xl leading-none">&times;</button>
         </div>
 
-        <div className="px-6 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
+        <div className="px-4 py-4 md:px-6 space-y-5 flex-1 overflow-y-auto md:max-h-[70vh]">
           {/* Cliente */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cliente / Tercero</label>
@@ -222,7 +222,7 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
           </div>
 
           {/* Fechas */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
               <input
@@ -293,76 +293,142 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
               </div>
             )}
 
-            {/* Line items table */}
+            {/* Line items */}
             {lineas.length > 0 ? (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
-                      <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
-                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-28">Precio</th>
-                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Desc. %</th>
-                      <th className="text-right px-3 py-2 font-medium text-gray-500 w-28">Total</th>
-                      <th className="w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineas.map((linea, i) => {
-                      const calc = calcularLinea(linea);
-                      return (
-                        <tr key={i} className="border-b border-gray-50">
-                          <td className="px-3 py-2">
-                            <p className="text-gray-900 font-medium text-xs">{linea.nombre}</p>
-                            <p className="text-gray-400 text-xs">IVA: {linea.porcentaje_iva}%</p>
-                          </td>
-                          <td className="px-2 py-2">
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
+                        <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
+                        <th className="text-right px-2 py-2 font-medium text-gray-500 w-28">Precio</th>
+                        <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Desc. %</th>
+                        <th className="text-right px-3 py-2 font-medium text-gray-500 w-28">Total</th>
+                        <th className="w-8"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lineas.map((linea, i) => {
+                        const calc = calcularLinea(linea);
+                        return (
+                          <tr key={i} className="border-b border-gray-50">
+                            <td className="px-3 py-2">
+                              <p className="text-gray-900 font-medium text-xs">{linea.nombre}</p>
+                              <p className="text-gray-400 text-xs">IVA: {linea.porcentaje_iva}%</p>
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                min={1}
+                                value={linea.cantidad}
+                                onChange={(e) => actualizarLinea(i, 'cantidad', Math.max(1, Number(e.target.value)))}
+                                className="w-full text-center rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={linea.precio_unitario}
+                                onChange={(e) => actualizarLinea(i, 'precio_unitario', Math.max(0, Number(e.target.value)))}
+                                className="w-full text-right rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={linea.descuento}
+                                onChange={(e) => actualizarLinea(i, 'descuento', Math.min(100, Math.max(0, Number(e.target.value))))}
+                                className="w-full text-right rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium text-gray-900 text-xs">
+                              {formatCurrency(calc.total)}
+                            </td>
+                            <td className="px-1 py-2">
+                              <button
+                                onClick={() => eliminarLinea(i)}
+                                className="text-red-400 hover:text-red-600 text-lg leading-none"
+                              >
+                                &times;
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile line cards */}
+                <div className="md:hidden space-y-2">
+                  {lineas.map((linea, i) => {
+                    const calc = calcularLinea(linea);
+                    return (
+                      <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{linea.nombre}</p>
+                            <p className="text-xs text-gray-400">IVA: {linea.porcentaje_iva}%</p>
+                          </div>
+                          <button
+                            onClick={() => eliminarLinea(i)}
+                            className="p-1 text-red-400 hover:text-red-600"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] text-gray-400">Cant.</label>
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={1}
                               value={linea.cantidad}
                               onChange={(e) => actualizarLinea(i, 'cantidad', Math.max(1, Number(e.target.value)))}
-                              className="w-full text-center rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-center rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          </td>
-                          <td className="px-2 py-2">
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400">Precio</label>
                             <input
                               type="number"
+                              inputMode="decimal"
                               min={0}
                               step={100}
                               value={linea.precio_unitario}
                               onChange={(e) => actualizarLinea(i, 'precio_unitario', Math.max(0, Number(e.target.value)))}
-                              className="w-full text-right rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          </td>
-                          <td className="px-2 py-2">
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400">Desc. %</label>
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={0}
                               max={100}
-                              step={1}
                               value={linea.descuento}
                               onChange={(e) => actualizarLinea(i, 'descuento', Math.min(100, Math.max(0, Number(e.target.value))))}
-                              className="w-full text-right rounded border border-gray-200 px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium text-gray-900 text-xs">
-                            {formatCurrency(calc.total)}
-                          </td>
-                          <td className="px-1 py-2">
-                            <button
-                              onClick={() => eliminarLinea(i)}
-                              className="text-red-400 hover:text-red-600 text-lg leading-none"
-                            >
-                              &times;
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </div>
+                        <div className="text-right text-sm font-semibold text-gray-900">
+                          {formatCurrency(calc.total)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             ) : (
               <div className="border border-dashed border-gray-300 rounded-lg py-8 text-center text-sm text-gray-400">
                 Agrega productos para comenzar
@@ -427,7 +493,7 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 px-4 py-3 md:px-6 md:py-4 border-t border-gray-100 bg-white">
           <button
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"

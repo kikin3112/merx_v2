@@ -4,6 +4,7 @@ import { terceros } from '../api/endpoints';
 import { formatCurrency, formatDate, statusColor } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import SearchInput from '../components/ui/SearchInput';
+import DataCard from '../components/ui/DataCard';
 import type { Tercero, TerceroCreate, TerceroUpdate } from '../types';
 
 const TIPOS_DOCUMENTO = ['CC', 'NIT', 'CE', 'PAS', 'TI'] as const;
@@ -235,7 +236,7 @@ export default function TercerosPage() {
           {/* Info Tab */}
           {detailTab === 'info' && !editingDetail && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoField label="Telefono" value={selectedTercero.telefono} />
                 <InfoField label="Email" value={selectedTercero.email} />
                 <InfoField label="Direccion" value={selectedTercero.direccion} />
@@ -262,7 +263,7 @@ export default function TercerosPage() {
           {/* Info Tab - Editing */}
           {detailTab === 'info' && editingDetail && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Telefono</label>
                   <input
@@ -529,59 +530,126 @@ export default function TercerosPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Documento</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Grupo</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Telefono</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.map((t) => (
-                <tr
-                  key={t.id}
-                  onClick={() => openDetail(t)}
-                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">{t.nombre}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                    <span className="text-gray-400 mr-1">{t.tipo_documento}</span>
-                    {t.numero_documento}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        t.tipo_tercero === 'CLIENTE'
-                          ? 'bg-blue-100 text-blue-700'
-                          : t.tipo_tercero === 'PROVEEDOR'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {t.tipo_tercero}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{t.grupo_cliente || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{t.telefono || '-'}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        t.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {t.estado ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Documento</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Grupo</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Telefono</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.map((t) => (
+                  <tr
+                    key={t.id}
+                    onClick={() => openDetail(t)}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">{t.nombre}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      <span className="text-gray-400 mr-1">{t.tipo_documento}</span>
+                      {t.numero_documento}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                          t.tipo_tercero === 'CLIENTE'
+                            ? 'bg-blue-100 text-blue-700'
+                            : t.tipo_tercero === 'PROVEEDOR'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {t.tipo_tercero}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{t.grupo_cliente || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{t.telefono || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                          t.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {t.estado ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => openEdit(t)}
+                        className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-3"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Desactivar este tercero?')) deleteMut.mutate(t.id);
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin terceros</p>
+                <p className="text-sm">Crea tu primer cliente o proveedor</p>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {data?.map((t) => (
+              <DataCard
+                key={t.id}
+                title={t.nombre}
+                subtitle={`${TIPO_DOC_LABELS[t.tipo_documento] || t.tipo_documento}: ${t.numero_documento}`}
+                badge={
+                  <span
+                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                      t.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {t.estado ? 'Activo' : 'Inactivo'}
+                  </span>
+                }
+                fields={[
+                  {
+                    label: 'Tipo',
+                    value: (
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                          t.tipo_tercero === 'CLIENTE'
+                            ? 'bg-blue-100 text-blue-700'
+                            : t.tipo_tercero === 'PROVEEDOR'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {t.tipo_tercero}
+                      </span>
+                    ),
+                  },
+                  { label: 'Contacto', value: t.telefono || t.email || '-' },
+                ]}
+                onClick={() => openDetail(t)}
+                actions={
+                  <>
                     <button
                       onClick={() => openEdit(t)}
-                      className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-3"
+                      className="flex-1 text-center py-2 text-sm font-medium text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50 transition-colors"
                     >
                       Editar
                     </button>
@@ -589,22 +657,22 @@ export default function TercerosPage() {
                       onClick={() => {
                         if (confirm('Desactivar este tercero?')) deleteMut.mutate(t.id);
                       }}
-                      className="text-xs text-red-500 hover:text-red-700 font-medium"
+                      className="flex-1 text-center py-2 text-sm font-medium text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       Eliminar
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {data?.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-lg mb-2">Sin terceros</p>
-              <p className="text-sm">Crea tu primer cliente o proveedor</p>
-            </div>
-          )}
-        </div>
+                  </>
+                }
+              />
+            ))}
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin terceros</p>
+                <p className="text-sm">Crea tu primer cliente o proveedor</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Create / Edit Modal */}
@@ -627,7 +695,7 @@ export default function TercerosPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Documento *</label>
               <select
@@ -675,7 +743,7 @@ export default function TercerosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
@@ -707,7 +775,7 @@ export default function TercerosPage() {
           </div>
 
           {/* CRM fields */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Persona contacto</label>
               <input

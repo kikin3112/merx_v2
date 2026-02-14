@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { contabilidad } from '../api/endpoints';
 import { formatCurrency, formatDate, statusColor } from '../utils/format';
+import DataCard from '../components/ui/DataCard';
 import type { AsientoContable, BalancePrueba } from '../types';
 
 function AsientoRow({ asiento }: { asiento: AsientoContable }) {
@@ -83,6 +84,59 @@ function AsientoRow({ asiento }: { asiento: AsientoContable }) {
   );
 }
 
+function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const totalDebito = asiento.detalles?.reduce((sum, d) => sum + d.debito, 0) ?? 0;
+  const totalCredito = asiento.detalles?.reduce((sum, d) => sum + d.credito, 0) ?? 0;
+
+  return (
+    <div>
+      <DataCard
+        title={`Asiento #${asiento.numero_asiento}`}
+        subtitle={`${formatDate(asiento.fecha)} · ${asiento.tipo_asiento}`}
+        badge={
+          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(asiento.estado)}`}>
+            {asiento.estado}
+          </span>
+        }
+        fields={[
+          { label: 'Concepto', value: asiento.concepto || '-' },
+          { label: 'Total Debito', value: formatCurrency(totalDebito) },
+          { label: 'Referencia', value: asiento.documento_referencia || '-' },
+          { label: 'Total Credito', value: formatCurrency(totalCredito) },
+        ]}
+        onClick={() => setExpanded(!expanded)}
+      />
+      {expanded && asiento.detalles && asiento.detalles.length > 0 && (
+        <div className="mx-2 -mt-1 bg-gray-50 rounded-b-xl border border-t-0 border-gray-200 px-4 py-3 space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Detalle lineas</p>
+          {asiento.detalles.map((d) => (
+            <div key={d.id} className="flex items-start justify-between gap-2 text-xs border-t border-gray-100 pt-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-gray-700">{d.cuenta_codigo || '-'}</p>
+                <p className="text-gray-900 font-medium">{d.cuenta_nombre || '-'}</p>
+                {d.descripcion && <p className="text-gray-500">{d.descripcion}</p>}
+              </div>
+              <div className="text-right shrink-0">
+                {d.debito > 0 && <p className="text-gray-700 font-mono">D: {formatCurrency(d.debito)}</p>}
+                {d.credito > 0 && <p className="text-gray-700 font-mono">C: {formatCurrency(d.credito)}</p>}
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-between text-xs font-semibold text-gray-900 border-t border-gray-200 pt-2">
+            <span>Totales</span>
+            <div className="text-right font-mono">
+              <span className="mr-3">D: {formatCurrency(totalDebito)}</span>
+              <span>C: {formatCurrency(totalCredito)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ContabilidadPage() {
   const [tab, setTab] = useState<'asientos' | 'balance'>('asientos');
 
@@ -103,7 +157,7 @@ export default function ContabilidadPage() {
       <h1 className="text-xl font-bold text-gray-900 mb-6">Contabilidad</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
+      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto pb-1 whitespace-nowrap">
         {[
           { id: 'asientos' as const, label: 'Asientos Contables' },
           { id: 'balance' as const, label: 'Balance de Prueba' },
@@ -133,24 +187,35 @@ export default function ContabilidadPage() {
             </div>
           ) : (
             <>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Concepto</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Valor</th>
-                    <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {asientos?.map((a) => (
-                    <AsientoRow key={a.id} asiento={a} />
-                  ))}
-                </tbody>
-              </table>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Concepto</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-500">Valor</th>
+                      <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {asientos?.map((a) => (
+                      <AsientoRow key={a.id} asiento={a} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3 p-3">
+                {asientos?.map((a) => (
+                  <AsientoMobileCard key={a.id} asiento={a} />
+                ))}
+              </div>
+
               {asientos?.length === 0 && (
                 <div className="text-center py-12 text-gray-400">
                   <p className="text-lg mb-2">Sin asientos contables</p>
@@ -174,16 +239,16 @@ export default function ContabilidadPage() {
           ) : balance ? (
             <>
               {/* Summary */}
-              <div className="flex items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <div className="flex-1 min-w-[100px]">
                   <span className="text-xs text-gray-500">Total Debito</span>
                   <p className="font-semibold text-gray-900">{formatCurrency(balance.total_debito)}</p>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-[100px]">
                   <span className="text-xs text-gray-500">Total Credito</span>
                   <p className="font-semibold text-gray-900">{formatCurrency(balance.total_credito)}</p>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-[100px]">
                   <span
                     className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
                       balance.balanceado
@@ -196,32 +261,58 @@ export default function ContabilidadPage() {
                 </div>
               </div>
 
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Debito</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Credito</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {balance.cuentas.map((c) => (
-                    <tr key={c.cuenta_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">{c.codigo}</td>
-                      <td className="px-4 py-3 text-gray-900">{c.nombre}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{c.tipo_cuenta}</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_debito)}</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_credito)}</td>
-                      <td className={`px-4 py-3 text-right font-semibold ${c.saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-                        {formatCurrency(c.saldo)}
-                      </td>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-500">Debito</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-500">Credito</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-500">Saldo</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {balance.cuentas.map((c) => (
+                      <tr key={c.cuenta_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">{c.codigo}</td>
+                        <td className="px-4 py-3 text-gray-900">{c.nombre}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{c.tipo_cuenta}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_debito)}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_credito)}</td>
+                        <td className={`px-4 py-3 text-right font-semibold ${c.saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                          {formatCurrency(c.saldo)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3 p-3">
+                {balance.cuentas.map((c) => (
+                  <DataCard
+                    key={c.cuenta_id}
+                    title={c.nombre}
+                    subtitle={`${c.codigo} · ${c.tipo_cuenta}`}
+                    badge={
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold font-mono ${
+                        c.saldo >= 0 ? 'bg-gray-100 text-gray-900' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {formatCurrency(c.saldo)}
+                      </span>
+                    }
+                    fields={[
+                      { label: 'Debito', value: formatCurrency(c.total_debito) },
+                      { label: 'Credito', value: formatCurrency(c.total_credito) },
+                    ]}
+                  />
+                ))}
+              </div>
+
               {balance.cuentas.length === 0 && (
                 <div className="text-center py-12 text-gray-400">
                   <p className="text-lg mb-2">Sin movimientos contables</p>

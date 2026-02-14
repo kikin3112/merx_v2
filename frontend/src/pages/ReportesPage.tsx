@@ -99,18 +99,19 @@ function RentabilidadTab() {
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">Margen % por Categoria</h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" fontSize={12} unit="%" />
-            <YAxis dataKey="categoria" type="category" fontSize={11} width={120} />
+            <YAxis dataKey="categoria" type="category" fontSize={11} width={100} />
             <Tooltip formatter={(v: number) => `${v}%`} />
             <Bar dataKey="margen_promedio" name="Margen %" fill="#EC4899" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -137,6 +138,26 @@ function RentabilidadTab() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {data.map((row) => (
+          <div key={row.categoria} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">{row.categoria}</h4>
+              <span className={`text-sm font-bold ${row.margen_promedio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {row.margen_promedio}%
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><span className="text-gray-500">Productos:</span> <span className="font-medium">{row.cantidad_productos}</span></div>
+              <div><span className="text-gray-500">Precio Prom:</span> <span className="font-medium">{formatCurrency(row.precio_promedio)}</span></div>
+              <div><span className="text-gray-500">Costo Prom:</span> <span className="font-medium">{formatCurrency(row.costo_promedio)}</span></div>
+              <div><span className="text-gray-500">Valor Inv:</span> <span className="font-semibold">{formatCurrency(row.valor_inventario)}</span></div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -215,7 +236,8 @@ function MargenesTab({ period }: { period: PeriodValue }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -242,6 +264,26 @@ function MargenesTab({ period }: { period: PeriodValue }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {data.map((row) => (
+          <div key={row.categoria} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">{row.categoria}</h4>
+              <span className={`text-sm font-bold ${row.margen_porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {row.margen_porcentaje}%
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><span className="text-gray-500">Ingresos:</span> <span className="font-medium text-green-600">{formatCurrency(row.ingresos)}</span></div>
+              <div><span className="text-gray-500">Costo:</span> <span className="font-medium text-red-600">{formatCurrency(row.costo)}</span></div>
+              <div><span className="text-gray-500">Margen:</span> <span className="font-semibold">{formatCurrency(row.margen)}</span></div>
+              <div><span className="text-gray-500">Items:</span> <span className="font-medium">{row.cantidad_items}</span></div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -270,20 +312,22 @@ export default function ReportesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1 mb-6">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-max">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}

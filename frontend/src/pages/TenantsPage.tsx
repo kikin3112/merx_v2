@@ -409,13 +409,15 @@ export default function TenantsPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <>
+            {/* Desktop table */}
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Tenant</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Plan</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden sm:table-cell">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Plan</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Email</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">Creado</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
                   </tr>
@@ -431,10 +433,8 @@ export default function TenantsPage() {
                         <p className="font-medium text-gray-900">{t.nombre}</p>
                         <p className="text-xs text-gray-500">{t.slug}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
-                        {getPlanNombre(t.plan_id)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{t.email_contacto}</td>
+                      <td className="px-4 py-3 text-gray-600">{getPlanNombre(t.plan_id)}</td>
+                      <td className="px-4 py-3 text-gray-600">{t.email_contacto}</td>
                       <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">{formatDate(t.created_at)}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${estadoColor[t.estado] || 'bg-gray-100 text-gray-600'}`}>
@@ -452,6 +452,38 @@ export default function TenantsPage() {
                 </div>
               )}
             </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {tenantsList?.map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => { setSelectedTenant(t); setDetailTab('info'); }}
+                  className="bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">{t.nombre}</h4>
+                      <p className="text-xs text-gray-500 font-mono">{t.slug}</p>
+                    </div>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ml-2 ${estadoColor[t.estado] || 'bg-gray-100 text-gray-600'}`}>
+                      {t.estado}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-gray-500">Plan:</span> <span className="font-medium">{getPlanNombre(t.plan_id)}</span></div>
+                    <div className="truncate"><span className="text-gray-500">Email:</span> <span className="font-medium">{t.email_contacto}</span></div>
+                  </div>
+                </div>
+              ))}
+              {tenantsList?.length === 0 && (
+                <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+                  <p className="text-lg mb-2">Sin tenants</p>
+                  <p className="text-sm">No se encontraron tenants con los filtros aplicados</p>
+                </div>
+              )}
+            </div>
+            </>
           )}
         </>
       )}
@@ -475,13 +507,15 @@ export default function TenantsPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <>
+            {/* Desktop table */}
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Precio/mes</th>
-                    <th className="text-center px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Limites</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-500">Limites</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Tenants</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
@@ -495,7 +529,7 @@ export default function TenantsPage() {
                         {p.descripcion && <p className="text-xs text-gray-500 truncate max-w-[200px]">{p.descripcion}</p>}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.precio_mensual)}</td>
-                      <td className="px-4 py-3 text-center hidden md:table-cell">
+                      <td className="px-4 py-3 text-center">
                         <span className="text-xs text-gray-500">
                           {p.max_usuarios}u / {p.max_productos}p / {p.max_facturas_mes}f
                         </span>
@@ -533,6 +567,47 @@ export default function TenantsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {planes?.map((p) => (
+                <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900">{p.nombre}</h4>
+                      {p.descripcion && <p className="text-xs text-gray-500 mt-0.5">{p.descripcion}</p>}
+                    </div>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ml-2 ${p.esta_activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                      {p.esta_activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div><span className="text-gray-500">Precio:</span> <span className="font-semibold">{formatCurrency(p.precio_mensual)}/mes</span></div>
+                    <div><span className="text-gray-500">Tenants:</span> <span className="font-medium">{p.tenant_count}</span></div>
+                    <div className="col-span-2"><span className="text-gray-500">Limites:</span> <span className="font-medium">{p.max_usuarios}u / {p.max_productos}p / {p.max_facturas_mes}f</span></div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingPlan(p); setPlanModal(true); }}
+                      className="rounded px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Editar
+                    </button>
+                    {p.esta_activo && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Desactivar plan "${p.nombre}"?`)) deletePlanMut.mutate(p.id);
+                        }}
+                        className="rounded px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                      >
+                        Desactivar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
 
           {/* Revenue por plan */}
@@ -590,13 +665,15 @@ export default function TenantsPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <>
+            {/* Desktop table */}
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Usuario</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Rol</th>
-                    <th className="text-center px-4 py-3 font-medium text-gray-500 hidden sm:table-cell">Tenants</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Rol</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-500">Tenants</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">Último acceso</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
@@ -609,13 +686,13 @@ export default function TenantsPage() {
                         <p className="font-medium text-gray-900">{u.nombre}</p>
                         <p className="text-xs text-gray-500">{u.email}</p>
                       </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
+                      <td className="px-4 py-3">
                         <span className="text-xs font-mono bg-gray-100 rounded px-1.5 py-0.5">{u.rol}</span>
                         {u.es_superadmin && (
                           <span className="ml-1 text-xs font-medium text-purple-700 bg-purple-100 rounded px-1.5 py-0.5">superadmin</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center hidden sm:table-cell">
+                      <td className="px-4 py-3 text-center">
                         <span className="text-sm font-medium">{u.tenant_count}</span>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">
@@ -651,6 +728,47 @@ export default function TenantsPage() {
                 </div>
               )}
             </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {usuariosList?.items?.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => {
+                    setSelectedUser(u);
+                    setUserModalTab('info');
+                    setEditUserNombre(u.nombre);
+                    setEditUserEmail(u.email);
+                    setEditUserRol(u.rol);
+                    setNewPassword('');
+                  }}
+                  className="bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">{u.nombre}</h4>
+                      <p className="text-xs text-gray-500">{u.email}</p>
+                    </div>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ml-2 ${u.estado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                      {u.estado ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono bg-gray-100 rounded px-1.5 py-0.5">{u.rol}</span>
+                    {u.es_superadmin && (
+                      <span className="text-xs font-medium text-purple-700 bg-purple-100 rounded px-1.5 py-0.5">superadmin</span>
+                    )}
+                    <span className="text-xs text-gray-500 ml-auto">{u.tenant_count} tenants</span>
+                  </div>
+                </div>
+              ))}
+              {(!usuariosList?.items || usuariosList.items.length === 0) && (
+                <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+                  <p>No se encontraron usuarios</p>
+                </div>
+              )}
+            </div>
+            </>
           )}
         </>
       )}
@@ -757,30 +875,32 @@ export default function TenantsPage() {
             </div>
 
             {/* Sub-tabs */}
-            <div className="flex border-b border-gray-200 mb-4">
-              {([
-                { key: 'info', label: 'Info' },
-                { key: 'tenants', label: 'Tenants / Impersonar' },
-                { key: 'password', label: 'Contraseña' },
-              ] as const).map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setUserModalTab(tab.key)}
-                  className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                    userModalTab === tab.key
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="flex border-b border-gray-200 mb-4 w-max md:w-auto">
+                {([
+                  { key: 'info', label: 'Info' },
+                  { key: 'tenants', label: 'Tenants / Impersonar' },
+                  { key: 'password', label: 'Contraseña' },
+                ] as const).map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setUserModalTab(tab.key)}
+                    className={`px-3 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                      userModalTab === tab.key
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Info tab */}
             {userModalTab === 'info' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
                     <input
@@ -809,14 +929,14 @@ export default function TenantsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     onClick={() => updateUserMut.mutate({
                       id: selectedUser.id,
                       data: { nombre: editUserNombre, email: editUserEmail, rol: editUserRol },
                     })}
                     disabled={updateUserMut.isPending}
-                    className="rounded-lg bg-primary-500 text-white px-4 py-2 text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
+                    className="rounded-lg bg-primary-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
                   >
                     {updateUserMut.isPending ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
@@ -828,7 +948,7 @@ export default function TenantsPage() {
                       }
                     }}
                     disabled={toggleStatusMut.isPending}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                    className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
                       selectedUser.estado
                         ? 'bg-red-50 text-red-700 hover:bg-red-100'
                         : 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -852,7 +972,7 @@ export default function TenantsPage() {
                 ) : userTenants && userTenants.length > 0 ? (
                   <div className="space-y-2">
                     {userTenants.map((t) => (
-                      <div key={t.tenant_id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                      <div key={t.tenant_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-gray-200 px-4 py-3">
                         <div>
                           <p className="text-sm font-medium text-gray-900">{t.tenant_nombre}</p>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -869,7 +989,7 @@ export default function TenantsPage() {
                             }
                           }}
                           disabled={impersonateMut.isPending || !t.esta_activo}
-                          className="rounded px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                          className="rounded px-3 py-2 sm:py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50 text-center"
                           title={!t.esta_activo ? 'Usuario inactivo en este tenant' : ''}
                         >
                           {impersonateMut.isPending ? '...' : 'Impersonar'}
@@ -1021,26 +1141,28 @@ function TenantDetailPanel({
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setDetailTab(tab.key)}
-            className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-              detailTab === tab.key
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex border-b border-gray-200 mb-4 w-max md:w-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setDetailTab(tab.key)}
+              className={`px-3 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                detailTab === tab.key
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ---- INFO TAB ---- */}
       {detailTab === 'info' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
               <input
@@ -1094,7 +1216,7 @@ function TenantDetailPanel({
           </div>
 
           {/* Fechas */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-xs text-gray-500">Inicio suscripcion</span>
               <p className="font-medium">{tenant.fecha_inicio_suscripcion ? formatDate(tenant.fecha_inicio_suscripcion) : '-'}</p>
@@ -1215,13 +1337,13 @@ function TenantDetailPanel({
               {usuarios.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-gray-200 px-4 py-3"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 truncate">{u.usuario_nombre}</p>
                     <p className="text-xs text-gray-500">{u.usuario_email}</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-3">
+                  <div className="flex items-center gap-2">
                     <select
                       value={u.rol}
                       onChange={(e) => onCambiarRol(u.usuario_id, e.target.value)}
@@ -1318,7 +1440,7 @@ function TenantDetailPanel({
               <ProgressBar value={metricas.facturas_mes_count} max={metricas.max_facturas_mes} label="Facturas este mes" />
 
               <div className="border-t border-gray-100 pt-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-xs text-gray-500">Terceros</p>
                     <p className="text-lg font-bold text-gray-900">{metricas.terceros_count}</p>
@@ -1346,7 +1468,7 @@ function TenantDetailPanel({
           {loadingPulse ? (
             <div className="space-y-4">
               <div className="h-28 bg-gray-200 rounded-xl animate-pulse" />
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
                 ))}
@@ -1355,7 +1477,7 @@ function TenantDetailPanel({
           ) : pulse ? (
             <div className="space-y-4">
               {/* Score principal */}
-              <div className="flex items-center gap-6 rounded-xl border border-gray-200 p-5">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-xl border border-gray-200 p-5">
                 {/* Número grande */}
                 <div className="flex-shrink-0 text-center">
                   <span
@@ -1413,7 +1535,7 @@ function TenantDetailPanel({
               </div>
 
               {/* Metricas del score */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-gray-500 mb-1">Logins (7d)</p>
                   <p className="text-2xl font-bold text-gray-900">{pulse.logins_recientes}</p>
@@ -1523,8 +1645,8 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
       {/* Datos del tenant */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Datos del Tenant</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
             <input
               required
@@ -1534,7 +1656,7 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">
               Slug * <span className="text-gray-400 font-normal">(solo minúsculas, números y guiones)</span>
             </label>
@@ -1547,7 +1669,7 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">Email de contacto *</label>
             <input
               required
@@ -1576,7 +1698,7 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">Plan *</label>
             <select
               required
@@ -1598,8 +1720,8 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
       {/* Datos del admin */}
       <div className="border-t border-gray-100 pt-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admin Inicial</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
             <input
               required
@@ -1704,7 +1826,7 @@ function PlanForm({ plan, onSubmit, isPending }: {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Precio mensual *</label>
           <input
@@ -1730,7 +1852,7 @@ function PlanForm({ plan, onSubmit, isPending }: {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Max Usuarios</label>
           <input

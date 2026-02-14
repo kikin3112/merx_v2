@@ -228,7 +228,7 @@ export default function DashboardPage() {
       {ventasDiarias && ventasDiarias.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Ventas diarias ({period.label})</h2>
-          <div className="h-64">
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={ventasDiarias}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
