@@ -5,6 +5,7 @@ import { formatCurrency, formatNumber } from '../utils/format';
 import PeriodSelector, { getDefaultPeriod } from '../components/PeriodSelector';
 import type { PeriodValue } from '../components/PeriodSelector';
 import type { DashboardKPIs, AlertaStock, VentaDiaria, ProductoMasVendido, TopCliente } from '../types';
+import { useAuthStore } from '../stores/authStore';
 import {
   ResponsiveContainer,
   LineChart,
@@ -48,12 +49,20 @@ function formatTooltipValue(value: number): string {
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<PeriodValue>(getDefaultPeriod);
+  const { user, impersonation } = useAuthStore();
+
+  // Determinar rol efectivo
+  const effectiveRole = impersonation ? impersonation.rolEnTenant : user?.rol;
+
+  // Solo admin y contador pueden ver reportes detallados
+  const canViewReports = effectiveRole === 'admin' || effectiveRole === 'contador';
 
   const dateParams = { fecha_inicio: period.fecha_inicio, fecha_fin: period.fecha_fin };
 
   const { data: kpis, isLoading: kpisLoading } = useQuery<DashboardKPIs>({
     queryKey: ['dashboard-kpis', dateParams],
     queryFn: () => reportes.dashboard(dateParams).then((r) => r.data),
+    enabled: canViewReports, // Solo ejecutar si tiene permisos
   });
 
   const { data: alertas } = useQuery<AlertaStock[]>({
@@ -64,16 +73,19 @@ export default function DashboardPage() {
   const { data: ventasDiarias } = useQuery<VentaDiaria[]>({
     queryKey: ['ventas-diarias', dateParams],
     queryFn: () => reportes.ventasDiarias(dateParams).then((r) => r.data),
+    enabled: canViewReports, // Solo ejecutar si tiene permisos
   });
 
   const { data: topProductos } = useQuery<ProductoMasVendido[]>({
     queryKey: ['productos-mas-vendidos', dateParams],
     queryFn: () => reportes.productosMasVendidos({ limite: 5, ...dateParams }).then((r) => r.data),
+    enabled: canViewReports, // Solo ejecutar si tiene permisos
   });
 
   const { data: topClientes } = useQuery<TopCliente[]>({
     queryKey: ['top-clientes', dateParams],
     queryFn: () => reportes.topClientes({ limite: 5, ...dateParams }).then((r) => r.data),
+    enabled: canViewReports, // Solo ejecutar si tiene permisos
   });
 
   if (kpisLoading) {
@@ -86,6 +98,77 @@ export default function DashboardPage() {
           ))}
         </div>
         <div className="h-64 bg-gray-200 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Mensaje para usuarios sin permisos de reportes
+  if (!canViewReports) {
+    return (
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+        <div className="rounded-xl bg-blue-50 border border-blue-200 p-6 text-center">
+          <svg className="w-16 h-16 mx-auto text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Bienvenido, {user?.nombre}</h2>
+          <p className="text-gray-600 mb-4">
+            Tu rol de <span className="font-medium text-blue-600">{effectiveRole}</span> te permite gestionar operaciones del día a día.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Los reportes detallados están disponibles para roles de Admin y Contador.
+            <br />
+            Usa el menú lateral para acceder a tus funciones.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {effectiveRole === 'vendedor' && (
+              <>
+                <a href="/pos" className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
+                  Ir al POS
+                </a>
+                <a href="/ventas" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                  Ver Ventas
+                </a>
+              </>
+            )}
+            {effectiveRole === 'operador' && (
+              <>
+                <a href="/productos" className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
+                  Gestionar Productos
+                </a>
+                <a href="/inventario" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                  Ver Inventario
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Alertas de stock - todos pueden verlas */}
+        {alertas && alertas.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">⚠️ Alertas de Stock</h2>
+            <div className="space-y-2">
+              {alertas.slice(0, 5).map((alerta) => (
+                <div
+                  key={alerta.producto_id}
+                  className="flex items-center justify-between rounded-lg bg-red-50 border border-red-200 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{alerta.nombre_producto}</p>
+                    <p className="text-xs text-gray-500">
+                      Stock: {alerta.cantidad_disponible} / Mínimo: {alerta.stock_minimo}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                    Bajo stock
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

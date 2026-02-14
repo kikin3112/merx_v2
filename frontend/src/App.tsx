@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import AppShell from './components/layout/AppShell';
 import ImpersonationBanner from './components/ImpersonationBanner';
+import RoleGuard from './components/auth/RoleGuard';
+import SuperadminGuard from './components/auth/SuperadminGuard';
 import LoginPage from './pages/LoginPage';
 import SelectTenantPage from './pages/SelectTenantPage';
 import DashboardPage from './pages/DashboardPage';
@@ -71,20 +73,62 @@ export default function App() {
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route path="/" element={<SuperadminRedirect><DashboardPage /></SuperadminRedirect>} />
+
+              {/* Open to all authenticated roles */}
               <Route path="/ventas" element={<VentasPage />} />
               <Route path="/facturas" element={<FacturasPage />} />
               <Route path="/cotizaciones" element={<CotizacionesPage />} />
               <Route path="/crm" element={<CRMPage />} />
-              <Route path="/productos" element={<ProductosPage />} />
               <Route path="/terceros" element={<TercerosPage />} />
-              <Route path="/inventario" element={<InventarioPage />} />
-              <Route path="/recetas" element={<RecetasPage />} />
-              <Route path="/cartera" element={<CarteraPage />} />
-              <Route path="/contabilidad" element={<ContabilidadPage />} />
-              <Route path="/reportes" element={<ReportesPage />} />
               <Route path="/pos" element={<POSPage />} />
-              <Route path="/config" element={<ConfigPage />} />
-              <Route path="/tenants" element={<TenantsPage />} />
+
+              {/* Admin + Operador only */}
+              <Route path="/productos" element={
+                <RoleGuard allowedRoles={['admin', 'operador']}>
+                  <ProductosPage />
+                </RoleGuard>
+              } />
+              <Route path="/inventario" element={
+                <RoleGuard allowedRoles={['admin', 'operador']}>
+                  <InventarioPage />
+                </RoleGuard>
+              } />
+              <Route path="/recetas" element={
+                <RoleGuard allowedRoles={['admin', 'operador']}>
+                  <RecetasPage />
+                </RoleGuard>
+              } />
+
+              {/* Admin + Contador only */}
+              <Route path="/cartera" element={
+                <RoleGuard allowedRoles={['admin', 'contador']}>
+                  <CarteraPage />
+                </RoleGuard>
+              } />
+              <Route path="/contabilidad" element={
+                <RoleGuard allowedRoles={['admin', 'contador']}>
+                  <ContabilidadPage />
+                </RoleGuard>
+              } />
+              <Route path="/reportes" element={
+                <RoleGuard allowedRoles={['admin', 'contador']}>
+                  <ReportesPage />
+                </RoleGuard>
+              } />
+
+              {/* Admin only */}
+              <Route path="/config" element={
+                <RoleGuard allowedRoles={['admin']}>
+                  <ConfigPage />
+                </RoleGuard>
+              } />
+
+              {/* Superadmin only */}
+              <Route path="/tenants" element={
+                <SuperadminGuard>
+                  <TenantsPage />
+                </SuperadminGuard>
+              } />
             </Route>
           </Route>
 

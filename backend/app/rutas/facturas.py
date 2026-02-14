@@ -19,7 +19,7 @@ from ..datos.modelos import (
 )
 from ..datos.modelos_tenant import Tenants
 from ..datos.esquemas import VentasCreate, VentasResponse
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_contabilidad import ServicioContabilidad
@@ -140,17 +140,17 @@ def _generar_pdf_factura(db: Session, factura: Ventas, tenant_id: UUID) -> bytes
 async def pos_factura(
     data: VentasCreate,
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'vendedor', 'operador'))
 ):
     """
     POS: Crea y emite una factura en un solo paso atómico.
     PENDIENTE -> FACTURADA con inventario + contabilidad + PDF.
     """
+    tenant_id = ctx.tenant_id  # Compatibilidad con código existente
     # Validar tercero
     tercero = db.query(Terceros).filter(
         Terceros.id == data.tercero_id,
-        Terceros.tenant_id == tenant_id
+        Terceros.tenant_id == ctx.tenant_id
     ).first()
     if not tercero:
         raise HTTPException(status_code=404, detail="Tercero no encontrado")
@@ -162,11 +162,11 @@ async def pos_factura(
         )
 
     # Generar número de factura (secuencia FACTURAS)
-    numero = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
+    numero = generar_numero_secuencia(db, 'FACTURAS', ctx.tenant_id)
 
     # Crear venta en estado PENDIENTE (transitorio)
     factura = Ventas(
-        tenant_id=tenant_id,
+        tenant_id=ctx.tenant_id,
         numero_venta=numero,
         tercero_id=data.tercero_id,
         fecha_venta=data.fecha_venta,
@@ -308,17 +308,17 @@ async def listar_facturas(
 async def crear_factura(
     data: VentasCreate,
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'vendedor', 'operador'))
 ):
     """
     Crea una nueva factura (venta en estado borrador/PENDIENTE).
     Usar POST /facturas/{id}/emitir para confirmar y descontar inventario.
     """
+    tenant_id = ctx.tenant_id  # Compatibilidad con código existente
     # Validar tercero
     tercero = db.query(Terceros).filter(
         Terceros.id == data.tercero_id,
-        Terceros.tenant_id == tenant_id
+        Terceros.tenant_id == ctx.tenant_id
     ).first()
     if not tercero:
         raise HTTPException(status_code=404, detail="Tercero no encontrado")
@@ -330,10 +330,10 @@ async def crear_factura(
         )
 
     # Generar número de factura
-    numero = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
+    numero = generar_numero_secuencia(db, 'FACTURAS', ctx.tenant_id)
 
     factura = Ventas(
-        tenant_id=tenant_id,
+        tenant_id=ctx.tenant_id,
         numero_venta=numero,
         tercero_id=data.tercero_id,
         fecha_venta=data.fecha_venta,
@@ -396,8 +396,7 @@ async def obtener_factura(
 async def emitir_factura(
     factura_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'vendedor', 'operador'))
 ):
     """
     Emite una factura:
@@ -407,9 +406,10 @@ async def emitir_factura(
     4. Genera PDF
     5. Cambia estado a FACTURADA
     """
+    tenant_id = ctx.tenant_id  # Compatibilidad con código existente
     factura = db.query(Ventas).filter(
         Ventas.id == factura_id,
-        Ventas.tenant_id == tenant_id
+        Ventas.tenant_id == ctx.tenant_id
     ).first()
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -533,18 +533,18 @@ async def anular_factura(
     factura_id: UUID,
     motivo: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin'))
 ):
     """
-    Anula una factura:
+    Anula una factura (SOLO ADMIN):
     1. Revierte movimientos de inventario (si estaba emitida)
     2. Crea asiento contable de reversión
     3. Cambia estado a ANULADA
     """
+    tenant_id = ctx.tenant_id  # Compatibilidad con código existente
     factura = db.query(Ventas).filter(
         Ventas.id == factura_id,
-        Ventas.tenant_id == tenant_id
+        Ventas.tenant_id == ctx.tenant_id
     ).first()
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")

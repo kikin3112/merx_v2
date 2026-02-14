@@ -79,6 +79,20 @@ class Settings(BaseSettings):
         description="Timeout en segundos para obtener conexión del pool"
     )
 
+    DB_STATEMENT_TIMEOUT: int = Field(
+        default=30000,
+        ge=1000,
+        le=300000,
+        description="PostgreSQL statement_timeout en milisegundos (previene queries infinitos)"
+    )
+
+    DB_IDLE_IN_TRANSACTION_TIMEOUT: int = Field(
+        default=60000,
+        ge=1000,
+        le=600000,
+        description="PostgreSQL idle_in_transaction_session_timeout en milisegundos (previene locks prolongados)"
+    )
+
     # ============================================================================
     # APLICACIÓN
     # ============================================================================

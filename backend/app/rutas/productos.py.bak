@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 
 from ..datos.db import get_db
 from ..datos.modelos import Productos, Usuarios
 from ..datos.esquemas import ProductoCreate, ProductoUpdate, ProductoResponse
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
 
 router = APIRouter()
@@ -17,12 +17,19 @@ logger = setup_logger(__name__)
 async def crear_producto(
         producto_data: ProductoCreate,
         db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Crea un nuevo producto."""
+    if current_user.rol not in ['admin', 'operador']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para crear productos"
+        )
+
     # Validar código interno único dentro del tenant
     existing = db.query(Productos).filter(
-        Productos.tenant_id == ctx.tenant_id,
+        Productos.tenant_id == tenant_id,
         Productos.codigo_interno == producto_data.codigo_interno
     ).first()
 
@@ -35,7 +42,7 @@ async def crear_producto(
     # Validar código de barras único dentro del tenant
     if producto_data.codigo_barras:
         existing_barcode = db.query(Productos).filter(
-            Productos.tenant_id == ctx.tenant_id,
+            Productos.tenant_id == tenant_id,
             Productos.codigo_barras == producto_data.codigo_barras
         ).first()
 
@@ -46,7 +53,7 @@ async def crear_producto(
             )
 
     try:
-        nuevo_producto = Productos(tenant_id=ctx.tenant_id, **producto_data.model_dump())
+        nuevo_producto = Productos(tenant_id=tenant_id, **producto_data.model_dump())
         db.add(nuevo_producto)
         db.commit()
         db.refresh(nuevo_producto)
@@ -56,7 +63,7 @@ async def crear_producto(
             extra={
                 "producto_id": str(nuevo_producto.id),
                 "codigo": nuevo_producto.codigo_interno,
-                "user_id": str(ctx.user.id)
+                "user_id": str(current_user.id)
             }
         )
 
@@ -84,10 +91,7 @@ async def listar_productos(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista productos con filtros y búsqueda."""
-    query = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(Productos.tenant_id == tenant_id)
+    query = db.query(Productos).filter(Productos.tenant_id == tenant_id)
 
     if categoria:
         query = query.filter(Productos.categoria == categoria)
@@ -134,10 +138,7 @@ async def listar_por_categoria(
             detail=f"Categoría inválida. Válidas: {', '.join(categorias_validas)}"
         )
 
-    query = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(
+    query = db.query(Productos).filter(
         Productos.tenant_id == tenant_id,
         Productos.categoria == categoria
     )
@@ -164,10 +165,7 @@ async def obtener_producto(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene un producto por ID."""
-    producto = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(
+    producto = db.query(Productos).filter(
         Productos.id == producto_id,
         Productos.tenant_id == tenant_id
     ).first()
@@ -186,12 +184,19 @@ async def actualizar_producto(
         producto_id: UUID,
         producto_data: ProductoUpdate,
         db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Actualiza un producto existente."""
+    if current_user.rol not in ['admin', 'operador']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para actualizar productos"
+        )
+
     producto = db.query(Productos).filter(
         Productos.id == producto_id,
-        Productos.tenant_id == ctx.tenant_id
+        Productos.tenant_id == tenant_id
     ).first()
 
     if not producto:
@@ -205,7 +210,7 @@ async def actualizar_producto(
 
         if 'codigo_barras' in update_data and update_data['codigo_barras']:
             existing = db.query(Productos).filter(
-                Productos.tenant_id == ctx.tenant_id,
+                Productos.tenant_id == tenant_id,
                 Productos.codigo_barras == update_data['codigo_barras'],
                 Productos.id != producto_id
             ).first()
@@ -226,7 +231,7 @@ async def actualizar_producto(
             f"Producto actualizado: {producto.nombre}",
             extra={
                 "producto_id": str(producto.id),
-                "user_id": str(ctx.user.id)
+                "user_id": str(current_user.id)
             }
         )
 
@@ -247,12 +252,19 @@ async def actualizar_producto(
 async def eliminar_producto(
         producto_id: UUID,
         db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin'))
+        current_user: Usuarios = Depends(get_current_user),
+        tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    """Elimina un producto (soft delete). Solo admin."""
+    """Elimina un producto (soft delete)."""
+    if current_user.rol != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores pueden eliminar productos"
+        )
+
     producto = db.query(Productos).filter(
         Productos.id == producto_id,
-        Productos.tenant_id == ctx.tenant_id
+        Productos.tenant_id == tenant_id
     ).first()
 
     if not producto:
@@ -269,7 +281,7 @@ async def eliminar_producto(
             f"Producto eliminado (soft): {producto.nombre}",
             extra={
                 "producto_id": str(producto.id),
-                "user_id": str(ctx.user.id)
+                "user_id": str(current_user.id)
             }
         )
 

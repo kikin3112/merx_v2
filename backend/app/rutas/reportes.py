@@ -11,7 +11,7 @@ from ..datos.db import get_db
 from ..datos.modelos import (
     Ventas, VentasDetalle, Productos, Inventarios, Terceros, Usuarios, Cotizaciones
 )
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
 from ..utils.logger import setup_logger
 
 router = APIRouter()
@@ -23,14 +23,13 @@ async def dashboard_kpis(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """KPIs principales del dashboard. Accepts optional date range filters."""
     hoy = date.today()
 
     query = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"])
     )
     if fecha_inicio:
@@ -56,14 +55,14 @@ async def dashboard_kpis(
     alertas_stock = db.query(Inventarios).join(
         Productos, Productos.id == Inventarios.producto_id
     ).filter(
-        Inventarios.tenant_id == tenant_id,
+        Inventarios.tenant_id == ctx.tenant_id,
         Productos.stock_minimo.isnot(None),
         Inventarios.cantidad_disponible <= Productos.stock_minimo
     ).count()
 
     # Facturas pendientes de cobro (always current)
     facturas_pendientes = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado == "FACTURADA"
     ).all()
     total_pendiente = sum(v.total_venta for v in facturas_pendientes)
@@ -87,12 +86,11 @@ async def reporte_ventas(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """Reporte de ventas por periodo."""
     query = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado != "ANULADA"
     )
     if fecha_inicio:
@@ -116,8 +114,7 @@ async def ventas_diarias(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Ventas agrupadas por día para gráfico de línea.
@@ -135,7 +132,7 @@ async def ventas_diarias(
     num_dias = (fin - inicio).days + 1
 
     ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio,
         Ventas.fecha_venta <= fin
@@ -168,8 +165,7 @@ async def ventas_diarias(
 async def productos_top(
     limite: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """Top productos por valor de inventario."""
     inventarios = db.query(
@@ -180,7 +176,7 @@ async def productos_top(
     ).join(
         Inventarios, Productos.id == Inventarios.producto_id
     ).filter(
-        Productos.tenant_id == tenant_id,
+        Productos.tenant_id == ctx.tenant_id,
         Productos.deleted_at.is_(None),
         Inventarios.cantidad_disponible > 0
     ).order_by(Inventarios.valor_total.desc()).limit(limite).all()
@@ -203,8 +199,7 @@ async def productos_mas_vendidos(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """Top productos por cantidad vendida en un período."""
     if fecha_inicio and fecha_fin:
@@ -215,7 +210,7 @@ async def productos_mas_vendidos(
         fin = date.today()
 
     ventas_activas = db.query(Ventas.id).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio,
         Ventas.fecha_venta <= fin
@@ -257,8 +252,7 @@ async def top_clientes(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """Top clientes por monto total de ventas."""
     if fecha_inicio and fecha_fin:
@@ -269,7 +263,7 @@ async def top_clientes(
         fin = date.today()
 
     ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio,
         Ventas.fecha_venta <= fin
@@ -310,8 +304,7 @@ async def top_clientes(
 async def rentabilidad_productos(
     limite: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Rentabilidad por producto: precio_venta vs costo_promedio.
@@ -329,7 +322,7 @@ async def rentabilidad_productos(
     ).join(
         Inventarios, Productos.id == Inventarios.producto_id
     ).filter(
-        Productos.tenant_id == tenant_id,
+        Productos.tenant_id == ctx.tenant_id,
         Productos.deleted_at.is_(None),
         Productos.precio_venta > 0
     ).order_by(Productos.nombre).limit(limite).all()
@@ -356,8 +349,7 @@ async def rentabilidad_productos(
 @router.get("/abc-inventario")
 async def abc_inventario(
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Análisis ABC de inventario.
@@ -375,7 +367,7 @@ async def abc_inventario(
     ).join(
         Inventarios, Productos.id == Inventarios.producto_id
     ).filter(
-        Productos.tenant_id == tenant_id,
+        Productos.tenant_id == ctx.tenant_id,
         Productos.deleted_at.is_(None),
         Inventarios.cantidad_disponible > 0,
         Inventarios.valor_total > 0
@@ -424,8 +416,7 @@ async def abc_inventario(
 @router.get("/rentabilidad-categoria")
 async def rentabilidad_por_categoria(
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Rentabilidad agregada por categoría de producto.
@@ -441,7 +432,7 @@ async def rentabilidad_por_categoria(
     ).join(
         Inventarios, Productos.id == Inventarios.producto_id
     ).filter(
-        Productos.tenant_id == tenant_id,
+        Productos.tenant_id == ctx.tenant_id,
         Productos.deleted_at.is_(None),
         Productos.precio_venta > 0
     ).group_by(Productos.categoria).all()
@@ -466,8 +457,7 @@ async def rentabilidad_por_categoria(
 async def comparativa_mensual(
     fecha_referencia: Optional[date] = Query(None, description="Any date in the month to compare. Defaults to today."),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Comparativa mes actual vs mes anterior.
@@ -497,7 +487,7 @@ async def comparativa_mensual(
 
     # Ventas mes actual
     ventas_actual = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio_mes_actual,
         Ventas.fecha_venta <= fin_mes_actual
@@ -505,7 +495,7 @@ async def comparativa_mensual(
 
     # Ventas mes anterior
     ventas_anterior = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio_mes_anterior,
         Ventas.fecha_venta <= fin_mes_anterior
@@ -549,8 +539,7 @@ async def comparativa_mensual(
 async def proyeccion_flujo_caja(
     dias_proyeccion: int = Query(30, ge=7, le=90),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Proyección de flujo de caja basada en histórico de 90 días + facturas pendientes.
@@ -560,7 +549,7 @@ async def proyeccion_flujo_caja(
 
     # Ventas históricas (90 días)
     ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= hace_90,
         Ventas.fecha_venta <= hoy
@@ -572,7 +561,7 @@ async def proyeccion_flujo_caja(
 
     # Facturas pendientes (por cobrar)
     facturas_pendientes = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado == "FACTURADA"
     ).all()
     total_por_cobrar = sum((v.total_venta for v in facturas_pendientes), Decimal("0"))
@@ -605,8 +594,7 @@ async def margenes_por_categoria(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
 ):
     """
     Márgenes basados en ventas reales por categoría.
@@ -620,7 +608,7 @@ async def margenes_por_categoria(
         fin = date.today()
 
     ventas_activas = db.query(Ventas.id).filter(
-        Ventas.tenant_id == tenant_id,
+        Ventas.tenant_id == ctx.tenant_id,
         Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
         Ventas.fecha_venta >= inicio,
         Ventas.fecha_venta <= fin

@@ -8,7 +8,7 @@ from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from ..datos.modelos import (
@@ -33,30 +33,12 @@ class ServicioInventario:
     # CONSULTAS
     # ========================================================================
 
-    def obtener_inventario_producto(
-        self,
-        producto_id: UUID,
-        lock: bool = False
-    ) -> Optional[Inventarios]:
-        """
-        Obtiene el inventario de un producto.
-
-        Args:
-            producto_id: ID del producto
-            lock: Si True, adquiere bloqueo FOR UPDATE (previene race conditions)
-
-        Returns:
-            Inventarios o None si no existe
-        """
-        query = self.db.query(Inventarios).filter(
+    def obtener_inventario_producto(self, producto_id: UUID) -> Optional[Inventarios]:
+        """Obtiene el inventario de un producto."""
+        return self.db.query(Inventarios).filter(
             Inventarios.tenant_id == self.tenant_id,
             Inventarios.producto_id == producto_id
-        )
-
-        if lock:
-            query = query.with_for_update()
-
-        return query.first()
+        ).first()
 
     def obtener_stock_disponible(self, producto_id: UUID) -> Decimal:
         """Obtiene la cantidad disponible de un producto."""
@@ -75,10 +57,7 @@ class ServicioInventario:
         limite: int = 100
     ) -> List[MovimientosInventario]:
         """Lista movimientos de inventario con filtros opcionales."""
-        query = self.db.query(MovimientosInventario).options(
-            selectinload(MovimientosInventario.created_by_user),
-            selectinload(MovimientosInventario.updated_by_user)
-        ).filter(
+        query = self.db.query(MovimientosInventario).filter(
             MovimientosInventario.tenant_id == self.tenant_id
         )
 
@@ -152,8 +131,8 @@ class ServicioInventario:
         Raises:
             ValueError: Si no hay stock suficiente para salidas
         """
-        # Obtener o crear inventario (con bloqueo para prevenir race conditions)
-        inventario = self.obtener_inventario_producto(producto_id, lock=True)
+        # Obtener o crear inventario
+        inventario = self.obtener_inventario_producto(producto_id)
         if not inventario:
             inventario = Inventarios(
                 tenant_id=self.tenant_id,
@@ -327,21 +306,6 @@ class ServicioInventario:
 
         if not receta.ingredientes:
             raise ValueError("La receta no tiene ingredientes")
-
-        # Prevenir deadlocks: Adquirir bloqueos de inventario en orden consistente
-        # Ordenar IDs de ingredientes y bloquear todos de una vez
-        ingredient_ids = sorted([ing.producto_id for ing in receta.ingredientes])
-        if ingredient_ids:
-            self.db.query(Inventarios).filter(
-                Inventarios.tenant_id == self.tenant_id,
-                Inventarios.producto_id.in_(ingredient_ids)
-            ).with_for_update().all()
-
-        # También bloquear el inventario del producto resultado
-        self.db.query(Inventarios).filter(
-            Inventarios.tenant_id == self.tenant_id,
-            Inventarios.producto_id == receta.producto_resultado_id
-        ).with_for_update().first()
 
         # Validar stock
         faltantes = self.validar_stock_receta(receta, cantidad_producir)

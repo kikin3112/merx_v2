@@ -34,6 +34,7 @@ from .rutas import (
     crm,
     cuentas_contables,
     facturas,
+    health,
     inventarios,
     medios_pago,
     ordenes_produccion,
@@ -430,6 +431,9 @@ def health_check():
 
 # Todos los routers usan el prefijo de la API
 prefix = settings.API_PREFIX
+
+# Health checks (sin prefijo de versión - infraestructura)
+app.include_router(health.router, tags=["Health"])
 
 # Autenticación (sin prefijo adicional, solo /api/v1/auth)
 app.include_router(auth.router, prefix=f"{prefix}/auth", tags=["Autenticación"])
