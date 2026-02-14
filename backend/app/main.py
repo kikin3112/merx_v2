@@ -24,6 +24,35 @@ from .utils.logger import (
 from .utils.rate_limiter import limiter
 from .datos.db import engine, SessionLocal
 
+# Sentry integration (production/staging only)
+if settings.ENVIRONMENT in ['production', 'staging'] and hasattr(settings, 'SENTRY_DSN') and settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    def filter_sensitive_data(event, hint):
+        """Remove sensitive headers from Sentry events."""
+        if 'request' in event:
+            headers = event['request'].get('headers', {})
+            headers.pop('Authorization', None)
+            headers.pop('authorization', None)
+            headers.pop('X-Tenant-ID', None)
+            headers.pop('x-tenant-id', None)
+        return event
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+        send_default_pii=False,
+        before_send=filter_sensitive_data,
+    )
+    setup_logger(__name__).info(f"✅ Sentry initialized for {settings.ENVIRONMENT}")
+
 # Importar todos los routers
 from .rutas import (
     auth,
