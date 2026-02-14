@@ -219,10 +219,10 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
   const canEdit = isPendiente && (tipo === 'venta' || tipo === 'factura');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
+      <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-3xl md:mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
               {tipo === 'cotizacion' ? 'Cotizacion' : tipo === 'factura' ? 'Factura' : 'Venta'}{' '}
@@ -245,7 +245,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
           </button>
         </div>
 
-        <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="px-4 py-4 md:px-6 space-y-4 flex-1 overflow-y-auto md:max-h-[70vh]">
           {/* Client info */}
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-500 mb-0.5">Cliente</p>
@@ -302,29 +302,133 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
               </div>
             )}
 
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
-                    <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
-                    <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Precio</th>
-                    <th className="text-right px-2 py-2 font-medium text-gray-500 w-20">Desc.%</th>
-                    <th className="text-right px-2 py-2 font-medium text-gray-500 w-16">IVA%</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500 w-28">Total</th>
-                    {editing && <th className="w-8"></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineas.map((l, i) => {
-                    const c = calcLinea(l);
-                    return (
-                      <tr key={i} className="border-b border-gray-50">
-                        <td className="px-3 py-2 text-xs font-medium text-gray-900">{l.nombre}</td>
-                        <td className="px-2 py-2 text-center">
-                          {editing ? (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
+                      <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
+                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Precio</th>
+                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-20">Desc.%</th>
+                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-16">IVA%</th>
+                      <th className="text-right px-3 py-2 font-medium text-gray-500 w-28">Total</th>
+                      {editing && <th className="w-8"></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineas.map((l, i) => {
+                      const c = calcLinea(l);
+                      return (
+                        <tr key={i} className="border-b border-gray-50">
+                          <td className="px-3 py-2 text-xs font-medium text-gray-900">{l.nombre}</td>
+                          <td className="px-2 py-2 text-center">
+                            {editing ? (
+                              <input
+                                type="number"
+                                min={1}
+                                value={l.cantidad}
+                                onChange={(e) =>
+                                  setLineas((prev) =>
+                                    prev.map((ll, j) =>
+                                      j === i ? { ...ll, cantidad: Math.max(1, Number(e.target.value)) } : ll
+                                    )
+                                  )
+                                }
+                                className="w-full text-center rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-700">{l.cantidad}</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 text-right">
+                            {editing ? (
+                              <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={l.precio_unitario}
+                                onChange={(e) =>
+                                  setLineas((prev) =>
+                                    prev.map((ll, j) =>
+                                      j === i ? { ...ll, precio_unitario: Math.max(0, Number(e.target.value)) } : ll
+                                    )
+                                  )
+                                }
+                                className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-700">{formatCurrency(l.precio_unitario)}</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 text-right">
+                            {editing ? (
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={l.descuento}
+                                onChange={(e) =>
+                                  setLineas((prev) =>
+                                    prev.map((ll, j) =>
+                                      j === i
+                                        ? { ...ll, descuento: Math.min(100, Math.max(0, Number(e.target.value))) }
+                                        : ll
+                                    )
+                                  )
+                                }
+                                className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-700">{l.descuento}%</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 text-right text-sm text-gray-500">{l.porcentaje_iva}%</td>
+                          <td className="px-3 py-2 text-right font-medium text-gray-900 text-xs">
+                            {formatCurrency(c.total)}
+                          </td>
+                          {editing && (
+                            <td className="px-1 py-2">
+                              <button
+                                onClick={() => setLineas((prev) => prev.filter((_, j) => j !== i))}
+                                className="text-red-400 hover:text-red-600 text-lg leading-none"
+                              >
+                                &times;
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile line cards */}
+              <div className="md:hidden space-y-2">
+                {lineas.map((l, i) => {
+                  const c = calcLinea(l);
+                  return (
+                    <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <p className="text-sm font-medium text-gray-900">{l.nombre}</p>
+                        {editing && (
+                          <button
+                            onClick={() => setLineas((prev) => prev.filter((_, j) => j !== i))}
+                            className="p-1 text-red-400 hover:text-red-600"
+                          >
+                            &times;
+                          </button>
+                        )}
+                      </div>
+                      {editing ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] text-gray-400">Cant.</label>
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={1}
                               value={l.cantidad}
                               onChange={(e) =>
@@ -334,16 +438,14 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-center rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-center rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          ) : (
-                            <span className="text-sm text-gray-700">{l.cantidad}</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-right">
-                          {editing ? (
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400">Precio</label>
                             <input
                               type="number"
+                              inputMode="decimal"
                               min={0}
                               step={100}
                               value={l.precio_unitario}
@@ -354,16 +456,14 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          ) : (
-                            <span className="text-sm text-gray-700">{formatCurrency(l.precio_unitario)}</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-right">
-                          {editing ? (
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400">Desc.%</label>
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={0}
                               max={100}
                               value={l.descuento}
@@ -376,32 +476,24 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                          ) : (
-                            <span className="text-sm text-gray-700">{l.descuento}%</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-right text-sm text-gray-500">{l.porcentaje_iva}%</td>
-                        <td className="px-3 py-2 text-right font-medium text-gray-900 text-xs">
-                          {formatCurrency(c.total)}
-                        </td>
-                        {editing && (
-                          <td className="px-1 py-2">
-                            <button
-                              onClick={() => setLineas((prev) => prev.filter((_, j) => j !== i))}
-                              className="text-red-400 hover:text-red-600 text-lg leading-none"
-                            >
-                              &times;
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <span>{l.cantidad} x {formatCurrency(l.precio_unitario)}</span>
+                          <span>IVA {l.porcentaje_iva}% {l.descuento > 0 && `/ Desc ${l.descuento}%`}</span>
+                        </div>
+                      )}
+                      <div className="text-right text-sm font-semibold text-gray-900">
+                        {formatCurrency(c.total)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           </div>
 
           {/* Totals */}
@@ -477,8 +569,8 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
         </div>
 
         {/* Footer - Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 py-3 md:px-6 md:py-4 border-t border-gray-100 bg-white">
+          <div className="flex flex-wrap gap-2">
             {/* Edit / Save */}
             {canEdit && !editing && (
               <button

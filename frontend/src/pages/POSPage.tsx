@@ -4,6 +4,7 @@ import { productos, terceros, facturas } from '../api/endpoints';
 import { formatCurrency } from '../utils/format';
 import type { Producto, Tercero, Factura } from '../types';
 import { usePOSStore } from '../stores/posStore';
+import { useBreakpoint } from '../hooks/useMediaQuery';
 
 interface CartItem {
   producto: Producto;
@@ -31,6 +32,7 @@ const emptyClientForm: QuickClientForm = {
 
 export default function POSPage() {
   const queryClient = useQueryClient();
+  const { isDesktop } = useBreakpoint();
 
   // POS Store persistente
   const {
@@ -114,7 +116,7 @@ export default function POSPage() {
   const handleAddToCart = (producto: Producto) => {
     addToCartStore(producto);
     // Switch to cart on mobile
-    if (window.innerWidth < 1024) setMobileTab('carrito');
+    if (!isDesktop) setMobileTab('carrito');
   };
 
   const handleUpdateQty = (productoId: string, newQuantity: number) => {

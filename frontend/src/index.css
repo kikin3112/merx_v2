@@ -30,3 +30,11 @@ body {
   @apply bg-gray-50 text-gray-900 antialiased;
   margin: 0;
 }
+
+/* Touch target minimum for mobile accessibility */
+@media (max-width: 767px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

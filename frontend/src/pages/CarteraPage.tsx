@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartera, terceros } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
+import DataCard from '../components/ui/DataCard';
 import type { CarteraItem, Tercero, MedioPago, PagoCartera } from '../types';
 
 const ESTADOS = ['', 'PENDIENTE', 'PARCIAL', 'PAGADA', 'VENCIDA', 'ANULADA'];
@@ -76,12 +77,12 @@ export default function CarteraPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-4 border-b border-gray-200">
+      <div className="flex items-center gap-4 border-b border-gray-200 overflow-x-auto pb-1">
         {TABS.map(t => (
           <button
             key={t}
             onClick={() => { setTab(t); setSelectedItem(null); }}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               tab === t ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -109,51 +110,82 @@ export default function CarteraPage() {
           <p className="text-sm">Las cuentas por {tab === 'COBRAR' ? 'cobrar' : 'pagar'} se crean automaticamente al facturar</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tercero</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Emision</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vencimiento</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saldo</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {carteraData.map(item => (
-                <tr
-                  key={item.id}
-                  className={`hover:bg-gray-50 cursor-pointer transition-colors ${isVencida(item) ? 'bg-red-50/50' : ''}`}
-                  onClick={() => setSelectedItem(item)}
-                >
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.documento_referencia}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{terceroMap[item.tercero_id] || '-'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(item.fecha_emision)}</td>
-                  <td className={`px-4 py-3 text-sm ${isVencida(item) ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                    {formatDate(item.fecha_vencimiento)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(item.valor_total)}</td>
-                  <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">{formatCurrency(item.saldo_pendiente)}</td>
-                  <td className="px-4 py-3 text-center">{estadoBadge(item)}</td>
-                  <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-                    {['PENDIENTE', 'PARCIAL'].includes(item.estado) && (
-                      <button
-                        onClick={() => { setSelectedItem(item); setShowPagoModal(true); }}
-                        className="text-xs font-medium text-primary-600 hover:text-primary-700"
-                      >
-                        Registrar pago
-                      </button>
-                    )}
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tercero</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Emision</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vencimiento</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saldo</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {carteraData.map(item => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-gray-50 cursor-pointer transition-colors ${isVencida(item) ? 'bg-red-50/50' : ''}`}
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.documento_referencia}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{terceroMap[item.tercero_id] || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{formatDate(item.fecha_emision)}</td>
+                    <td className={`px-4 py-3 text-sm ${isVencida(item) ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                      {formatDate(item.fecha_vencimiento)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(item.valor_total)}</td>
+                    <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">{formatCurrency(item.saldo_pendiente)}</td>
+                    <td className="px-4 py-3 text-center">{estadoBadge(item)}</td>
+                    <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+                      {['PENDIENTE', 'PARCIAL'].includes(item.estado) && (
+                        <button
+                          onClick={() => { setSelectedItem(item); setShowPagoModal(true); }}
+                          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+                        >
+                          Registrar pago
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {carteraData.map(item => (
+              <DataCard
+                key={item.id}
+                title={item.documento_referencia}
+                subtitle={terceroMap[item.tercero_id] || '-'}
+                badge={estadoBadge(item)}
+                fields={[
+                  { label: 'Total', value: formatCurrency(item.valor_total) },
+                  { label: 'Saldo', value: <span className="font-bold text-primary-600">{formatCurrency(item.saldo_pendiente)}</span> },
+                  { label: 'Vencimiento', value: <span className={isVencida(item) ? 'text-red-600 font-medium' : ''}>{formatDate(item.fecha_vencimiento)}</span> },
+                ]}
+                onClick={() => setSelectedItem(item)}
+                actions={
+                  ['PENDIENTE', 'PARCIAL'].includes(item.estado) ? (
+                    <button
+                      onClick={() => { setSelectedItem(item); setShowPagoModal(true); }}
+                      className="text-xs font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      Registrar pago
+                    </button>
+                  ) : undefined
+                }
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Detail panel */}
@@ -224,7 +256,7 @@ function DetailPanel({ item, terceroNombre, onClose, onRegistrarPago }: {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div><span className="text-gray-500">Documento:</span> <span className="font-medium">{item.documento_referencia}</span></div>
             <div><span className="text-gray-500">Tercero:</span> <span className="font-medium">{terceroNombre}</span></div>
             <div><span className="text-gray-500">Emision:</span> <span>{formatDate(item.fecha_emision)}</span></div>

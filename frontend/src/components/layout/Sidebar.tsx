@@ -1,57 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import {
-  ChartBarIcon,
-  ShoppingCartIcon,
-  CubeIcon,
-  BeakerIcon,
-  CalculatorIcon,
-  CogIcon,
-  ArrowRightStartOnRectangleIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
-  UserGroupIcon,
-  BuildingOffice2Icon,
-  BanknotesIcon,
-  ChartPieIcon,
-  CreditCardIcon,
-  BriefcaseIcon,
-  ArchiveBoxIcon,
-} from '@heroicons/react/24/outline';
+import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
-
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: ChartBarIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
-  { to: '/pos', label: 'POS', icon: BanknotesIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/ventas', label: 'Ventas', icon: ShoppingCartIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/facturas', label: 'Facturas', icon: DocumentTextIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/cotizaciones', label: 'Cotizaciones', icon: ClipboardDocumentListIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/crm', label: 'CRM', icon: BriefcaseIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/productos', label: 'Productos', icon: CubeIcon, roles: ['admin', 'operador'] },
-  { to: '/terceros', label: 'Terceros', icon: UserGroupIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
-  { to: '/inventario', label: 'Inventario', icon: ArchiveBoxIcon, roles: ['admin', 'operador'] },
-  { to: '/recetas', label: 'Recetas', icon: BeakerIcon, roles: ['admin', 'operador'] },
-  { to: '/cartera', label: 'Cartera', icon: CreditCardIcon, roles: ['admin', 'contador'] },
-  { to: '/contabilidad', label: 'Contabilidad', icon: CalculatorIcon, roles: ['admin', 'contador'] },
-  { to: '/reportes', label: 'Reportes', icon: ChartPieIcon, roles: ['admin', 'contador'] },
-  { to: '/config', label: 'Config', icon: CogIcon, roles: ['admin'] },
-];
-
-const superadminItems = [
-  { to: '/tenants', label: 'Tenants', icon: BuildingOffice2Icon },
-];
+import { useNavigation } from '../../hooks/useNavigation';
 
 export default function Sidebar() {
-  const { tenantName, tenantId, user, impersonation, logout } = useAuthStore();
-
-  const isSuperadminOnly = user?.es_superadmin && !tenantId;
-
-  // Determine effective role (impersonation takes precedence)
-  const effectiveRole = impersonation
-    ? impersonation.rolEnTenant
-    : user?.rol;
+  const { tenantName, logout } = useAuthStore();
+  const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
 
   return (
-    <aside className="flex h-screen w-60 flex-col bg-white border-r border-gray-200">
+    <aside className="hidden lg:flex h-screen w-60 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
       <div className="flex items-center gap-2 px-4 py-5 border-b border-gray-100">
         <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center">
@@ -67,35 +24,27 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {/* Tenant-scoped nav: only show when a tenant is selected and user has role access */}
-        {!isSuperadminOnly && navItems
-          .filter(item => {
-            // Superadmin (not impersonating) sees all
-            if (user?.es_superadmin && !impersonation) return true;
-            // Filter by role
-            return effectiveRole && item.roles.includes(effectiveRole);
-          })
-          .map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`
-              }
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
+        {mainItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`
+            }
+          >
+            <item.icon className="h-5 w-5 shrink-0" />
+            {item.label}
+          </NavLink>
+        ))}
 
-        {user?.es_superadmin && (
+        {superadminItems.length > 0 && (
           <>
-            {!isSuperadminOnly && <div className="my-2 mx-3 border-t border-gray-200" />}
+            {mainItems.length > 0 && <div className="my-2 mx-3 border-t border-gray-200" />}
             <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               SuperAdmin
             </p>

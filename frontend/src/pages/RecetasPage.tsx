@@ -163,13 +163,13 @@ export default function RecetasPage() {
               key={r.id}
               className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-gray-900">{r.nombre}</h3>
                   {r.descripcion && (
                     <p className="text-xs text-gray-500 mt-0.5">{r.descripcion}</p>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
                     <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
                     <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
                     {r.costo_unitario != null && (
@@ -180,16 +180,16 @@ export default function RecetasPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 ml-4">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => costoMutation.mutate(r.id)}
-                    className="rounded px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                   >
                     Calcular Costo
                   </button>
                   <button
                     onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
-                    className="rounded px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
                   >
                     Producir
                   </button>
@@ -197,7 +197,7 @@ export default function RecetasPage() {
                     onClick={() => {
                       if (confirm(`Eliminar receta "${r.nombre}"?`)) deleteMutation.mutate(r.id);
                     }}
-                    className="rounded px-2.5 py-1 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
                   >
                     Eliminar
                   </button>
@@ -231,13 +231,13 @@ export default function RecetasPage() {
 
       {/* Costo Modal */}
       {costoInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Costo: {costoInfo.receta_nombre}</h2>
-              <button onClick={() => setCostoInfo(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => setCostoInfo(null)} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
               <div className="space-y-2">
                 {costoInfo.detalle_ingredientes.map((d, i) => (
                   <div key={i} className="flex justify-between text-sm">
@@ -283,13 +283,13 @@ export default function RecetasPage() {
 
       {/* Producir Modal */}
       {showProducir && selectedReceta && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-sm md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Producir</h2>
-              <button onClick={() => { setShowProducir(false); setSelectedReceta(null); }} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => { setShowProducir(false); setSelectedReceta(null); }} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
               <p className="text-sm text-gray-600">
                 Receta: <strong>{selectedReceta.nombre}</strong>
                 <br />
@@ -336,13 +336,13 @@ export default function RecetasPage() {
 
       {/* Create Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
+          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-2xl md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Nueva Receta</h2>
-              <button onClick={resetForm} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={resetForm} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
-            <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="px-4 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">
               {/* Nombre */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre receta *</label>
@@ -402,7 +402,7 @@ export default function RecetasPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Rendimiento (uds)</label>
                   <input
@@ -469,8 +469,8 @@ export default function RecetasPage() {
                 {ingredientes.length > 0 ? (
                   <div className="space-y-2">
                     {ingredientes.map((ing, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                        <span className="flex-1 text-sm font-medium text-gray-900 truncate">{ing.nombre}</span>
+                      <div key={i} className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                        <span className="flex-1 min-w-[120px] text-sm font-medium text-gray-900 truncate">{ing.nombre}</span>
                         <input
                           type="number"
                           min={0.01}
@@ -514,7 +514,7 @@ export default function RecetasPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-4 py-4 md:px-6 border-t border-gray-100">
               <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 Cancelar
               </button>

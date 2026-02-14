@@ -118,6 +118,7 @@ export default function CRMPage() {
   }
 
   // Drag & Drop handlers
+  const [mobileStageFilter, setMobileStageFilter] = useState<string>('');
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
 
   function handleDragStart(dealId: string) {
@@ -153,7 +154,7 @@ export default function CRMPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">CRM - Pipeline de Ventas</h1>
+        <h1 className="text-xl font-bold text-gray-900">Conversión de Ventas</h1>
         <button
           onClick={openCreate}
           className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
@@ -188,73 +189,155 @@ export default function CRMPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 overflow-x-auto">
-          <div className="flex gap-4 min-w-max">
-            {defaultPipeline?.etapas
-              .sort((a, b) => a.orden - b.orden)
-              .map((stage) => (
-                <div
-                  key={stage.id}
-                  className="flex-shrink-0 w-72"
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(stage.id)}
-                >
-                  {/* Stage Header */}
-                  <div className="mb-3 pb-2 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-gray-900">{stage.nombre}</h3>
-                      <span className="text-xs text-gray-500">
-                        {dealsByStage[stage.id]?.length || 0}
-                      </span>
+        <>
+          {/* Desktop: Kanban columns */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 p-4 overflow-x-auto">
+            <div className="flex gap-4 min-w-max">
+              {defaultPipeline?.etapas
+                .sort((a, b) => a.orden - b.orden)
+                .map((stage) => (
+                  <div
+                    key={stage.id}
+                    className="flex-shrink-0 w-72"
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(stage.id)}
+                  >
+                    {/* Stage Header */}
+                    <div className="mb-3 pb-2 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">{stage.nombre}</h3>
+                        <span className="text-xs text-gray-500">
+                          {dealsByStage[stage.id]?.length || 0}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Prob: {stage.probabilidad}%</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Prob: {stage.probabilidad}%</p>
-                  </div>
 
-                  {/* Deals */}
-                  <div className="space-y-2">
-                    {dealsByStage[stage.id]?.length === 0 ? (
-                      <p className="text-xs text-gray-400 text-center py-4">Sin deals</p>
-                    ) : (
-                      dealsByStage[stage.id]?.map((deal) => (
-                        <div
-                          key={deal.id}
-                          draggable
-                          onDragStart={() => handleDragStart(deal.id)}
-                          onClick={() => handleDealClick(deal)}
-                          className={`bg-gray-50 rounded-lg p-3 border border-gray-200 cursor-move hover:border-primary-300 hover:shadow-sm transition-all ${
-                            draggedDealId === deal.id ? 'opacity-50' : ''
-                          }`}
-                        >
-                          <h4 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
-                            {deal.nombre}
-                          </h4>
-                          {deal.tercero_nombre && (
-                            <p className="text-xs text-gray-600 mb-2">{deal.tercero_nombre}</p>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-primary-600">
-                              {formatCurrency(deal.valor_estimado)}
-                            </span>
-                            {deal.estado_cierre !== 'ABIERTO' && (
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded ${
-                                  deal.estado_cierre === 'GANADO'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {deal.estado_cierre}
-                              </span>
+                    {/* Deals */}
+                    <div className="space-y-2">
+                      {dealsByStage[stage.id]?.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">Sin deals</p>
+                      ) : (
+                        dealsByStage[stage.id]?.map((deal) => (
+                          <div
+                            key={deal.id}
+                            draggable
+                            onDragStart={() => handleDragStart(deal.id)}
+                            onClick={() => handleDealClick(deal)}
+                            className={`bg-gray-50 rounded-lg p-3 border border-gray-200 cursor-move hover:border-primary-300 hover:shadow-sm transition-all ${
+                              draggedDealId === deal.id ? 'opacity-50' : ''
+                            }`}
+                          >
+                            <h4 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
+                              {deal.nombre}
+                            </h4>
+                            {deal.tercero_nombre && (
+                              <p className="text-xs text-gray-600 mb-2">{deal.tercero_nombre}</p>
                             )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-primary-600">
+                                {formatCurrency(deal.valor_estimado)}
+                              </span>
+                              {deal.estado_cierre !== 'ABIERTO' && (
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded ${
+                                    deal.estado_cierre === 'GANADO'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-red-100 text-red-800'
+                                  }`}
+                                >
+                                  {deal.estado_cierre}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Mobile: Stage filter + vertical list */}
+          <div className="md:hidden space-y-3">
+            {/* Stage filter tabs */}
+            <div className="overflow-x-auto pb-1">
+              <div className="flex gap-1.5 bg-gray-100 p-1 rounded-lg w-max">
+                <button
+                  onClick={() => setMobileStageFilter('')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                    !mobileStageFilter ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  Todas ({filteredDeals.length})
+                </button>
+                {defaultPipeline?.etapas
+                  .sort((a, b) => a.orden - b.orden)
+                  .map((stage) => (
+                    <button
+                      key={stage.id}
+                      onClick={() => setMobileStageFilter(stage.id)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                        mobileStageFilter === stage.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                      }`}
+                    >
+                      {stage.nombre} ({dealsByStage[stage.id]?.length || 0})
+                    </button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Deal cards */}
+            {(mobileStageFilter
+              ? filteredDeals.filter((d) => d.stage_id === mobileStageFilter)
+              : filteredDeals
+            ).length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
+                Sin deals en esta etapa
+              </div>
+            ) : (
+              (mobileStageFilter
+                ? filteredDeals.filter((d) => d.stage_id === mobileStageFilter)
+                : filteredDeals
+              ).map((deal) => (
+                <div
+                  key={deal.id}
+                  onClick={() => handleDealClick(deal)}
+                  className="bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">{deal.nombre}</h4>
+                      {deal.tercero_nombre && (
+                        <p className="text-xs text-gray-500 mt-0.5">{deal.tercero_nombre}</p>
+                      )}
+                    </div>
+                    <span className="text-sm font-bold text-primary-600 ml-3">
+                      {formatCurrency(deal.valor_estimado)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                      {deal.stage_nombre}
+                    </span>
+                    {deal.estado_cierre !== 'ABIERTO' && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          deal.estado_cierre === 'GANADO'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {deal.estado_cierre}
+                      </span>
                     )}
                   </div>
                 </div>
-              ))}
+              ))
+            )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Create/Edit Modal */}
@@ -396,18 +479,18 @@ export default function CRMPage() {
             </div>
 
             {selectedDeal.estado_cierre === 'ABIERTO' && (
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => handleCloseDeal('GANADO')}
                   disabled={closeDealMut.isPending}
-                  className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  className="flex-1 px-3 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
                   Marcar Ganado
                 </button>
                 <button
                   onClick={() => handleCloseDeal('PERDIDO')}
                   disabled={closeDealMut.isPending}
-                  className="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  className="flex-1 px-3 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
                   Marcar Perdido
                 </button>

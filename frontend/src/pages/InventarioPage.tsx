@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventarios, productos } from '../api/endpoints';
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../utils/format';
 import Modal from '../components/ui/Modal';
+import DataCard from '../components/ui/DataCard';
 import type { Inventario, MovimientoInventario, Producto } from '../types';
 
 type Tab = 'valorizado' | 'movimientos' | 'alertas';
@@ -98,7 +99,7 @@ export default function InventarioPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
+      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto pb-1">
         {([
           { key: 'valorizado', label: 'Valorizado' },
           { key: 'movimientos', label: 'Movimientos' },
@@ -107,7 +108,7 @@ export default function InventarioPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === t.key
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -123,36 +124,59 @@ export default function InventarioPage() {
         loadingVal ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Producto</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Promedio</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Valor Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {valorizado?.map((inv) => (
-                  <tr key={inv.producto_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{inv.codigo}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{inv.nombre}</td>
-                    <td className="px-4 py-3 text-right text-gray-900">{formatNumber(inv.cantidad)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(inv.costo_promedio)}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(inv.valor_total)}</td>
+          <>
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Producto</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Promedio</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Valor Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {valorizado?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-lg mb-2">Sin inventario</p>
-                <p className="text-sm">Registra entradas para ver el inventario valorizado</p>
-              </div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {valorizado?.map((inv) => (
+                    <tr key={inv.producto_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{inv.codigo}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{inv.nombre}</td>
+                      <td className="px-4 py-3 text-right text-gray-900">{formatNumber(inv.cantidad)}</td>
+                      <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(inv.costo_promedio)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(inv.valor_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {valorizado?.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin inventario</p>
+                  <p className="text-sm">Registra entradas para ver el inventario valorizado</p>
+                </div>
+              )}
+            </div>
+            <div className="md:hidden space-y-3">
+              {valorizado?.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin inventario</p>
+                  <p className="text-sm">Registra entradas para ver el inventario valorizado</p>
+                </div>
+              ) : (
+                valorizado?.map((inv) => (
+                  <DataCard
+                    key={inv.producto_id}
+                    title={inv.nombre}
+                    subtitle={inv.codigo}
+                    fields={[
+                      { label: 'Stock', value: formatNumber(inv.cantidad) },
+                      { label: 'Costo Promedio', value: formatCurrency(inv.costo_promedio) },
+                      { label: 'Valor Total', value: formatCurrency(inv.valor_total) },
+                    ]}
+                  />
+                ))
+              )}
+            </div>
+          </>
         )
       )}
 
@@ -161,54 +185,96 @@ export default function InventarioPage() {
         loadingMov ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Unit.</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Observaciones</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movimientos?.map((m) => {
+          <>
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Unit.</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Observaciones</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movimientos?.map((m) => {
+                    const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'bg-gray-100 text-gray-700' };
+                    return (
+                      <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(m.fecha_movimiento)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${info.color}`}>
+                            {info.label}
+                          </span>
+                        </td>
+                        <td className={`px-4 py-3 text-right font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-500">
+                          {m.costo_unitario != null ? formatCurrency(m.costo_unitario) : '-'}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-500">{m.documento_referencia || '-'}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500 max-w-48 truncate">{m.observaciones || '-'}</td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-900">{m.created_by?.nombre || 'Sistema'}</div>
+                          <div className="text-xs text-gray-400">{formatDateTime(m.created_at)}</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {movimientos?.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin movimientos</p>
+                  <p className="text-sm">Los movimientos aparecen al registrar entradas, ventas o ajustes</p>
+                </div>
+              )}
+            </div>
+            <div className="md:hidden space-y-3">
+              {movimientos?.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin movimientos</p>
+                  <p className="text-sm">Los movimientos aparecen al registrar entradas, ventas o ajustes</p>
+                </div>
+              ) : (
+                movimientos?.map((m) => {
                   const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'bg-gray-100 text-gray-700' };
                   return (
-                    <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(m.fecha_movimiento)}</td>
-                      <td className="px-4 py-3">
+                    <DataCard
+                      key={m.id}
+                      title={m.documento_referencia || 'Movimiento'}
+                      subtitle={formatDate(m.fecha_movimiento)}
+                      badge={
                         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${info.color}`}>
                           {info.label}
                         </span>
-                      </td>
-                      <td className={`px-4 py-3 text-right font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-500">
-                        {m.costo_unitario != null ? formatCurrency(m.costo_unitario) : '-'}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{m.documento_referencia || '-'}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500 max-w-48 truncate">{m.observaciones || '-'}</td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm text-gray-900">{m.created_by?.nombre || 'Sistema'}</div>
-                        <div className="text-xs text-gray-400">{formatDateTime(m.created_at)}</div>
-                      </td>
-                    </tr>
+                      }
+                      fields={[
+                        {
+                          label: 'Cantidad',
+                          value: (
+                            <span className={m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
+                            </span>
+                          ),
+                        },
+                        {
+                          label: 'Costo Unit.',
+                          value: m.costo_unitario != null ? formatCurrency(m.costo_unitario) : '-',
+                        },
+                        { label: 'Usuario', value: m.created_by?.nombre || 'Sistema' },
+                        { label: 'Hora', value: formatDateTime(m.created_at) },
+                      ]}
+                    />
                   );
-                })}
-              </tbody>
-            </table>
-            {movimientos?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-lg mb-2">Sin movimientos</p>
-                <p className="text-sm">Los movimientos aparecen al registrar entradas, ventas o ajustes</p>
-              </div>
-            )}
-          </div>
+                })
+              )}
+            </div>
+          </>
         )
       )}
 
@@ -217,29 +283,57 @@ export default function InventarioPage() {
         loadingAlertas ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {alertas && alertas.length > 0 ? (
-              <div className="divide-y divide-gray-50">
-                {alertas.map((a) => (
-                  <div key={a.producto_id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{a.nombre}</p>
-                      <p className="text-xs text-gray-500">{a.codigo}</p>
+          <>
+            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {alertas && alertas.length > 0 ? (
+                <div className="divide-y divide-gray-50">
+                  {alertas.map((a) => (
+                    <div key={a.producto_id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{a.nombre}</p>
+                        <p className="text-xs text-gray-500">{a.codigo}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-red-600">{formatNumber(a.stock_actual)}</p>
+                        <p className="text-xs text-gray-400">min: {formatNumber(a.stock_minimo)}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-red-600">{formatNumber(a.stock_actual)}</p>
-                      <p className="text-xs text-gray-400">min: {formatNumber(a.stock_minimo)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-lg mb-2">Sin alertas</p>
-                <p className="text-sm">Todos los productos tienen stock por encima del minimo</p>
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin alertas</p>
+                  <p className="text-sm">Todos los productos tienen stock por encima del minimo</p>
+                </div>
+              )}
+            </div>
+            <div className="md:hidden space-y-3">
+              {alertas && alertas.length > 0 ? (
+                alertas.map((a: any) => (
+                  <DataCard
+                    key={a.producto_id}
+                    title={a.nombre}
+                    subtitle={a.codigo}
+                    badge={
+                      <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700">
+                        Bajo stock
+                      </span>
+                    }
+                    fields={[
+                      { label: 'Stock Actual', value: <span className="text-red-600 font-semibold">{formatNumber(a.stock_actual)}</span> },
+                      { label: 'Stock Minimo', value: formatNumber(a.stock_minimo) },
+                      { label: 'Deficit', value: <span className="text-red-600">-{formatNumber(a.stock_minimo - a.stock_actual)}</span> },
+                    ]}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin alertas</p>
+                  <p className="text-sm">Todos los productos tienen stock por encima del minimo</p>
+                </div>
+              )}
+            </div>
+          </>
         )
       )}
 

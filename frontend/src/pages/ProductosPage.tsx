@@ -4,6 +4,7 @@ import { productos } from '../api/endpoints';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import SearchInput from '../components/ui/SearchInput';
+import DataCard from '../components/ui/DataCard';
 import type { Producto, ProductoCreate, ProductoUpdate } from '../types';
 
 const CATEGORIAS = ['Insumo', 'Producto_Propio', 'Producto_Tercero', 'Servicio'] as const;
@@ -166,64 +167,111 @@ export default function ProductosPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Categoria</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Precio Venta</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{p.codigo_interno}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{p.nombre}</td>
-                  <td className="px-4 py-3 text-gray-600">{CATEGORIA_LABELS[p.categoria] || p.categoria}</td>
-                  <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(p.precio_venta)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      p.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {p.estado ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm text-gray-900">{p.created_by?.nombre || 'Sistema'}</div>
-                    <div className="text-xs text-gray-400">{formatDateTime(p.created_at)}</div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Categoria</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">Precio Venta</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{p.codigo_interno}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{p.nombre}</td>
+                    <td className="px-4 py-3 text-gray-600">{CATEGORIA_LABELS[p.categoria] || p.categoria}</td>
+                    <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(p.precio_venta)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                        p.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {p.estado ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-gray-900">{p.created_by?.nombre || 'Sistema'}</div>
+                      <div className="text-xs text-gray-400">{formatDateTime(p.created_at)}</div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-3"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Desactivar este producto?')) deleteMut.mutate(p.id);
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin productos</p>
+                <p className="text-sm">Crea tu primer producto para empezar</p>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {data?.map((p) => (
+              <DataCard
+                key={p.id}
+                title={p.nombre}
+                subtitle={p.codigo_interno}
+                badge={
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                    p.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {p.estado ? 'Activo' : 'Inactivo'}
+                  </span>
+                }
+                fields={[
+                  { label: 'Precio', value: formatCurrency(p.precio_venta) },
+                  { label: 'Categoria', value: CATEGORIA_LABELS[p.categoria] || p.categoria },
+                ]}
+                actions={
+                  <>
                     <button
                       onClick={() => openEdit(p)}
-                      className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-3"
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 active:bg-primary-100"
                     >
                       Editar
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm('Desactivar este producto?')) deleteMut.mutate(p.id);
-                      }}
-                      className="text-xs text-red-500 hover:text-red-700 font-medium"
+                      onClick={() => { if (confirm('Desactivar este producto?')) deleteMut.mutate(p.id); }}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 active:bg-red-100"
                     >
                       Eliminar
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {data?.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-lg mb-2">Sin productos</p>
-              <p className="text-sm">Crea tu primer producto para empezar</p>
-            </div>
-          )}
-        </div>
+                  </>
+                }
+              />
+            ))}
+            {data?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-lg mb-2">Sin productos</p>
+                <p className="text-sm">Crea tu primer producto para empezar</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Create / Edit Modal */}
@@ -233,7 +281,7 @@ export default function ProductosPage() {
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Codigo Interno *</label>
               <input
@@ -277,7 +325,7 @@ export default function ProductosPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
               <select
@@ -304,7 +352,7 @@ export default function ProductosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo IVA *</label>
               <select
@@ -350,7 +398,7 @@ export default function ProductosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Stock Minimo</label>
               <input
