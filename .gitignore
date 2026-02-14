@@ -36,6 +36,10 @@ coverage.xml
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Application logs
+logs/
+*.log
+
 # Editors and IDEs
 # PyCharm
 .idea/  # Uncomment this to ignore the entire .idea folder

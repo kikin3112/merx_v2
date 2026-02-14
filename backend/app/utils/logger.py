@@ -5,9 +5,12 @@ Soporta formato JSON para producción y texto legible para desarrollo.
 
 import logging
 import sys
+import os
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from contextvars import ContextVar
+from logging.handlers import RotatingFileHandler
 from pythonjsonlogger import jsonlogger
 
 # ============================================================================
@@ -188,6 +191,38 @@ def setup_logger(
 
     stdout_handler.setFormatter(formatter)
     logger.addHandler(stdout_handler)
+
+    # ========================================================================
+    # FILE HANDLER - Logs rotativos en archivos
+    # ========================================================================
+    try:
+        # Crear directorio de logs si no existe
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+
+        # Handler de archivo con rotación automática
+        # - Rota cuando el archivo alcanza 10MB
+        # - Mantiene 5 archivos de backup (app.log.1, app.log.2, etc.)
+        # - Total storage: ~50MB de logs
+        file_handler = RotatingFileHandler(
+            filename=log_dir / "app.log",
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(log_level)
+
+        # Logs de archivo SIEMPRE en formato JSON (más fácil de parsear)
+        json_formatter = CustomJsonFormatter(
+            '%(timestamp)s %(level)s %(name)s %(message)s'
+        )
+        file_handler.setFormatter(json_formatter)
+        logger.addHandler(file_handler)
+
+    except Exception as e:
+        # Si falla la creación del file handler, solo log a stdout
+        # (no queremos que falle el servidor por esto)
+        logger.warning(f"No se pudo crear file handler para logs: {e}")
 
     return logger
 

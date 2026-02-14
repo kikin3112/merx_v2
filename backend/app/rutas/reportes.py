@@ -227,7 +227,7 @@ async def productos_mas_vendidos(
         VentasDetalle, Productos.id == VentasDetalle.producto_id
     ).filter(
         VentasDetalle.venta_id.in_(ventas_activas),
-        Productos.tenant_id == tenant_id
+        Productos.tenant_id == ctx.tenant_id
     ).group_by(
         Productos.id, Productos.nombre, Productos.codigo_interno, Productos.precio_venta
     ).order_by(desc("total_ingresos")).limit(limite).all()
@@ -627,7 +627,7 @@ async def margenes_por_categoria(
         Inventarios, Productos.id == Inventarios.producto_id
     ).filter(
         VentasDetalle.venta_id.in_(ventas_activas),
-        Productos.tenant_id == tenant_id
+        Productos.tenant_id == ctx.tenant_id
     ).all()
 
     # Agrupar por categoría
