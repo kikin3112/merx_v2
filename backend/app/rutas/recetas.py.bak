@@ -7,7 +7,7 @@ from uuid import UUID
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from ..datos.db import get_db
@@ -18,7 +18,7 @@ from ..datos.esquemas import (
 )
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
 
 router = APIRouter()
@@ -33,9 +33,9 @@ logger = setup_logger(__name__)
 async def crear_receta(
     receta_data: RecetaCreate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Crea una nueva receta con sus ingredientes.
 
@@ -155,10 +155,7 @@ async def listar_recetas(
     """
     Lista recetas con filtros opcionales.
     """
-    query = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    query = db.query(Recetas).filter(
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
     )
@@ -183,10 +180,7 @@ async def obtener_receta(
     """
     Obtiene una receta por ID con sus ingredientes.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -206,16 +200,13 @@ async def actualizar_receta(
     receta_id: UUID,
     receta_data: RecetaUpdate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Actualiza una receta existente.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -267,18 +258,15 @@ async def actualizar_receta(
 async def eliminar_receta(
     receta_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina una receta (soft delete).
     """
     from datetime import datetime
 
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -305,16 +293,13 @@ async def agregar_ingrediente(
     receta_id: UUID,
     ingrediente_data: RecetaIngredienteCreate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Agrega un ingrediente a una receta existente.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -377,17 +362,14 @@ async def eliminar_ingrediente(
     receta_id: UUID,
     ingrediente_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina un ingrediente de una receta.
     """
     # Verificar receta
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -422,7 +404,8 @@ async def eliminar_ingrediente(
 async def calcular_costo_receta(
     receta_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """
     Calcula el costo detallado de una receta.
@@ -456,7 +439,8 @@ async def producir_desde_receta(
     receta_id: UUID,
     produccion_data: ProduccionRequest,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """
     Produce productos terminados desde una receta.
@@ -469,7 +453,6 @@ async def producir_desde_receta(
 
     **Requiere:** Stock suficiente de todos los ingredientes
     """
-    tenant_id = ctx.tenant_id  # Compatibilidad
     servicio = ServicioInventario(db, tenant_id)
 
     try:
@@ -502,10 +485,7 @@ async def validar_stock_receta(
     Retorna lista de ingredientes faltantes (vacia si hay stock suficiente).
     """
     # Obtener receta
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
+    receta = db.query(Recetas).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)

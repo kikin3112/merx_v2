@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productos, terceros, facturas } from '../api/endpoints';
 import { formatCurrency } from '../utils/format';
 import type { Producto, Tercero, Factura } from '../types';
+import { usePOSStore } from '../stores/posStore';
 
 interface CartItem {
   producto: Producto;
@@ -30,11 +31,22 @@ const emptyClientForm: QuickClientForm = {
 
 export default function POSPage() {
   const queryClient = useQueryClient();
-  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // POS Store persistente
+  const {
+    cart,
+    clienteId,
+    descuentoGlobal,
+    addToCart: addToCartStore,
+    removeFromCart,
+    updateQuantity,
+    setCliente,
+    setDescuento,
+    clearCart
+  } = usePOSStore();
+
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
-  const [clienteId, setClienteId] = useState<string>('');
-  const [descuentoGlobal, setDescuentoGlobal] = useState(0);
   const [mobileTab, setMobileTab] = useState<'productos' | 'carrito'>('productos');
   const [checkoutOk, setCheckoutOk] = useState(false);
   const [lastFactura, setLastFactura] = useState<Factura | null>(null);
@@ -70,7 +82,7 @@ export default function POSPage() {
       }),
     onSuccess: (response) => {
       const newClient = response.data;
-      setClienteId(newClient.id);
+      setCliente(newClient.id);
       setShowQuickClient(false);
       setClientForm(emptyClientForm);
       queryClient.invalidateQueries({ queryKey: ['terceros-clientes'] });
@@ -79,14 +91,14 @@ export default function POSPage() {
   });
 
   // Set default client
-  useMemo(() => {
+  useEffect(() => {
     if (tercerosData?.length && !clienteId) {
       const mostrador = tercerosData.find(t =>
         t.nombre.toLowerCase().includes('mostrador') || t.numero_documento === '222222222222'
       );
-      setClienteId(mostrador?.id || tercerosData[0].id);
+      setCliente(mostrador?.id || tercerosData[0].id);
     }
-  }, [tercerosData, clienteId]);
+  }, [tercerosData, clienteId, setCliente]);
 
   const productosFiltrados = useMemo(() => {
     if (!productosData) return [];
@@ -99,36 +111,18 @@ export default function POSPage() {
     });
   }, [productosData, busqueda, categoriaFiltro]);
 
-  const addToCart = (producto: Producto) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.producto.id === producto.id);
-      if (existing) {
-        return prev.map(item =>
-          item.producto.id === producto.id
-            ? { ...item, cantidad: item.cantidad + 1 }
-            : item
-        );
-      }
-      return [...prev, { producto, cantidad: 1 }];
-    });
+  const handleAddToCart = (producto: Producto) => {
+    addToCartStore(producto);
     // Switch to cart on mobile
     if (window.innerWidth < 1024) setMobileTab('carrito');
   };
 
-  const updateQty = (productoId: string, delta: number) => {
-    setCart(prev =>
-      prev
-        .map(item =>
-          item.producto.id === productoId
-            ? { ...item, cantidad: Math.max(0, item.cantidad + delta) }
-            : item
-        )
-        .filter(item => item.cantidad > 0)
-    );
+  const handleUpdateQty = (productoId: string, newQuantity: number) => {
+    updateQuantity(productoId, newQuantity);
   };
 
-  const removeItem = (productoId: string) => {
-    setCart(prev => prev.filter(item => item.producto.id !== productoId));
+  const handleRemoveItem = (productoId: string) => {
+    removeFromCart(productoId);
   };
 
   const totals = useMemo(() => {
@@ -181,8 +175,7 @@ export default function POSPage() {
     },
     onSuccess: (response) => {
       const factura = response.data;
-      setCart([]);
-      setDescuentoGlobal(0);
+      clearCart();
       setCheckoutOk(true);
       setLastFactura(factura);
       setTimeout(() => { setCheckoutOk(false); setLastFactura(null); }, 10000);
@@ -227,7 +220,7 @@ export default function POSPage() {
         {productosFiltrados.map(p => (
           <button
             key={p.id}
-            onClick={() => addToCart(p)}
+            onClick={() => handleAddToCart(p)}
             className="flex flex-col items-start bg-white rounded-xl border border-gray-200 p-3 text-left hover:border-primary-300 hover:shadow-sm active:scale-95 transition-all min-h-[80px]"
           >
             <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{p.nombre}</p>
@@ -251,7 +244,7 @@ export default function POSPage() {
         <label className="text-xs font-medium text-gray-500 mb-1 block">Cliente</label>
         <select
           value={clienteId}
-          onChange={e => { setClienteId(e.target.value); setShowQuickClient(false); }}
+          onChange={e => { setCliente(e.target.value); setShowQuickClient(false); }}
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500"
         >
           {tercerosData?.map(t => (
@@ -347,7 +340,7 @@ export default function POSPage() {
                   <p className="text-xs text-gray-500">{formatCurrency(item.producto.precio_venta)} c/u</p>
                 </div>
                 <button
-                  onClick={() => removeItem(item.producto.id)}
+                  onClick={() => handleRemoveItem(item.producto.id)}
                   className="text-gray-400 hover:text-red-500 p-1 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -358,14 +351,14 @@ export default function POSPage() {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => updateQty(item.producto.id, -1)}
+                    onClick={() => handleUpdateQty(item.producto.id, item.cantidad - 1)}
                     className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold transition-colors"
                   >
                     -
                   </button>
                   <span className="w-8 text-center text-sm font-semibold">{item.cantidad}</span>
                   <button
-                    onClick={() => updateQty(item.producto.id, 1)}
+                    onClick={() => handleUpdateQty(item.producto.id, item.cantidad + 1)}
                     className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold transition-colors"
                   >
                     +
@@ -396,7 +389,7 @@ export default function POSPage() {
               max={100}
               step={1}
               value={descuentoGlobal}
-              onChange={e => setDescuentoGlobal(Math.min(100, Math.max(0, Number(e.target.value))))}
+              onChange={e => setDescuento(Math.min(100, Math.max(0, Number(e.target.value))))}
               className="w-14 text-right rounded border border-gray-200 px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <span className="text-xs text-gray-400">%</span>
