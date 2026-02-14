@@ -6,7 +6,7 @@ Proporcionan campos comunes para multi-tenancy, auditoría y soft deletes.
 from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm import declared_attr, relationship
 
 
 class TenantMixin:
@@ -117,6 +117,24 @@ class AuditMixin:
             UUID(as_uuid=True),
             ForeignKey("usuarios.id", ondelete="SET NULL"),
             nullable=True
+        )
+
+    @declared_attr
+    def created_by_user(cls):
+        """Relación con el usuario creador (para eager loading)"""
+        return relationship(
+            "Usuarios",
+            foreign_keys=f"[{cls.__name__}.created_by]",
+            lazy="noload"  # Requiere eager loading explícito
+        )
+
+    @declared_attr
+    def updated_by_user(cls):
+        """Relación con el usuario que hizo la última modificación"""
+        return relationship(
+            "Usuarios",
+            foreign_keys=f"[{cls.__name__}.updated_by]",
+            lazy="noload"  # Requiere eager loading explícito
         )
 
 

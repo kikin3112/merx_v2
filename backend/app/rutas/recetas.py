@@ -7,7 +7,7 @@ from uuid import UUID
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel, Field
 
 from ..datos.db import get_db
@@ -155,7 +155,10 @@ async def listar_recetas(
     """
     Lista recetas con filtros opcionales.
     """
-    query = db.query(Recetas).filter(
+    query = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
     )
@@ -180,7 +183,10 @@ async def obtener_receta(
     """
     Obtiene una receta por ID con sus ingredientes.
     """
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -206,7 +212,10 @@ async def actualizar_receta(
     """
     Actualiza una receta existente.
     """
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -266,7 +275,10 @@ async def eliminar_receta(
     """
     from datetime import datetime
 
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -299,7 +311,10 @@ async def agregar_ingrediente(
     """
     Agrega un ingrediente a una receta existente.
     """
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -369,7 +384,10 @@ async def eliminar_ingrediente(
     Elimina un ingrediente de una receta.
     """
     # Verificar receta
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)
@@ -485,7 +503,10 @@ async def validar_stock_receta(
     Retorna lista de ingredientes faltantes (vacia si hay stock suficiente).
     """
     # Obtener receta
-    receta = db.query(Recetas).filter(
+    receta = db.query(Recetas).options(
+        selectinload(Recetas.created_by_user),
+        selectinload(Recetas.updated_by_user)
+    ).filter(
         Recetas.id == receta_id,
         Recetas.tenant_id == tenant_id,
         Recetas.deleted_at.is_(None)

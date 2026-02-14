@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from uuid import UUID
 
@@ -71,7 +71,10 @@ async def listar_compras(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista compras del tenant."""
-    compras = db.query(Compras).filter(
+    compras = db.query(Compras).options(
+        selectinload(Compras.created_by_user),
+        selectinload(Compras.updated_by_user)
+    ).filter(
         Compras.tenant_id == tenant_id
     ).order_by(Compras.fecha_compra.desc()).offset(skip).limit(limit).all()
     return [ComprasResponse.model_validate(c) for c in compras]
@@ -85,7 +88,11 @@ async def obtener_compra(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene una compra por ID."""
-    compra = db.query(Compras).filter(
+    compra = db.query(Compras).options(
+        selectinload(Compras.created_by_user),
+        selectinload(Compras.updated_by_user),
+        selectinload(Compras.detalles)
+    ).filter(
         Compras.id == compra_id,
         Compras.tenant_id == tenant_id
     ).first()

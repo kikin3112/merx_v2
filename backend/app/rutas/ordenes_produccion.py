@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from uuid import UUID
 
@@ -22,7 +22,10 @@ async def listar(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista órdenes de producción del tenant."""
-    return db.query(OrdenesProduccion).filter(
+    return db.query(OrdenesProduccion).options(
+        selectinload(OrdenesProduccion.created_by_user),
+        selectinload(OrdenesProduccion.updated_by_user)
+    ).filter(
         OrdenesProduccion.tenant_id == tenant_id
     ).order_by(OrdenesProduccion.created_at.desc()).offset(skip).limit(limit).all()
 
@@ -55,7 +58,10 @@ async def obtener(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene una orden de producción por ID."""
-    orden = db.query(OrdenesProduccion).filter(
+    orden = db.query(OrdenesProduccion).options(
+        selectinload(OrdenesProduccion.created_by_user),
+        selectinload(OrdenesProduccion.updated_by_user)
+    ).filter(
         OrdenesProduccion.id == orden_id,
         OrdenesProduccion.tenant_id == tenant_id
     ).first()

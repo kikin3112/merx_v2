@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productos } from '../api/endpoints';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatDateTime } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import SearchInput from '../components/ui/SearchInput';
 import type { Producto, ProductoCreate, ProductoUpdate } from '../types';
@@ -175,6 +175,7 @@ export default function ProductosPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Categoria</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-500">Precio Venta</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
               </tr>
             </thead>
@@ -191,6 +192,10 @@ export default function ProductosPage() {
                     }`}>
                       {p.estado ? 'Activo' : 'Inactivo'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-900">{p.created_by?.nombre || 'Sistema'}</div>
+                    <div className="text-xs text-gray-400">{formatDateTime(p.created_at)}</div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button

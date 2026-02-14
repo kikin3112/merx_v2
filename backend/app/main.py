@@ -46,8 +46,9 @@ from .rutas import (
     tenants
 )
 
-# Middleware de contexto de tenant
+# Middleware de contexto de tenant y usuario
 from .middleware.tenant_context import TenantContextMiddleware
+from .middleware.user_context import UserContextMiddleware
 
 # Configuración de Logger
 logger = setup_logger(__name__)
@@ -230,6 +231,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # 3. Tenant Context (para RLS multi-tenant)
 app.add_middleware(TenantContextMiddleware)
+
+# 3.5. User Context (para auditoría automática)
+app.add_middleware(UserContextMiddleware)
 
 # 4. CORS
 app.add_middleware(

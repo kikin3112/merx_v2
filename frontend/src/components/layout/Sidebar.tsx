@@ -15,6 +15,7 @@ import {
   ChartPieIcon,
   CreditCardIcon,
   BriefcaseIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -27,7 +28,7 @@ const navItems = [
   { to: '/crm', label: 'CRM', icon: BriefcaseIcon },
   { to: '/productos', label: 'Productos', icon: CubeIcon },
   { to: '/terceros', label: 'Terceros', icon: UserGroupIcon },
-  { to: '/inventario', label: 'Inventario', icon: BeakerIcon },
+  { to: '/inventario', label: 'Inventario', icon: ArchiveBoxIcon },
   { to: '/recetas', label: 'Recetas', icon: BeakerIcon },
   { to: '/cartera', label: 'Cartera', icon: CreditCardIcon },
   { to: '/contabilidad', label: 'Contabilidad', icon: CalculatorIcon },

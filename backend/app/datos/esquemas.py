@@ -34,6 +34,15 @@ class Token(BaseModel):
 # USUARIOS
 # ============================================================================
 
+class UsuarioMini(BaseModel):
+    """Schema mínimo de usuario para embeddings (creadores, etc.)"""
+    id: UUID
+    nombre: str
+    email: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UsuarioBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     email: EmailStr
@@ -109,7 +118,9 @@ class TerceroResponse(TerceroBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -155,7 +166,9 @@ class ProductoResponse(ProductoBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -204,7 +217,10 @@ class MovimientoInventarioResponse(MovimientoInventarioBase):
     id: UUID
     fecha_movimiento: datetime
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    updated_at: datetime
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -292,7 +308,11 @@ class VentasResponse(BaseModel):
     # Relaciones
     detalles: List[VentasDetalleResponse] = []
 
-    model_config = ConfigDict(from_attributes=True)
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -363,7 +383,12 @@ class ComprasResponse(BaseModel):
     total_compra: Decimal
 
     detalles: List[ComprasDetalleResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -431,7 +456,12 @@ class OrdenesProduccionResponse(BaseModel):
     costo_unitario: Decimal
 
     detalles: List[OrdenesProduccionDetalleResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -492,7 +522,12 @@ class RecetaResponse(RecetaBase):
     costo_total: Optional[Decimal] = None
     costo_unitario: Optional[Decimal] = None
     ingredientes: List[RecetaIngredienteResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -611,7 +646,12 @@ class CotizacionesResponse(BaseModel):
     total_cotizacion: Decimal
 
     detalles: List[CotizacionesDetalleResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -728,7 +768,12 @@ class AsientoContableResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     detalles: List[DetalleAsientoResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ============================================================================
@@ -1246,9 +1291,10 @@ class CrmStageResponse(CrmStageBase):
     pipeline_id: UUID
     requiere_motivo_perdida: bool = False
     dias_estancamiento_alerta: int = 0
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class CrmPipelineResponse(CrmPipelineBase):
@@ -1256,10 +1302,12 @@ class CrmPipelineResponse(CrmPipelineBase):
     id: UUID
     tenant_id: UUID
     created_at: datetime
+    updated_at: datetime
     etapas: List[CrmStageResponse] = []
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Stages
@@ -1308,9 +1356,11 @@ class CrmDealResponse(CrmDealBase):
     tercero_nombre: Optional[str] = None
     usuario_nombre: Optional[str] = None
     stage_nombre: Optional[str] = None
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class CrmDealMoveRequest(BaseModel):
@@ -1352,8 +1402,11 @@ class CrmActivityResponse(BaseModel):
     duracion_minutos: int = 0
     es_automatica: bool = False
     created_at: datetime
+    updated_at: datetime
     # Campo computado
     usuario_nombre: Optional[str] = None
+    # Auditoría
+    created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")
+    updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

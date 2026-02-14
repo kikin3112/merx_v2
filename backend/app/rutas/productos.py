@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from uuid import UUID
 
@@ -91,7 +91,10 @@ async def listar_productos(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista productos con filtros y búsqueda."""
-    query = db.query(Productos).filter(Productos.tenant_id == tenant_id)
+    query = db.query(Productos).options(
+        selectinload(Productos.created_by_user),
+        selectinload(Productos.updated_by_user)
+    ).filter(Productos.tenant_id == tenant_id)
 
     if categoria:
         query = query.filter(Productos.categoria == categoria)
@@ -138,7 +141,10 @@ async def listar_por_categoria(
             detail=f"Categoría inválida. Válidas: {', '.join(categorias_validas)}"
         )
 
-    query = db.query(Productos).filter(
+    query = db.query(Productos).options(
+        selectinload(Productos.created_by_user),
+        selectinload(Productos.updated_by_user)
+    ).filter(
         Productos.tenant_id == tenant_id,
         Productos.categoria == categoria
     )
@@ -165,7 +171,10 @@ async def obtener_producto(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene un producto por ID."""
-    producto = db.query(Productos).filter(
+    producto = db.query(Productos).options(
+        selectinload(Productos.created_by_user),
+        selectinload(Productos.updated_by_user)
+    ).filter(
         Productos.id == producto_id,
         Productos.tenant_id == tenant_id
     ).first()

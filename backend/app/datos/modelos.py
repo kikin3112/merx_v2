@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from .db import Base
-from .mixins import TenantMixin, SoftDeleteMixin
+from .mixins import TenantMixin, SoftDeleteMixin, TenantAuditMixin
 
 
 # ============================================================================
@@ -88,10 +88,10 @@ class Usuarios(Base):
 # MODELO: Terceros
 # ============================================================================
 
-class Terceros(TenantMixin, SoftDeleteMixin, Base):
+class Terceros(TenantAuditMixin, Base):
     """
     Clientes, proveedores y otros terceros.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "terceros"
 
@@ -136,10 +136,10 @@ class Terceros(TenantMixin, SoftDeleteMixin, Base):
 # MODELO: Productos
 # ============================================================================
 
-class Productos(TenantMixin, SoftDeleteMixin, Base):
+class Productos(TenantAuditMixin, Base):
     """
     Productos e insumos del inventario.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "productos"
 
@@ -227,10 +227,10 @@ class Inventarios(TenantMixin, Base):
 # MODELO: MovimientosInventario
 # ============================================================================
 
-class MovimientosInventario(TenantMixin, Base):
+class MovimientosInventario(TenantAuditMixin, Base):
     """
     Historial de movimientos de inventario.
-    Modelo con multi-tenancy.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "movimientos_inventario"
 
@@ -258,10 +258,10 @@ class MovimientosInventario(TenantMixin, Base):
 # MODELO: Ventas
 # ============================================================================
 
-class Ventas(TenantMixin, SoftDeleteMixin, Base):
+class Ventas(TenantAuditMixin, Base):
     """
     Ventas realizadas.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "ventas"
 
@@ -396,10 +396,10 @@ class VentasDetalle(TenantMixin, Base):
 # MODELO: Compras
 # ============================================================================
 
-class Compras(TenantMixin, SoftDeleteMixin, Base):
+class Compras(TenantAuditMixin, Base):
     """
     Compras realizadas a proveedores.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "compras"
 
@@ -524,10 +524,10 @@ class ComprasDetalle(TenantMixin, Base):
 # MODELO: OrdenesProduccion
 # ============================================================================
 
-class OrdenesProduccion(TenantMixin, SoftDeleteMixin, Base):
+class OrdenesProduccion(TenantAuditMixin, Base):
     """
     Órdenes de producción.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "ordenes_produccion"
 
@@ -612,11 +612,11 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
 # MODELO: Recetas (BOM - Bill of Materials para produccion de velas)
 # ============================================================================
 
-class Recetas(TenantMixin, SoftDeleteMixin, Base):
+class Recetas(TenantAuditMixin, Base):
     """
     Recetas para produccion de velas.
     Define los ingredientes necesarios para producir un producto terminado.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "recetas"
 
@@ -733,10 +733,10 @@ class RecetasIngredientes(Base):
 # MODELO: Cotizaciones
 # ============================================================================
 
-class Cotizaciones(TenantMixin, SoftDeleteMixin, Base):
+class Cotizaciones(TenantAuditMixin, Base):
     """
     Cotizaciones a clientes.
-    Modelo con multi-tenancy y soft delete.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "cotizaciones"
 
@@ -927,10 +927,10 @@ class ConfiguracionContable(TenantMixin, Base):
 # MODELO: AsientosContables
 # ============================================================================
 
-class AsientosContables(TenantMixin, Base):
+class AsientosContables(TenantAuditMixin, Base):
     """
     Asientos contables del libro diario.
-    Modelo con multi-tenancy.
+    Modelo con multi-tenancy, soft delete y auditoría completa.
     """
     __tablename__ = "asientos_contables"
 

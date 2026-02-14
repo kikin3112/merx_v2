@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from uuid import UUID
 from decimal import Decimal
@@ -87,7 +87,10 @@ async def listar(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista cotizaciones del tenant."""
-    query = db.query(Cotizaciones).filter(Cotizaciones.tenant_id == tenant_id)
+    query = db.query(Cotizaciones).options(
+        selectinload(Cotizaciones.created_by_user),
+        selectinload(Cotizaciones.updated_by_user)
+    ).filter(Cotizaciones.tenant_id == tenant_id)
     if estado:
         query = query.filter(Cotizaciones.estado == estado)
     items = query.order_by(Cotizaciones.created_at.desc()).offset(skip).limit(limit).all()
@@ -150,7 +153,10 @@ async def obtener(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene una cotización por ID."""
-    cot = db.query(Cotizaciones).filter(
+    cot = db.query(Cotizaciones).options(
+        selectinload(Cotizaciones.created_by_user),
+        selectinload(Cotizaciones.updated_by_user)
+    ).filter(
         Cotizaciones.id == cotizacion_id,
         Cotizaciones.tenant_id == tenant_id
     ).first()

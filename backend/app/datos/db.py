@@ -32,6 +32,14 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
+# ============================================================================
+# AUDIT EVENT LISTENERS
+# ============================================================================
+
+# Importar y registrar los event listeners de auditoría
+from .audit_listeners import register_audit_listeners
+register_audit_listeners(SessionLocal)
+
 
 # ============================================================================
 # AUTO-SET TENANT CONTEXT ON TRANSACTION BEGIN (RLS)
