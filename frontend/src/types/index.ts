@@ -1,3 +1,9 @@
+export interface UsuarioMini {
+  id: string;
+  nombre: string;
+  email: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -85,6 +91,8 @@ export interface Producto {
   estado: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface ProductoCreate {
@@ -138,6 +146,8 @@ export interface Tercero {
   grupo_cliente: string | null;
   created_at: string;
   updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface TerceroCreate {
@@ -189,6 +199,10 @@ export interface Venta {
   total_iva: number;
   total_venta: number;
   detalles: VentaDetalle[];
+  created_at: string;
+  updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface VentaDetalle {
@@ -225,6 +239,10 @@ export interface Cotizacion {
   total_iva: number;
   total_cotizacion: number;
   detalles: CotizacionDetalle[];
+  created_at: string;
+  updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface CotizacionDetalle {
@@ -252,6 +270,10 @@ export interface AsientoContable {
   documento_referencia: string | null;
   estado: string;
   detalles: DetalleAsiento[];
+  created_at: string;
+  updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface DetalleAsiento {
@@ -379,6 +401,8 @@ export interface Receta {
   ingredientes: RecetaIngrediente[];
   created_at: string;
   updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 export interface RecetaCosto {
@@ -446,6 +470,9 @@ export interface MovimientoInventario {
   observaciones: string | null;
   fecha_movimiento: string;
   created_at: string;
+  updated_at: string;
+  created_by?: UsuarioMini;
+  updated_by?: UsuarioMini;
 }
 
 // ---- Reportes Avanzados ----

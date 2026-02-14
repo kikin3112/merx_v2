@@ -8,7 +8,7 @@ from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import text
 
 from ..datos.modelos import (
@@ -57,7 +57,10 @@ class ServicioInventario:
         limite: int = 100
     ) -> List[MovimientosInventario]:
         """Lista movimientos de inventario con filtros opcionales."""
-        query = self.db.query(MovimientosInventario).filter(
+        query = self.db.query(MovimientosInventario).options(
+            selectinload(MovimientosInventario.created_by_user),
+            selectinload(MovimientosInventario.updated_by_user)
+        ).filter(
             MovimientosInventario.tenant_id == self.tenant_id
         )
 

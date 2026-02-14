@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 from uuid import UUID
 from datetime import date
@@ -27,7 +27,10 @@ async def listar_asientos(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Lista asientos contables del tenant con filtros."""
-    query = db.query(AsientosContables).filter(
+    query = db.query(AsientosContables).options(
+        selectinload(AsientosContables.created_by_user),
+        selectinload(AsientosContables.updated_by_user)
+    ).filter(
         AsientosContables.tenant_id == tenant_id
     )
 
@@ -51,7 +54,10 @@ async def obtener_asiento(
         tenant_id: UUID = Depends(get_tenant_id_from_token)
 ):
     """Obtiene un asiento contable con sus detalles."""
-    asiento = db.query(AsientosContables).filter(
+    asiento = db.query(AsientosContables).options(
+        selectinload(AsientosContables.created_by_user),
+        selectinload(AsientosContables.updated_by_user)
+    ).filter(
         AsientosContables.id == asiento_id,
         AsientosContables.tenant_id == tenant_id
     ).first()

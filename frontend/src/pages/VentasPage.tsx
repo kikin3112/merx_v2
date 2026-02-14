@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ventas } from '../api/endpoints';
-import { formatCurrency, formatDate, statusColor } from '../utils/format';
+import { formatCurrency, formatDate, formatDateTime, statusColor } from '../utils/format';
 import type { Venta } from '../types';
 import DocumentForm from '../components/DocumentForm';
 import type { DocumentFormData } from '../components/DocumentForm';
@@ -124,6 +124,7 @@ export default function VentasPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
               </tr>
             </thead>
@@ -137,6 +138,10 @@ export default function VentasPage() {
                     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(v.estado)}`}>
                       {v.estado}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-900">{v.created_by?.nombre || 'Sistema'}</div>
+                    <div className="text-xs text-gray-400">{formatDateTime(v.created_at)}</div>
                   </td>
                   <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1">

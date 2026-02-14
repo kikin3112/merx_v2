@@ -6,7 +6,7 @@ Usa @hybrid_property de modelos para cálculos automáticos.
 from decimal import Decimal
 from datetime import datetime
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 from fastapi import HTTPException
 
@@ -110,7 +110,10 @@ def listar_ventas(
         estado: str = None
 ) -> List[Ventas]:
     """Lista ventas con filtros opcionales."""
-    query = db.query(Ventas).filter(Ventas.tenant_id == tenant_id)
+    query = db.query(Ventas).options(
+        selectinload(Ventas.created_by_user),
+        selectinload(Ventas.updated_by_user)
+    ).filter(Ventas.tenant_id == tenant_id)
 
     if tercero_id:
         query = query.filter(Ventas.tercero_id == tercero_id)
@@ -129,7 +132,11 @@ def listar_ventas(
 
 def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
     """Obtiene una venta por ID."""
-    venta = db.query(Ventas).filter(
+    venta = db.query(Ventas).options(
+        selectinload(Ventas.created_by_user),
+        selectinload(Ventas.updated_by_user),
+        selectinload(Ventas.detalles)
+    ).filter(
         Ventas.id == venta_id,
         Ventas.tenant_id == tenant_id
     ).first()

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cotizaciones } from '../api/endpoints';
-import { formatCurrency, formatDate, statusColor } from '../utils/format';
+import { formatCurrency, formatDate, formatDateTime, statusColor } from '../utils/format';
 import type { Cotizacion } from '../types';
 import DocumentForm from '../components/DocumentForm';
 import type { DocumentFormData } from '../components/DocumentForm';
@@ -96,6 +96,7 @@ export default function CotizacionesPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Vencimiento</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
               </tr>
             </thead>
@@ -120,6 +121,10 @@ export default function CotizacionesPage() {
                     >
                       {c.estado}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-900">{c.created_by?.nombre || 'Sistema'}</div>
+                    <div className="text-xs text-gray-400">{formatDateTime(c.created_at)}</div>
                   </td>
                   <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventarios, productos } from '../api/endpoints';
-import { formatCurrency, formatNumber, formatDate } from '../utils/format';
+import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import type { Inventario, MovimientoInventario, Producto } from '../types';
 
@@ -171,6 +171,7 @@ export default function InventarioPage() {
                   <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Unit.</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Observaciones</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
                 </tr>
               </thead>
               <tbody>
@@ -192,6 +193,10 @@ export default function InventarioPage() {
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{m.documento_referencia || '-'}</td>
                       <td className="px-4 py-3 text-xs text-gray-500 max-w-48 truncate">{m.observaciones || '-'}</td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-900">{m.created_by?.nombre || 'Sistema'}</div>
+                        <div className="text-xs text-gray-400">{formatDateTime(m.created_at)}</div>
+                      </td>
                     </tr>
                   );
                 })}

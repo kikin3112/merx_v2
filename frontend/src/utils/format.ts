@@ -22,6 +22,14 @@ export function formatDate(date: string): string {
   }).format(new Date(date));
 }
 
+export function formatDateTime(isoString: string): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Bogota'
+  }).format(new Date(isoString));
+}
+
 export function statusColor(estado: string): string {
   const colors: Record<string, string> = {
     PENDIENTE: 'bg-yellow-100 text-yellow-800',
