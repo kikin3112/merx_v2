@@ -13,6 +13,8 @@ import type {
   Factura,
   Cotizacion,
   AsientoContable,
+  ConfiguracionContable,
+  PeriodoContable,
   BalancePrueba,
   DashboardKPIs,
   VentaDiaria,
@@ -174,6 +176,24 @@ export const contabilidad = {
   crearAsiento: (data: unknown) => client.post<AsientoContable>('/contabilidad/asientos', data),
   balancePrueba: (params?: Record<string, unknown>) =>
     client.get<BalancePrueba>('/contabilidad/balance-prueba', { params }),
+};
+
+// Configuración Contable
+export const configuracionContable = {
+  list: () =>
+    client.get<ConfiguracionContable[]>('/contabilidad/configuracion/'),
+  update: (concepto: string, data: unknown) =>
+    client.put<ConfiguracionContable>(`/contabilidad/configuracion/${concepto}`, data),
+};
+
+// Períodos Contables
+export const periodosContables = {
+  list: () =>
+    client.get<PeriodoContable[]>('/contabilidad/periodos/'),
+  cerrar: (anio: number, mes: number) =>
+    client.post<PeriodoContable>(`/contabilidad/periodos/${anio}/${mes}/cerrar`),
+  reabrir: (anio: number, mes: number) =>
+    client.post<PeriodoContable>(`/contabilidad/periodos/${anio}/${mes}/reabrir`),
 };
 
 // Tenants (superadmin)

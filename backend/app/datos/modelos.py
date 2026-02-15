@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 
 from sqlalchemy import (
     Column, Integer, String, Boolean, ForeignKey, Numeric,
-    DateTime, Date, Text, CheckConstraint, Index, func, Enum
+    DateTime, Date, Text, CheckConstraint, Index, UniqueConstraint, func, Enum
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -924,6 +924,39 @@ class ConfiguracionContable(TenantMixin, Base):
 
 
 # ============================================================================
+# MODELO: PeriodosContables
+# ============================================================================
+
+class PeriodosContables(TenantMixin, Base):
+    """
+    Períodos contables mensuales.
+    Controla si se pueden registrar asientos en un mes/año dado.
+    """
+    __tablename__ = "periodos_contables"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    anio = Column(Integer, nullable=False)
+    mes = Column(Integer, nullable=False)
+    estado = Column(String(20), nullable=False, default="ABIERTO")
+    fecha_cierre = Column(DateTime, nullable=True)
+    cerrado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    usuario_cierre = relationship("Usuarios", foreign_keys=[cerrado_por])
+
+    __table_args__ = (
+        UniqueConstraint('tenant_id', 'anio', 'mes', name='uq_periodos_tenant_anio_mes'),
+        CheckConstraint('mes >= 1 AND mes <= 12', name='ck_periodos_mes_valid'),
+        CheckConstraint(
+            "estado IN ('ABIERTO', 'CERRADO_PARCIAL', 'CERRADO')",
+            name='ck_periodos_estado_valid'
+        ),
+    )
+
+
+# ============================================================================
 # MODELO: AsientosContables
 # ============================================================================
 
@@ -941,15 +974,25 @@ class AsientosContables(TenantAuditMixin, Base):
     concepto = Column(String(200), nullable=False)
     documento_referencia = Column(String(100))
     estado = Column(String(50), nullable=False, default="ACTIVO")
+    periodo_id = Column(UUID(as_uuid=True), ForeignKey("periodos_contables.id", ondelete="RESTRICT"), nullable=True)
+    tercero_id = Column(UUID(as_uuid=True), ForeignKey("terceros.id", ondelete="RESTRICT"), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relaciones
     detalles = relationship("DetallesAsiento", back_populates="asiento", cascade="all, delete-orphan")
+    periodo = relationship("PeriodosContables")
+    tercero = relationship("Terceros", lazy="joined")
+
+    @hybrid_property
+    def tercero_nombre(self) -> str:
+        return self.tercero.nombre if self.tercero else None
 
     __table_args__ = (
         Index('idx_asientos_tenant_fecha', 'tenant_id', 'fecha'),
         Index('idx_asientos_tenant_numero', 'tenant_id', 'numero_asiento', unique=True),
+        Index('idx_asientos_tenant_tercero', 'tenant_id', 'tercero_id'),
+        Index('idx_asientos_periodo', 'periodo_id'),
         CheckConstraint(
             "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'OTRO')",
             name="check_tipo_asiento_valido"

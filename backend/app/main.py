@@ -58,6 +58,7 @@ from .rutas import (
     auth,
     cartera,
     compras,
+    configuracion_contable,
     contabilidad,
     cotizaciones,
     crm,
@@ -67,6 +68,7 @@ from .rutas import (
     inventarios,
     medios_pago,
     ordenes_produccion,
+    periodos_contables,
     productos,
     recetas,
     reportes,
@@ -490,6 +492,8 @@ app.include_router(inventarios.router, prefix=f"{prefix}/inventarios", tags=["In
 # Contabilidad
 app.include_router(cuentas_contables.router, prefix=f"{prefix}/cuentas-contables", tags=["Contabilidad"])
 app.include_router(contabilidad.router, prefix=f"{prefix}/contabilidad", tags=["Contabilidad"])
+app.include_router(configuracion_contable.router, prefix=f"{prefix}/contabilidad/configuracion", tags=["Contabilidad"])
+app.include_router(periodos_contables.router, prefix=f"{prefix}/contabilidad/periodos", tags=["Contabilidad"])
 
 # Cartera y finanzas
 app.include_router(cartera.router, prefix=f"{prefix}/cartera", tags=["Cartera"])
