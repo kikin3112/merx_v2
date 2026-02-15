@@ -12,9 +12,10 @@ from sqlalchemy import func
 
 from ..datos.modelos import (
     AsientosContables, DetallesAsiento, CuentasContables,
-    ConfiguracionContable, Usuarios
+    ConfiguracionContable, PeriodosContables, Usuarios
 )
 from ..datos.esquemas import AsientoContableCreate
+from ..utils.constantes_contables import VENTA_CONTADO, IVA_VENTAS
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.logger import setup_logger
 
@@ -35,13 +36,74 @@ class ServicioContabilidad:
             CuentasContables.codigo == codigo
         ).first()
 
+    def _obtener_cuenta_configurada(self, concepto: str, lado: str = "debito") -> CuentasContables:
+        """
+        Busca en ConfiguracionContable por concepto y tenant_id.
+        lado: "debito" o "credito" — determina qué cuenta retornar.
+        Raises ValueError si no encuentra.
+        """
+        config = self.db.query(ConfiguracionContable).filter(
+            ConfiguracionContable.tenant_id == self.tenant_id,
+            ConfiguracionContable.concepto == concepto
+        ).first()
+
+        if not config:
+            raise ValueError(
+                f"Configuración contable '{concepto}' no encontrada para este tenant. "
+                f"Configure las cuentas en Contabilidad > Configuración."
+            )
+
+        cuenta_id = config.cuenta_debito_id if lado == "debito" else config.cuenta_credito_id
+        if not cuenta_id:
+            raise ValueError(f"La configuración '{concepto}' no tiene cuenta de {lado} asignada.")
+
+        cuenta = self.db.query(CuentasContables).filter(
+            CuentasContables.id == cuenta_id,
+            CuentasContables.tenant_id == self.tenant_id
+        ).first()
+
+        if not cuenta:
+            raise ValueError(f"La cuenta configurada para '{concepto}' ({lado}) no existe.")
+
+        return cuenta
+
+    def _validar_periodo(self, fecha: date) -> UUID:
+        """
+        Valida que el período de la fecha esté abierto.
+        Auto-crea período ABIERTO si no existe.
+        Retorna periodo_id.
+        """
+        anio, mes = fecha.year, fecha.month
+
+        periodo = self.db.query(PeriodosContables).filter(
+            PeriodosContables.tenant_id == self.tenant_id,
+            PeriodosContables.anio == anio,
+            PeriodosContables.mes == mes
+        ).first()
+
+        if not periodo:
+            periodo = PeriodosContables(
+                tenant_id=self.tenant_id,
+                anio=anio,
+                mes=mes,
+                estado="ABIERTO"
+            )
+            self.db.add(periodo)
+            self.db.flush()
+
+        if periodo.estado == "CERRADO":
+            raise ValueError(f"El período {mes}/{anio} está cerrado. No se pueden registrar movimientos.")
+
+        return periodo.id
+
     def crear_asiento(
         self,
         fecha: date,
         tipo_asiento: str,
         concepto: str,
         detalles: List[dict],
-        documento_referencia: Optional[str] = None
+        documento_referencia: Optional[str] = None,
+        tercero_id: Optional[UUID] = None
     ) -> AsientosContables:
         """
         Crea un asiento contable validando que esté balanceado.
@@ -52,6 +114,7 @@ class ServicioContabilidad:
             concepto: Descripción del asiento
             detalles: Lista de dicts con {cuenta_id, debito, credito, descripcion}
             documento_referencia: Número de documento origen
+            tercero_id: UUID del tercero asociado
 
         Returns:
             AsientoContable creado
@@ -74,6 +137,9 @@ class ServicioContabilidad:
         if total_debito == 0:
             raise ValueError("El asiento no puede tener todos los valores en cero")
 
+        # Validar período contable
+        periodo_id = self._validar_periodo(fecha)
+
         # Generar número
         numero = generar_numero_secuencia(self.db, 'ASIENTOS', self.tenant_id)
 
@@ -84,7 +150,9 @@ class ServicioContabilidad:
             tipo_asiento=tipo_asiento,
             concepto=concepto,
             documento_referencia=documento_referencia,
-            estado="ACTIVO"
+            estado="ACTIVO",
+            periodo_id=periodo_id,
+            tercero_id=tercero_id
         )
         self.db.add(asiento)
         self.db.flush()
@@ -122,26 +190,19 @@ class ServicioContabilidad:
         subtotal: Decimal,
         total_iva: Decimal,
         total: Decimal,
-        documento_referencia: str
-    ) -> Optional[AsientosContables]:
+        documento_referencia: str,
+        tercero_id: Optional[UUID] = None
+    ) -> AsientosContables:
         """
         Crea asiento contable automático para una venta/factura.
+        Usa cuentas de ConfiguracionContable (concepto VENTA_CONTADO e IVA_VENTAS).
 
-        DEBE: 1105 Caja (total)
-        HABER: 4135 Comercio (subtotal)
-        HABER: 2408 IVA por pagar (iva) -- si hay IVA
+        DEBE: Cuenta configurada VENTA_CONTADO.debito (ej: 1105 Caja)
+        HABER: Cuenta configurada VENTA_CONTADO.credito (ej: 4135 Ventas)
+        HABER: Cuenta configurada IVA_VENTAS.credito (ej: 2408 IVA) -- si hay IVA
         """
-        cuenta_caja = self._obtener_cuenta_por_codigo("1105")
-        cuenta_ventas = self._obtener_cuenta_por_codigo("4135")
-        cuenta_iva = self._obtener_cuenta_por_codigo("2408")
-
-        if not cuenta_caja or not cuenta_ventas:
-            logger.warning(
-                f"No se puede crear asiento de venta: faltan cuentas contables "
-                f"(1105={'OK' if cuenta_caja else 'FALTA'}, "
-                f"4135={'OK' if cuenta_ventas else 'FALTA'})"
-            )
-            return None
+        cuenta_caja = self._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
+        cuenta_ventas = self._obtener_cuenta_configurada(VENTA_CONTADO, "credito")
 
         # Ingresos netos = total - IVA (garantiza balance con descuentos globales/línea)
         ingresos_netos = total - total_iva
@@ -161,7 +222,8 @@ class ServicioContabilidad:
             }
         ]
 
-        if total_iva > 0 and cuenta_iva:
+        if total_iva > 0:
+            cuenta_iva = self._obtener_cuenta_configurada(IVA_VENTAS, "credito")
             detalles.append({
                 "cuenta_id": cuenta_iva.id,
                 "debito": Decimal("0"),
@@ -174,7 +236,8 @@ class ServicioContabilidad:
             tipo_asiento="VENTAS",
             concepto=f"Venta según {documento_referencia}",
             detalles=detalles,
-            documento_referencia=documento_referencia
+            documento_referencia=documento_referencia,
+            tercero_id=tercero_id
         )
 
     def crear_asiento_anulacion_venta(
@@ -183,18 +246,15 @@ class ServicioContabilidad:
         subtotal: Decimal,
         total_iva: Decimal,
         total: Decimal,
-        documento_referencia: str
-    ) -> Optional[AsientosContables]:
+        documento_referencia: str,
+        tercero_id: Optional[UUID] = None
+    ) -> AsientosContables:
         """
         Crea asiento contable de reversión para anulación de venta.
-        Invierte el asiento original.
+        Invierte el asiento original usando cuentas de ConfiguracionContable.
         """
-        cuenta_caja = self._obtener_cuenta_por_codigo("1105")
-        cuenta_ventas = self._obtener_cuenta_por_codigo("4135")
-        cuenta_iva = self._obtener_cuenta_por_codigo("2408")
-
-        if not cuenta_caja or not cuenta_ventas:
-            return None
+        cuenta_caja = self._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
+        cuenta_ventas = self._obtener_cuenta_configurada(VENTA_CONTADO, "credito")
 
         # Ingresos netos = total - IVA (garantiza balance con descuentos globales/línea)
         ingresos_netos = total - total_iva
@@ -214,7 +274,8 @@ class ServicioContabilidad:
             }
         ]
 
-        if total_iva > 0 and cuenta_iva:
+        if total_iva > 0:
+            cuenta_iva = self._obtener_cuenta_configurada(IVA_VENTAS, "credito")
             detalles.append({
                 "cuenta_id": cuenta_iva.id,
                 "debito": total_iva,
@@ -227,7 +288,8 @@ class ServicioContabilidad:
             tipo_asiento="VENTAS",
             concepto=f"Anulación venta {documento_referencia}",
             detalles=detalles,
-            documento_referencia=f"ANUL-{documento_referencia}"
+            documento_referencia=f"ANUL-{documento_referencia}",
+            tercero_id=tercero_id
         )
 
     def obtener_balance_prueba(

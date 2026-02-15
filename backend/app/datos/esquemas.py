@@ -707,8 +707,32 @@ class ConfiguracionContableUpdate(BaseModel):
     descripcion: Optional[str] = None
 
 
-class ConfiguracionContableResponse(ConfiguracionContableBase):
+class ConfiguracionContableResponse(BaseModel):
     id: UUID
+    concepto: str
+    cuenta_debito_id: Optional[UUID] = None
+    cuenta_credito_id: Optional[UUID] = None
+    descripcion: Optional[str] = None
+    cuenta_debito_codigo: Optional[str] = None
+    cuenta_debito_nombre: Optional[str] = None
+    cuenta_credito_codigo: Optional[str] = None
+    cuenta_credito_nombre: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# PERÍODOS CONTABLES
+# ============================================================================
+
+class PeriodoContableResponse(BaseModel):
+    id: UUID
+    anio: int
+    mes: int
+    estado: str
+    fecha_cierre: Optional[datetime] = None
+    total_asientos: int = 0
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -750,6 +774,7 @@ class AsientoContableCreate(BaseModel):
     tipo_asiento: str
     concepto: str
     documento_referencia: Optional[str] = None
+    tercero_id: Optional[UUID] = None
     detalles: List[DetalleAsientoCreate]
 
 
@@ -765,6 +790,9 @@ class AsientoContableResponse(BaseModel):
     concepto: str
     documento_referencia: Optional[str] = None
     estado: str
+    periodo_id: Optional[UUID] = None
+    tercero_id: Optional[UUID] = None
+    tercero_nombre: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     detalles: List[DetalleAsientoResponse] = []

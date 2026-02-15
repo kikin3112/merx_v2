@@ -341,7 +341,8 @@ async def facturar_venta_endpoint(
         subtotal=venta.subtotal,
         total_iva=venta.total_iva,
         total=venta.total_venta,
-        documento_referencia=venta.numero_venta
+        documento_referencia=venta.numero_venta,
+        tercero_id=venta.tercero_id
     )
 
     # Generar PDF

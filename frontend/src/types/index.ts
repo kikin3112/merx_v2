@@ -269,11 +269,39 @@ export interface AsientoContable {
   concepto: string;
   documento_referencia: string | null;
   estado: string;
+  periodo_id: string | null;
+  tercero_id: string | null;
+  tercero_nombre?: string;
   detalles: DetalleAsiento[];
   created_at: string;
   updated_at: string;
   created_by?: UsuarioMini;
   updated_by?: UsuarioMini;
+}
+
+export interface ConfiguracionContable {
+  id: string;
+  concepto: string;
+  cuenta_debito_id: string | null;
+  cuenta_credito_id: string | null;
+  cuenta_debito_codigo?: string;
+  cuenta_debito_nombre?: string;
+  cuenta_credito_codigo?: string;
+  cuenta_credito_nombre?: string;
+  descripcion: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PeriodoContable {
+  id: string;
+  anio: number;
+  mes: number;
+  estado: 'ABIERTO' | 'CERRADO_PARCIAL' | 'CERRADO';
+  fecha_cierre: string | null;
+  total_asientos: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DetalleAsiento {

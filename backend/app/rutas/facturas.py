@@ -232,7 +232,8 @@ async def pos_factura(
         subtotal=factura.subtotal,
         total_iva=factura.total_iva,
         total=factura.total_venta,
-        documento_referencia=factura.numero_venta
+        documento_referencia=factura.numero_venta,
+        tercero_id=factura.tercero_id
     )
 
     # Generar PDF
@@ -455,7 +456,8 @@ async def emitir_factura(
         subtotal=factura.subtotal,
         total_iva=factura.total_iva,
         total=factura.total_venta,
-        documento_referencia=factura.numero_venta
+        documento_referencia=factura.numero_venta,
+        tercero_id=factura.tercero_id
     )
 
     # Generar PDF y subir a S3 si está habilitado
@@ -580,7 +582,8 @@ async def anular_factura(
             subtotal=factura.subtotal,
             total_iva=factura.total_iva,
             total=factura.total_venta,
-            documento_referencia=factura.numero_venta
+            documento_referencia=factura.numero_venta,
+            tercero_id=factura.tercero_id
         )
 
     factura.estado = "ANULADA"

@@ -91,7 +91,8 @@ async def crear_asiento(
         tipo_asiento=data.tipo_asiento,
         concepto=data.concepto,
         detalles=detalles,
-        documento_referencia=data.documento_referencia
+        documento_referencia=data.documento_referencia,
+        tercero_id=data.tercero_id
     )
 
     db.commit()
