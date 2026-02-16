@@ -4,6 +4,17 @@
 
 Sistema de reset de base de datos y wizard de inicialización de tenants para Chandelier ERP/POS. Permite limpiar el sistema para producción y ofrece un flujo de onboarding progresivo donde el superadmin o el dueño de empresa configura completamente un tenant — datos de empresa, catálogo de productos, clientes, inventario, contabilidad de apertura y migración de historial — dejándolo listo para operar desde el día 1.
 
+## Current Milestone: v1.0 Reset & Tenant Onboarding
+
+**Goal:** Preparar Chandelier para producción con reset de datos de desarrollo y wizard de onboarding que permita a cualquier empresa configurarse completamente importando sus datos desde Excel.
+
+**Target features:**
+- Reset de base de datos (conservar schema, PUC, planes, superadmin)
+- Wizard de onboarding progresivo (3 pasos obligatorios + 4 opcionales)
+- Importación Excel con preview y validación
+- Templates descargables con ejemplos
+- Flujo usable por superadmin y dueño de empresa
+
 ## Core Value
 
 Un tenant debe poder pasar de "cuenta creada" a "empresa operando" en menos de 30 minutos, sin necesidad de soporte técnico, importando sus datos reales desde Excel.
@@ -89,4 +100,4 @@ Chandelier está al ~90% de completitud para MVP. El backend tiene 22 routers, e
 | Excel como formato principal | Es lo que usan las microempresas colombianas | — Pending |
 
 ---
-*Last updated: 2026-02-15 after initialization*
+*Last updated: 2026-02-15 after milestone v1.0 started*
