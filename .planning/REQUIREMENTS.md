@@ -62,30 +62,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RESET-01 | — | Pending |
-| RESET-02 | — | Pending |
-| RESET-03 | — | Pending |
-| RESET-04 | — | Pending |
-| IMPORT-01 | — | Pending |
-| IMPORT-02 | — | Pending |
-| IMPORT-03 | — | Pending |
-| IMPORT-04 | — | Pending |
-| IMPORT-05 | — | Pending |
-| WIZARD-01 | — | Pending |
-| WIZARD-02 | — | Pending |
-| WIZARD-03 | — | Pending |
-| WIZARD-04 | — | Pending |
-| WIZARD-05 | — | Pending |
-| WIZARD-06 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
+| RESET-01 | Phase 1 | Pending |
+| RESET-02 | Phase 1 | Pending |
+| RESET-03 | Phase 1 | Pending |
+| RESET-04 | Phase 1 | Pending |
+| IMPORT-01 | Phase 1 | Pending |
+| IMPORT-02 | Phase 2 | Pending |
+| IMPORT-03 | Phase 1 | Pending |
+| IMPORT-04 | Phase 2 | Pending |
+| IMPORT-05 | Phase 2 | Pending |
+| WIZARD-01 | Phase 4 | Pending |
+| WIZARD-02 | Phase 4 | Pending |
+| WIZARD-03 | Phase 4 | Pending |
+| WIZARD-04 | Phase 5 | Pending |
+| WIZARD-05 | Phase 5 | Pending |
+| WIZARD-06 | Phase 6 | Pending |
+| UX-01 | Phase 6 | Pending |
+| UX-02 | Phase 6 | Pending |
+| UX-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 (pending roadmap creation)
+- Mapped to phases: 18
+- Unmapped: 0 (100% coverage)
 
 ---
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-15 after initial definition*
+*Last updated: 2026-02-15 after roadmap creation*
