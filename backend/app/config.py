@@ -109,7 +109,9 @@ class Settings(BaseSettings):
     )
 
     ALLOWED_HOSTS: str = Field(
-        default="localhost,127.0.0.1,0.0.0.0",
+        # TODO: Aterrizar esto a dominios específicos en producción.
+        # Se agrega '*' temporalmente para permitir health checks de Railway.
+        default="localhost,127.0.0.1,0.0.0.0,*",
         description="Hosts permitidos para TrustedHostMiddleware (separados por coma)",
     )
 
