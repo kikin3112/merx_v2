@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["python312", "gcc", "postgresql"]
+nixPkgs = ["python312", "python312Packages.pip", "gcc", "postgresql"]
 
 [phases.install]
-cmds = ["pip install uv", "uv sync --no-dev"]
+cmds = ["python3.12 -m pip install uv", "uv sync --no-dev"]
 
 [phases.build]
 cmds = ["echo 'Build complete'"]
