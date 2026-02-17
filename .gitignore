@@ -57,6 +57,8 @@ Thumbs.db # Windows
 .env
 .env.local
 .env.*.local
+.env.production
+.env.railway
 
 # Python version management
 .python-version
