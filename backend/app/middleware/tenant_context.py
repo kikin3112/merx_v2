@@ -127,6 +127,10 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         """
         path = request.url.path
 
+        # Allow OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Verificar si la ruta está excluida
         if self._is_excluded_path(path):
             return await call_next(request)
