@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { crm } from '../../api/endpoints';
-import type { CrmDeal, CrmActivity, TipoActividadCRM } from '../../types';
+import type { CrmDeal, TipoActividadCRM } from '../../types';
 import ActivityFeed from './ActivityFeed';
 
 interface DealDetailModalProps {
