@@ -25,6 +25,8 @@ class UserContextMiddleware(BaseHTTPMiddleware):
     EXCLUDED_PATHS = {
         "/",
         "/health",
+        "/health/ready",
+        "/health/startup",
         "/api/v1/docs",
         "/api/v1/redoc",
         "/api/v1/openapi.json",
@@ -54,12 +56,12 @@ class UserContextMiddleware(BaseHTTPMiddleware):
 
             # El user_id se establece en request.state.current_user cuando
             # el dependency get_current_user se ejecuta en las rutas protegidas
-            if hasattr(request.state, 'current_user'):
+            if hasattr(request.state, "current_user"):
                 user = request.state.current_user
-                if hasattr(user, 'id'):
+                if hasattr(user, "id"):
                     user_id = user.id
-                elif isinstance(user, dict) and 'id' in user:
-                    user_id = user['id']
+                elif isinstance(user, dict) and "id" in user:
+                    user_id = user["id"]
 
             # Establecer en ContextVar si existe
             if user_id:

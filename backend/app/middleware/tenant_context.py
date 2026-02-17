@@ -35,18 +35,19 @@ def _is_tenant_in_maintenance(tenant_id: UUID) -> bool:
     if key in _MAINTENANCE_CACHE:
         estado, ts = _MAINTENANCE_CACHE[key]
         if now - ts < _MAINTENANCE_CACHE_TTL:
-            return estado == 'mantenimiento'
+            return estado == "mantenimiento"
 
     # Cache miss — query DB synchronously (short query, acceptable latency)
     try:
         from ..datos.db import SessionLocal
         from ..datos.modelos_tenant import Tenants
+
         db = SessionLocal()
         try:
             row = db.query(Tenants.estado).filter(Tenants.id == tenant_id).first()
-            estado = row[0] if row else 'activo'
+            estado = row[0] if row else "activo"
             _MAINTENANCE_CACHE[key] = (estado, now)
-            return estado == 'mantenimiento'
+            return estado == "mantenimiento"
         finally:
             db.close()
     except Exception:
@@ -57,10 +58,11 @@ def invalidate_maintenance_cache(tenant_id: UUID) -> None:
     """Call this when tenant estado changes to ensure fresh reads."""
     _MAINTENANCE_CACHE.pop(str(tenant_id), None)
 
+
 logger = setup_logger(__name__)
 
 # ContextVar para almacenar el tenant_id del request actual
-_current_tenant_id: ContextVar[Optional[UUID]] = ContextVar('current_tenant_id', default=None)
+_current_tenant_id: ContextVar[Optional[UUID]] = ContextVar("current_tenant_id", default=None)
 
 
 def get_current_tenant_id() -> Optional[UUID]:
@@ -95,6 +97,8 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     EXCLUDED_PATHS = {
         "/",
         "/health",
+        "/health/ready",
+        "/health/startup",
         "/api/v1/docs",
         "/api/v1/redoc",
         "/api/v1/openapi.json",
@@ -111,7 +115,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     # Prefijos que no requieren tenant_id
     EXCLUDED_PREFIXES = (
         "/api/v1/superadmin/",  # Rutas de superadmin
-        "/api/v1/tenants/",     # Tenant management (superadmin + public routes)
+        "/api/v1/tenants/",  # Tenant management (superadmin + public routes)
     )
 
     async def dispatch(self, request: Request, call_next):
@@ -133,20 +137,14 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         if not tenant_id_header:
             # Para rutas no excluidas, el header es requerido
             logger.warning(f"Request sin X-Tenant-ID: {request.method} {path}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Header X-Tenant-ID es requerido"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Tenant-ID es requerido")
 
         # Validar formato UUID
         try:
             tenant_id = UUID(tenant_id_header)
         except ValueError:
             logger.warning(f"X-Tenant-ID inválido: {tenant_id_header}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="X-Tenant-ID debe ser un UUID válido"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Tenant-ID debe ser un UUID válido")
 
         # Establecer en ContextVar
         set_current_tenant_id(tenant_id)
@@ -163,8 +161,8 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                     status_code=503,
                     content={
                         "detail": "El tenant está en modo mantenimiento. "
-                                  "Las escrituras están temporalmente bloqueadas. Intente más tarde."
-                    }
+                        "Las escrituras están temporalmente bloqueadas. Intente más tarde."
+                    },
                 )
 
         try:
@@ -207,10 +205,7 @@ def set_tenant_context_for_session(db: Session, tenant_id: UUID) -> None:
         ```
     """
     try:
-        db.execute(
-            text("SET LOCAL app.tenant_id_actual = :tenant_id"),
-            {"tenant_id": str(tenant_id)}
-        )
+        db.execute(text("SET LOCAL app.tenant_id_actual = :tenant_id"), {"tenant_id": str(tenant_id)})
         logger.debug(f"PostgreSQL tenant context establecido: {tenant_id}")
     except Exception as e:
         logger.error(f"Error estableciendo tenant context: {e}")
