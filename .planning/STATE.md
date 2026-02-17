@@ -2,7 +2,7 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-15)
+See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Un tenant debe poder pasar de "cuenta creada" a "empresa operando" en menos de 30 minutos, sin necesidad de soporte técnico, importando sus datos reales desde Excel.
 **Current focus:** Phase 1 - Foundation & Reset
@@ -12,9 +12,16 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 Phase: 1 of 6 (Foundation & Reset)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-02-15 — Roadmap created for milestone v1.0
+Last activity: 2026-02-17 — Tenant Luz De Luna creado con 133 productos
 
 Progress: [░░░░░░░░░░] 0%
+
+## Production Tenants
+
+| Tenant | Slug | Productos | Creado |
+|--------|------|-----------|--------|
+| Velas Aromáticas Demo | velas-demo | ~7 (seed) | Pre-producción |
+| **Luz De Luna** | luz-de-luna | 133 | 2026-02-17 |
 
 ## Performance Metrics
 
@@ -59,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (phase 1 context)
-Stopped at: Phase 1 context gathered
+Last session: 2026-02-17 (tenant creation)
+Activity: Created Luz De Luna tenant with 133 products via import script
 Resume file: .planning/phases/01-foundation-reset/01-CONTEXT.md
