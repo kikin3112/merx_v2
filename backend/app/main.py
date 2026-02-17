@@ -271,9 +271,10 @@ app.add_middleware(
 )
 
 # 4. Trusted Host (protección contra HTTP Host header attacks)
-if settings.is_production:
-    # En producción, usar configuración de settings (incluye localhost para health checks)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
+# NOTA: Deshabilitado temporalmente - Railway usa hostnames internos variables
+# que rompen los health checks. Reactivar cuando se tenga dominio propio.
+# if settings.is_production:
+#     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
 
 # ============================================================================
