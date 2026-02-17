@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartera, terceros } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
 import DataCard from '../components/ui/DataCard';
-import type { CarteraItem, Tercero, MedioPago, PagoCartera } from '../types';
+import type { CarteraItem, Tercero, MedioPago } from '../types';
 
 const ESTADOS = ['', 'PENDIENTE', 'PARCIAL', 'PAGADA', 'VENCIDA', 'ANULADA'];
 const TABS = ['COBRAR', 'PAGAR'] as const;

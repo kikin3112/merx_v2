@@ -156,9 +156,9 @@ export default function DashboardPage() {
                   className="flex items-center justify-between rounded-lg bg-red-50 border border-red-200 p-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{alerta.nombre_producto}</p>
+                    <p className="text-sm font-medium text-gray-900">{alerta.nombre}</p>
                     <p className="text-xs text-gray-500">
-                      Stock: {alerta.cantidad_disponible} / Mínimo: {alerta.stock_minimo}
+                      Stock: {alerta.stock_actual} / Mínimo: {alerta.stock_minimo}
                     </p>
                   </div>
                   <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">

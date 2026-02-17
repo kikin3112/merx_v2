@@ -76,7 +76,7 @@ function ComparativaTab({ period }: { period: PeriodValue }) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" fontSize={12} />
             <YAxis fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
             <Legend />
             <Bar dataKey="ventas" name="Total Ventas" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -104,7 +104,7 @@ function RentabilidadTab() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" fontSize={12} unit="%" />
             <YAxis dataKey="categoria" type="category" fontSize={11} width={100} />
-            <Tooltip formatter={(v: number) => `${v}%`} />
+            <Tooltip formatter={(v) => `${Number(v ?? 0)}%`} />
             <Bar dataKey="margen_promedio" name="Margen %" fill="#EC4899" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -192,7 +192,7 @@ function FlujoCajaTab() {
               interval={4}
             />
             <YAxis fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
             <Line
               type="monotone"
               dataKey="acumulado"
@@ -228,7 +228,7 @@ function MargenesTab({ period }: { period: PeriodValue }) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="categoria" fontSize={11} />
             <YAxis fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
             <Legend />
             <Bar dataKey="ingresos" name="Ingresos" fill="#10B981" radius={[4, 4, 0, 0]} />
             <Bar dataKey="costo" name="Costo" fill="#EF4444" radius={[4, 4, 0, 0]} />

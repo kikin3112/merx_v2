@@ -6,11 +6,6 @@ import type { Producto, Tercero, Factura } from '../types';
 import { usePOSStore } from '../stores/posStore';
 import { useBreakpoint } from '../hooks/useMediaQuery';
 
-interface CartItem {
-  producto: Producto;
-  cantidad: number;
-}
-
 interface QuickClientForm {
   nombre: string;
   tipo_documento: string;

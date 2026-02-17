@@ -31,7 +31,7 @@ function getPresetDates(preset: typeof presets[number]): { fecha_inicio: string;
     return { fecha_inicio: `${hoy.getFullYear()}-01-01`, fecha_fin: fin };
   }
   const inicio = new Date(hoy);
-  inicio.setDate(inicio.getDate() - preset.days + 1);
+  inicio.setDate(inicio.getDate() - (preset as { days: number }).days + 1);
   return { fecha_inicio: toISO(inicio), fecha_fin: fin };
 }
 

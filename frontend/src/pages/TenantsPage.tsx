@@ -1105,7 +1105,6 @@ function TenantDetailPanel({
   onSalirMantenimiento: () => void;
   isPending: boolean;
 }) {
-  const qc = useQueryClient();
   const [trialDias, setTrialDias] = useState(7);
 
   // Editable info
@@ -1595,7 +1594,6 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
   const [slugManual, setSlugManual] = useState(false);
   const [emailContacto, setEmailContacto] = useState('');
   const [nit, setNit] = useState('');
-  const [telefono, setTelefono] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [planId, setPlanId] = useState(planes.find(p => p.esta_activo)?.id || '');
   const [adminNombre, setAdminNombre] = useState('');
@@ -1630,7 +1628,6 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
       email_contacto: emailContacto,
       plan_id: planId,
       nit: nit || null,
-      telefono: telefono || null,
       ciudad: ciudad || null,
       admin_nombre: adminNombre,
       admin_email: adminEmail,
