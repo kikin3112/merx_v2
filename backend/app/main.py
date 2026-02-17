@@ -259,6 +259,17 @@ app.add_middleware(TenantContextMiddleware)
 # 3.5. User Context (para auditoría automática)
 app.add_middleware(UserContextMiddleware)
 
+
+# Debug middleware for health check issues
+@app.middleware("http")
+async def debug_health_requests(request: Request, call_next):
+    if request.url.path == "/health":
+        print(
+            f"DEBUG: Health request - Host: {request.headers.get('host')}, X-Forwarded-Host: {request.headers.get('x-forwarded-host')}"
+        )
+    return await call_next(request)
+
+
 # 4. CORS
 app.add_middleware(
     CORSMiddleware,
