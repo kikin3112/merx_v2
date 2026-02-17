@@ -1,0 +1,15 @@
+[phases.setup]
+nixPkgs = ["python312", "gcc", "postgresql"]
+
+[phases.install]
+cmds = ["pip install uv", "uv sync --no-dev"]
+
+[phases.build]
+cmds = ["echo 'Build complete'"]
+
+[start]
+cmd = "sh -c 'alembic upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2'"
+
+[variables]
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
