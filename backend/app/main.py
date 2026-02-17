@@ -15,29 +15,24 @@ import uvicorn
 from slowapi.errors import RateLimitExceeded
 
 from .config import settings
-from .utils.logger import (
-    setup_logger,
-    set_request_context,
-    clear_request_context,
-    log_performance
-)
+from .utils.logger import setup_logger, set_request_context, clear_request_context, log_performance
 from .utils.rate_limiter import limiter
 from .datos.db import engine, SessionLocal
 
 # Sentry integration (production/staging only)
-if settings.ENVIRONMENT in ['production', 'staging'] and hasattr(settings, 'SENTRY_DSN') and settings.SENTRY_DSN:
+if settings.ENVIRONMENT in ["production", "staging"] and hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
     def filter_sensitive_data(event, hint):
         """Remove sensitive headers from Sentry events."""
-        if 'request' in event:
-            headers = event['request'].get('headers', {})
-            headers.pop('Authorization', None)
-            headers.pop('authorization', None)
-            headers.pop('X-Tenant-ID', None)
-            headers.pop('x-tenant-id', None)
+        if "request" in event:
+            headers = event["request"].get("headers", {})
+            headers.pop("Authorization", None)
+            headers.pop("authorization", None)
+            headers.pop("X-Tenant-ID", None)
+            headers.pop("x-tenant-id", None)
         return event
 
     sentry_sdk.init(
@@ -75,7 +70,7 @@ from .rutas import (
     terceros,
     usuarios,
     ventas,
-    tenants
+    tenants,
 )
 
 # Middleware de contexto de tenant y usuario
@@ -89,6 +84,7 @@ logger = setup_logger(__name__)
 # ============================================================================
 # LIFESPAN EVENTS (FastAPI 0.109+)
 # ============================================================================
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
@@ -145,7 +141,7 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url=f"{settings.API_PREFIX}/docs" if not settings.is_production else None,
     redoc_url=f"{settings.API_PREFIX}/redoc" if not settings.is_production else None,
-    openapi_url=f"{settings.API_PREFIX}/openapi.json" if not settings.is_production else None
+    openapi_url=f"{settings.API_PREFIX}/openapi.json" if not settings.is_production else None,
 )
 
 # Registrar limiter en el state de la app (requerido por slowapi)
@@ -155,6 +151,7 @@ app.state.limiter = limiter
 # ============================================================================
 # MIDDLEWARE DE REQUEST TRACKING
 # ============================================================================
+
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     """
@@ -170,10 +167,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         user_id = None
 
         # Establecer contexto para logging
-        set_request_context(
-            request_id=request_id,
-            user_id=user_id
-        )
+        set_request_context(request_id=request_id, user_id=user_id)
 
         # Medir tiempo de respuesta
         start_time = time.time()
@@ -189,8 +183,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     "method": request.method,
                     "path": request.url.path,
                     "query_params": str(request.query_params),
-                    "client_ip": request.client.host if request.client else None
-                }
+                    "client_ip": request.client.host if request.client else None,
+                },
             )
 
             # Procesar request
@@ -202,10 +196,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             # Log de respuesta
             logger.info(
                 f"← {request.method} {request.url.path} - {response.status_code} ({duration_ms:.2f}ms)",
-                extra={
-                    "status_code": response.status_code,
-                    "duration_ms": duration_ms
-                }
+                extra={"status_code": response.status_code, "duration_ms": duration_ms},
             )
 
             # Agregar header con request_id en la respuesta
@@ -218,7 +209,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             logger.error(
                 f"✗ {request.method} {request.url.path} - ERROR ({duration_ms:.2f}ms)",
                 exc_info=e,
-                extra={"duration_ms": duration_ms}
+                extra={"duration_ms": duration_ms},
             )
             raise
 
@@ -230,6 +221,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 # ============================================================================
 # MIDDLEWARE DE SEGURIDAD
 # ============================================================================
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
@@ -275,19 +267,19 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # Explícito, no "*"
     allow_headers=["Authorization", "Content-Type", "X-Tenant-ID", "Accept"],
     expose_headers=["X-Request-ID"],
-    max_age=settings.CORS_MAX_AGE
+    max_age=settings.CORS_MAX_AGE,
 )
 
 # 4. Trusted Host (protección contra HTTP Host header attacks)
 if settings.is_production:
-    # En producción, configurar hosts permitidos
-    allowed_hosts = ["api.tudominio.com", "www.tudominio.com"]
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+    # En producción, usar configuración de settings (incluye localhost para health checks)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
 
 # ============================================================================
 # MANEJADORES DE ERRORES GLOBALES
 # ============================================================================
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -295,17 +287,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     Maneja errores de validación de Pydantic (422).
     Devuelve formato consistente con detalles de los errores.
     """
-    logger.warning(
-        f"Validation error en {request.url.path}",
-        extra={"errors": exc.errors()}
-    )
+    logger.warning(f"Validation error en {request.url.path}", extra={"errors": exc.errors()})
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "detail": "Error de validación en los datos enviados",
-            "errors": exc.errors()
-        }
+        content={"detail": "Error de validación en los datos enviados", "errors": exc.errors()},
     )
 
 
@@ -317,10 +303,7 @@ async def value_error_handler(request: Request, exc: ValueError):
     """
     logger.warning(f"Business logic error en {request.url.path}: {str(exc)}")
 
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)})
 
 
 @app.exception_handler(HTTPException)
@@ -334,11 +317,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     else:
         logger.warning(f"HTTP {exc.status_code} en {request.url.path}: {exc.detail}")
 
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers=exc.headers
-    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
 
 
 @app.exception_handler(Exception)
@@ -347,20 +326,13 @@ async def general_exception_handler(request: Request, exc: Exception):
     Maneja cualquier excepción no capturada.
     Devuelve un 500 Internal Server Error sin exponer detalles internos.
     """
-    logger.error(
-        f"Unhandled exception en {request.url.path}",
-        exc_info=exc
-    )
+    logger.error(f"Unhandled exception en {request.url.path}", exc_info=exc)
 
     # En desarrollo, mostrar el error completo
     if settings.DEBUG:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "detail": "Error interno del servidor",
-                "error": str(exc),
-                "type": type(exc).__name__
-            }
+            content={"detail": "Error interno del servidor", "error": str(exc), "type": type(exc).__name__},
         )
 
     # En producción, ocultar detalles
@@ -368,8 +340,8 @@ async def general_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "detail": "Error interno del servidor. Por favor contacte al administrador.",
-            "request_id": getattr(request.state, "request_id", None)
-        }
+            "request_id": getattr(request.state, "request_id", None),
+        },
     )
 
 
@@ -380,13 +352,13 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     """
     logger.warning(
         f"Rate limit excedido: {request.method} {request.url.path}",
-        extra={"ip": request.client.host if request.client else "unknown"}
+        extra={"ip": request.client.host if request.client else "unknown"},
     )
     return JSONResponse(
         status_code=429,
         content={
             "detail": "Demasiadas solicitudes. Intente de nuevo en un momento.",
-        }
+        },
     )
 
 
@@ -401,14 +373,15 @@ async def not_found_handler(request: Request, exc):
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "detail": f"Ruta no encontrada: {request.method} {request.url.path}",
-            "available_routes": f"{settings.API_PREFIX}/docs"
-        }
+            "available_routes": f"{settings.API_PREFIX}/docs",
+        },
     )
 
 
 # ============================================================================
 # RUTAS RAÍZ
 # ============================================================================
+
 
 @app.get("/", tags=["Sistema"])
 def read_root():
@@ -421,39 +394,8 @@ def read_root():
         "app_name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT,
-        "docs": f"{settings.API_PREFIX}/docs" if not settings.is_production else None
+        "docs": f"{settings.API_PREFIX}/docs" if not settings.is_production else None,
     }
-
-
-@app.get("/health", tags=["Sistema"])
-def health_check():
-    """
-    Health check completo incluyendo base de datos.
-    Útil para orquestadores (Kubernetes, Docker Swarm, etc.)
-    """
-    health_status = {
-        "status": "healthy",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
-    }
-
-    # Verificar conexión a base de datos
-    try:
-        db = SessionLocal()
-        db.execute(text("SELECT 1"))
-        db.close()
-        health_status["database"] = "connected"
-    except Exception as e:
-        logger.error(f"Database health check failed: {str(e)}")
-        health_status["status"] = "unhealthy"
-        health_status["database"] = "disconnected"
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content=health_status
-        )
-
-    return health_status
 
 
 # ============================================================================
@@ -513,9 +455,10 @@ app.include_router(recetas.router, prefix=f"{prefix}/recetas", tags=["Recetas"])
 # ENDPOINTS DE ADMINISTRACIÓN
 # ============================================================================
 
+
 @app.post(f"{prefix}/admin/seed", tags=["Administración"])
 def ejecutar_seeds(
-        current_user=None  # TODO: Agregar dependency de autenticación admin
+    current_user=None,  # TODO: Agregar dependency de autenticación admin
 ):
     """
     Ejecuta la siembra de datos iniciales.
@@ -537,15 +480,11 @@ def ejecutar_seeds(
         run_all_seeders()
         logger.info("✅ Seeders completados")
 
-        return {
-            "status": "success",
-            "message": "Datos iniciales generados correctamente"
-        }
+        return {"status": "success", "message": "Datos iniciales generados correctamente"}
     except Exception as e:
         logger.error(f"Error ejecutando seeders: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error ejecutando seeders: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error ejecutando seeders: {str(e)}"
         )
 
 
@@ -561,11 +500,4 @@ if __name__ == "__main__":
 
     logger.info(f"Iniciando servidor en http://{host}:{port}")
 
-    uvicorn.run(
-        "app.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info",
-        access_log=True
-    )
+    uvicorn.run("app.main:app", host=host, port=port, reload=reload, log_level="info", access_log=True)

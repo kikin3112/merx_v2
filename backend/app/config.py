@@ -108,6 +108,11 @@ class Settings(BaseSettings):
         default=600, ge=0, description="Tiempo en segundos para cachear respuestas preflight CORS"
     )
 
+    ALLOWED_HOSTS: str = Field(
+        default="localhost,127.0.0.1,0.0.0.0",
+        description="Hosts permitidos para TrustedHostMiddleware (separados por coma)",
+    )
+
     # ============================================================================
     # JWT / SEGURIDAD
     # ============================================================================
@@ -312,6 +317,15 @@ class Settings(BaseSettings):
         Elimina espacios y entradas vacías.
         """
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @computed_field
+    @property
+    def allowed_hosts_list(self) -> List[str]:
+        """
+        Convierte ALLOWED_HOSTS de string separado por comas a lista limpia.
+        Elimina espacios y entradas vacías.
+        """
+        return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
 
     @computed_field
     @property
