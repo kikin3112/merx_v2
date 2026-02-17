@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
+import { usePageTracking } from './hooks/useAnalytics';
 import AppShell from './components/layout/AppShell';
 import ImpersonationBanner from './components/ImpersonationBanner';
 import RoleGuard from './components/auth/RoleGuard';
@@ -58,10 +59,17 @@ function RequireToken() {
   return <Outlet />;
 }
 
+// Component to track page views in SPA
+function AnalyticsTracker() {
+  usePageTracking();
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <AnalyticsTracker />
         <ImpersonationBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
