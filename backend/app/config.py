@@ -4,14 +4,8 @@ Utiliza Pydantic Settings para validación y carga desde variables de entorno.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import (
-    PostgresDsn,
-    Field,
-    computed_field,
-    field_validator,
-    ValidationError
-)
-from typing import List, Literal, Optional
+from pydantic import PostgresDsn, Field, computed_field, field_validator, ValidationError, model_validator
+from typing import List, Literal, Optional, Any
 import secrets
 
 
@@ -34,92 +28,69 @@ class Settings(BaseSettings):
     # ============================================================================
 
     ENVIRONMENT: Literal["development", "staging", "production"] = Field(
-        default="development",
-        description="Entorno de ejecución"
+        default="development", description="Entorno de ejecución"
     )
 
-    DEBUG: bool = Field(
-        default=False,
-        description="Modo debug (solo para development)"
-    )
+    DEBUG: bool = Field(default=False, description="Modo debug (solo para development)")
 
     # ============================================================================
     # BASE DE DATOS
     # ============================================================================
 
-    DB_URL: PostgresDsn = Field(
-        ...,
-        description="URL de conexión PostgreSQL (postgresql://user:pass@host:port/db)"
+    DB_URL: Optional[PostgresDsn] = Field(
+        default=None, description="URL de conexión PostgreSQL (postgresql://user:pass@host:port/db)"
     )
 
-    DB_POOL_SIZE: int = Field(
-        default=10,
-        ge=5,
-        le=50,
-        description="Tamaño del pool de conexiones"
+    DATABASE_URL: Optional[str] = Field(
+        default=None, description="URL de conexión PostgreSQL (alias para Railway/Render)"
     )
+
+    DB_POOL_SIZE: int = Field(default=10, ge=5, le=50, description="Tamaño del pool de conexiones")
 
     DB_MAX_OVERFLOW: int = Field(
-        default=20,
-        ge=10,
-        le=100,
-        description="Máximo de conexiones adicionales sobre el pool"
+        default=20, ge=10, le=100, description="Máximo de conexiones adicionales sobre el pool"
     )
 
     DB_POOL_RECYCLE: int = Field(
-        default=3600,
-        ge=300,
-        description="Segundos antes de reciclar conexiones (default: 1 hora)"
+        default=3600, ge=300, description="Segundos antes de reciclar conexiones (default: 1 hora)"
     )
 
     DB_POOL_TIMEOUT: int = Field(
-        default=30,
-        ge=5,
-        le=120,
-        description="Timeout en segundos para obtener conexión del pool"
+        default=30, ge=5, le=120, description="Timeout en segundos para obtener conexión del pool"
     )
 
     DB_STATEMENT_TIMEOUT: int = Field(
         default=30000,
         ge=1000,
         le=300000,
-        description="PostgreSQL statement_timeout en milisegundos (previene queries infinitos)"
+        description="PostgreSQL statement_timeout en milisegundos (previene queries infinitos)",
     )
 
     DB_IDLE_IN_TRANSACTION_TIMEOUT: int = Field(
         default=60000,
         ge=1000,
         le=600000,
-        description="PostgreSQL idle_in_transaction_session_timeout en milisegundos (previene locks prolongados)"
+        description="PostgreSQL idle_in_transaction_session_timeout en milisegundos (previene locks prolongados)",
     )
 
     # ============================================================================
     # APLICACIÓN
     # ============================================================================
 
-    APP_NAME: str = Field(
-        default="MERX - Sistema contable para PyMEs",
-        max_length=100
-    )
+    APP_NAME: str = Field(default="MERX - Sistema contable para PyMEs", max_length=100)
 
     APP_VERSION: str = Field(
-        default="1.0.0",
-        pattern=r"^\d+\.\d+\.\d+$",
-        description="Versión semántica (MAJOR.MINOR.PATCH)"
+        default="1.0.0", pattern=r"^\d+\.\d+\.\d+$", description="Versión semántica (MAJOR.MINOR.PATCH)"
     )
 
-    API_PREFIX: str = Field(
-        default="/api/v1",
-        description="Prefijo para todas las rutas de la API"
-    )
+    API_PREFIX: str = Field(default="/api/v1", description="Prefijo para todas las rutas de la API")
 
     # ============================================================================
     # ERROR TRACKING (SENTRY)
     # ============================================================================
 
     SENTRY_DSN: Optional[str] = Field(
-        default=None,
-        description="Sentry DSN para error tracking (opcional, solo production/staging)"
+        default=None, description="Sentry DSN para error tracking (opcional, solo production/staging)"
     )
 
     # ============================================================================
@@ -128,48 +99,33 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = Field(
         default="http://localhost:3000,http://localhost:3001,http://localhost:5173",
-        description="Orígenes permitidos para CORS (separados por coma)"
+        description="Orígenes permitidos para CORS (separados por coma)",
     )
 
-    CORS_ALLOW_CREDENTIALS: bool = Field(
-        default=True,
-        description="Permitir envío de cookies/credenciales en CORS"
-    )
+    CORS_ALLOW_CREDENTIALS: bool = Field(default=True, description="Permitir envío de cookies/credenciales en CORS")
 
     CORS_MAX_AGE: int = Field(
-        default=600,
-        ge=0,
-        description="Tiempo en segundos para cachear respuestas preflight CORS"
+        default=600, ge=0, description="Tiempo en segundos para cachear respuestas preflight CORS"
     )
 
     # ============================================================================
     # JWT / SEGURIDAD
     # ============================================================================
 
-    SECRET_KEY: str = Field(
-        ...,
-        min_length=32,
-        description="Clave secreta para JWT (mínimo 32 caracteres)"
+    SECRET_KEY: Optional[str] = Field(
+        default=None, min_length=32, description="Clave secreta para JWT (mínimo 32 caracteres)"
     )
 
     ALGORITHM: str = Field(
-        default="HS256",
-        pattern="^(HS256|HS384|HS512)$",
-        description="Algoritmo de encriptación JWT"
+        default="HS256", pattern="^(HS256|HS384|HS512)$", description="Algoritmo de encriptación JWT"
     )
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=30,
-        ge=5,
-        le=1440,
-        description="Tiempo de expiración del access token en minutos"
+        default=30, ge=5, le=1440, description="Tiempo de expiración del access token en minutos"
     )
 
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
-        default=7,
-        ge=1,
-        le=30,
-        description="Tiempo de expiración del refresh token en días"
+        default=7, ge=1, le=30, description="Tiempo de expiración del refresh token en días"
     )
 
     # ============================================================================
@@ -177,82 +133,46 @@ class Settings(BaseSettings):
     # ============================================================================
 
     LOG_LEVEL: str = Field(
-        default="INFO",
-        pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
-        description="Nivel de logging"
+        default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$", description="Nivel de logging"
     )
 
     LOG_FORMAT: Literal["json", "text"] = Field(
-        default="json",
-        description="Formato de logs (json para producción, text para development)"
+        default="json", description="Formato de logs (json para producción, text para development)"
     )
 
     # ============================================================================
     # RATE LIMITING
     # ============================================================================
 
-    RATE_LIMIT_ENABLED: bool = Field(
-        default=True,
-        description="Activar rate limiting"
-    )
+    RATE_LIMIT_ENABLED: bool = Field(default=True, description="Activar rate limiting")
 
-    RATE_LIMIT_PER_MINUTE: int = Field(
-        default=60,
-        ge=10,
-        le=1000,
-        description="Requests máximos por minuto por IP"
-    )
+    RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=10, le=1000, description="Requests máximos por minuto por IP")
 
     # ============================================================================
     # S3 / ALMACENAMIENTO
     # ============================================================================
 
-    S3_ENABLED: bool = Field(
-        default=False,
-        description="Habilitar almacenamiento S3/R2"
-    )
+    S3_ENABLED: bool = Field(default=False, description="Habilitar almacenamiento S3/R2")
 
-    S3_BUCKET: str = Field(
-        default="chandelier-documents",
-        description="Nombre del bucket S3"
-    )
+    S3_BUCKET: str = Field(default="chandelier-documents", description="Nombre del bucket S3")
 
-    S3_REGION: str = Field(
-        default="us-east-1",
-        description="Región del bucket S3"
-    )
+    S3_REGION: str = Field(default="us-east-1", description="Región del bucket S3")
 
-    AWS_ACCESS_KEY_ID: Optional[str] = Field(
-        default=None,
-        description="AWS Access Key ID"
-    )
+    AWS_ACCESS_KEY_ID: Optional[str] = Field(default=None, description="AWS Access Key ID")
 
-    AWS_SECRET_ACCESS_KEY: Optional[str] = Field(
-        default=None,
-        description="AWS Secret Access Key"
-    )
+    AWS_SECRET_ACCESS_KEY: Optional[str] = Field(default=None, description="AWS Secret Access Key")
 
-    S3_ENDPOINT_URL: Optional[str] = Field(
-        default=None,
-        description="URL del endpoint S3 (para R2, Spaces, etc.)"
-    )
+    S3_ENDPOINT_URL: Optional[str] = Field(default=None, description="URL del endpoint S3 (para R2, Spaces, etc.)")
 
     S3_PRESIGNED_URL_EXPIRY: int = Field(
-        default=86400,
-        ge=3600,
-        description="Expiración de URLs presignadas en segundos (default: 24h)"
+        default=86400, ge=3600, description="Expiración de URLs presignadas en segundos (default: 24h)"
     )
 
     # ============================================================================
     # TIMEOUTS
     # ============================================================================
 
-    REQUEST_TIMEOUT: int = Field(
-        default=30,
-        ge=5,
-        le=300,
-        description="Timeout para requests HTTP en segundos"
-    )
+    REQUEST_TIMEOUT: int = Field(default=30, ge=5, le=300, description="Timeout para requests HTTP en segundos")
 
     # ============================================================================
     # CONFIGURACIÓN DE PYDANTIC
@@ -263,7 +183,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",  # Ignora variables extra en .env
-        validate_default=True
+        validate_default=True,
     )
 
     # ============================================================================
@@ -272,11 +192,14 @@ class Settings(BaseSettings):
 
     @field_validator("SECRET_KEY")
     @classmethod
-    def validate_secret_key_strength(cls, v: str) -> str:
+    def validate_secret_key_strength(cls, v: Optional[str]) -> Optional[str]:
         """
         Valida que el SECRET_KEY tenga suficiente entropía.
         No debe ser un valor obvio o de ejemplo.
         """
+        if v is None:
+            return v
+
         forbidden_values = [
             "changeme",
             "secret",
@@ -284,7 +207,7 @@ class Settings(BaseSettings):
             "12345678901234567890123456789012",
             "your-secret-key-here",
             "supersecret",
-            "my-secret-key"
+            "my-secret-key",
         ]
 
         if v.lower() in forbidden_values:
@@ -311,9 +234,7 @@ class Settings(BaseSettings):
         environment = info.data.get("ENVIRONMENT", "development")
 
         if environment == "production" and v is True:
-            raise ValueError(
-                "DEBUG no puede estar activado en producción por razones de seguridad"
-            )
+            raise ValueError("DEBUG no puede estar activado en producción por razones de seguridad")
 
         return v
 
@@ -341,17 +262,43 @@ class Settings(BaseSettings):
         """
         environment = info.data.get("ENVIRONMENT", "development")
 
-        if environment == "production":
+        if environment == "production" and v:
             url_str = str(v)
             if "sslmode" not in url_str.lower():
                 # Solo advertencia, no error (algunas DBs manejan SSL automáticamente)
                 import warnings
+
                 warnings.warn(
-                    "Considera agregar '?sslmode=require' a DB_URL en producción para conexiones seguras",
-                    UserWarning
+                    "Considera agregar '?sslmode=require' a DB_URL en producción para conexiones seguras", UserWarning
                 )
 
         return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def resolve_database_url(cls, data: Any) -> Any:
+        """
+        Resolve DB_URL from DATABASE_URL (Railway/Render convention).
+        Generate a default SECRET_KEY for development if not provided.
+        """
+        if isinstance(data, dict):
+            # If DB_URL not set but DATABASE_URL is, use DATABASE_URL
+            if not data.get("DB_URL") and data.get("DATABASE_URL"):
+                data["DB_URL"] = data["DATABASE_URL"]
+
+            # If SECRET_KEY not set in development, generate one
+            environment = data.get("ENVIRONMENT", "development")
+            if not data.get("SECRET_KEY") and environment == "development":
+                data["SECRET_KEY"] = "dev_secret_key_for_development_only_min_32_chars"
+
+            # In production, both must be set
+            if environment == "production":
+                if not data.get("DB_URL") and not data.get("DATABASE_URL"):
+                    raise ValueError("DB_URL or DATABASE_URL is required in production")
+                if not data.get("SECRET_KEY"):
+                    raise ValueError("SECRET_KEY is required in production")
+
+        return data
 
     # ============================================================================
     # COMPUTED FIELDS
@@ -364,11 +311,7 @@ class Settings(BaseSettings):
         Convierte CORS_ORIGINS de string separado por comas a lista limpia.
         Elimina espacios y entradas vacías.
         """
-        return [
-            origin.strip()
-            for origin in self.CORS_ORIGINS.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     @computed_field
     @property
@@ -387,6 +330,16 @@ class Settings(BaseSettings):
     def is_staging(self) -> bool:
         """Indica si está en entorno de staging"""
         return self.ENVIRONMENT == "staging"
+
+    @computed_field
+    @property
+    def resolved_db_url(self) -> str:
+        """Return the resolved database URL (DB_URL or DATABASE_URL)"""
+        if self.DB_URL:
+            return str(self.DB_URL)
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        raise ValueError("No database URL configured")
 
 
 # ============================================================================
@@ -408,6 +361,7 @@ except ValidationError as e:
 # ============================================================================
 # HELPER PARA GENERAR SECRET_KEY
 # ============================================================================
+
 
 def generate_secret_key() -> str:
     """

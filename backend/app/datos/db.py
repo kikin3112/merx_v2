@@ -15,20 +15,16 @@ logger = setup_logger(__name__)
 # Configuración del Engine
 # Nota: No usamos event listeners manuales. pool_pre_ping ya maneja la verificación de conexión.
 engine = create_engine(
-    str(settings.DB_URL),
+    settings.resolved_db_url,
     pool_pre_ping=True,  # Verifica conexión antes de usar (Reemplaza el listener manual)
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_recycle=3600,  # Recicla conexiones cada hora
     pool_timeout=30,  # Timeout de 30 segundos para obtener conexión
-    echo=settings.DEBUG  # SQL logging solo en desarrollo
+    echo=settings.DEBUG,  # SQL logging solo en desarrollo
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
@@ -38,12 +34,14 @@ Base = declarative_base()
 
 # Importar y registrar los event listeners de auditoría
 from .audit_listeners import register_audit_listeners
+
 register_audit_listeners(SessionLocal)
 
 
 # ============================================================================
 # AUTO-SET TENANT CONTEXT ON TRANSACTION BEGIN (RLS)
 # ============================================================================
+
 
 @event.listens_for(Session, "after_begin")
 def _set_tenant_on_transaction_begin(session, transaction, connection):
@@ -54,15 +52,13 @@ def _set_tenant_on_transaction_begin(session, transaction, connection):
     """
     tenant_id = get_current_tenant_id()
     if tenant_id:
-        connection.execute(
-            text("SET LOCAL app.tenant_id_actual = :tid"),
-            {"tid": str(tenant_id)}
-        )
+        connection.execute(text("SET LOCAL app.tenant_id_actual = :tid"), {"tid": str(tenant_id)})
 
 
 # ============================================================================
 # FUNCIONES PARA CONTEXTO DE TENANT (RLS)
 # ============================================================================
+
 
 def set_tenant_context(db: Session, tenant_id: UUID) -> None:
     """
@@ -84,10 +80,7 @@ def set_tenant_context(db: Session, tenant_id: UUID) -> None:
         ```
     """
     try:
-        db.execute(
-            text("SET LOCAL app.tenant_id_actual = :tenant_id"),
-            {"tenant_id": str(tenant_id)}
-        )
+        db.execute(text("SET LOCAL app.tenant_id_actual = :tenant_id"), {"tenant_id": str(tenant_id)})
         logger.debug(f"Tenant context establecido: {tenant_id}")
     except Exception as e:
         logger.error(f"Error estableciendo tenant context: {e}")
@@ -110,9 +103,7 @@ def get_current_tenant_from_session(db: Session) -> Optional[str]:
     Útil para debugging.
     """
     try:
-        result = db.execute(
-            text("SELECT current_setting('app.tenant_id_actual', true)")
-        )
+        result = db.execute(text("SELECT current_setting('app.tenant_id_actual', true)"))
         row = result.fetchone()
         return row[0] if row and row[0] else None
     except Exception:
@@ -122,6 +113,7 @@ def get_current_tenant_from_session(db: Session) -> Optional[str]:
 # ============================================================================
 # DEPENDENCIAS DE FASTAPI
 # ============================================================================
+
 
 def get_db() -> Generator[Session, None, None]:
     """
