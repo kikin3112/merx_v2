@@ -98,6 +98,23 @@ Chandelier está al ~90% de completitud para MVP. El backend tiene 22 routers, e
 | Conservar superadmin en reset | Evitar lockout del administrador del sistema | — Pending |
 | Asiento apertura detallado PUC | Empresas existentes necesitan contabilidad precisa desde día 1 | — Pending |
 | Excel como formato principal | Es lo que usan las microempresas colombianas | — Pending |
+## Tenants Activos
+
+### Luz De Luna (Producción)
+
+| Campo | Valor |
+|-------|-------|
+| **Tenant ID** | `95b5afab-86ef-4b0d-8f21-2a8f1e63d794` |
+| **Slug** | `luz-de-luna` |
+| **Email** | luzdelunavelas30@gmail.com |
+| **Teléfono** | 3194079056 |
+| **Plan** | Free Trial |
+| **Productos** | 133 (importados desde Excel) |
+| **Creado** | 2026-02-17 |
+| **Estado** | Activo |
+
+**Notas:** Primer tenant real de producción. Productos importados desde catálogo existente de la empresa. IVA pendiente de configuración por el usuario. Todos los productos importados como `Insumo` con unidad `UNIDAD`.
 
 ---
-*Last updated: 2026-02-15 after milestone v1.0 started*
+
+*Last updated: 2026-02-17 after Luz De Luna tenant created*
