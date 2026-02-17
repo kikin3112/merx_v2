@@ -18,8 +18,26 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Core Onboarding Wizard** - Mandatory 3-step tenant setup (company, products, clients)
 - [ ] **Phase 5: Advanced Onboarding** - Optional steps for inventory, accounting opening balances
 - [ ] **Phase 6: UX & Polish** - Save/resume progress, Colombian-specific validations, completion flow
+- [ ] **Phase 7: User Guide** - PDF documentation with quick start, functionalities, and manual
 
 ## Phase Details
+
+### Phase 7: User Guide
+**Goal**: Create comprehensive PDF user guide covering all current system functionalities
+**Depends on**: Nothing (standalone documentation phase)
+**Requirements**: DOC-01, DOC-02, DOC-03
+**Success Criteria** (what must be TRUE):
+  1. PDF document contains quick start section for new users
+  2. PDF documents all current functionalities with screenshots/descriptions
+  3. PDF includes manual with step-by-step instructions for common tasks
+  4. Document is professionally structured and easy to navigate
+
+Plans:
+- [x] 07-01-PLAN.md — Infrastructure: generator, styles, templates
+- [x] 07-02-PLAN.md — Core chapters: Quick Start, Auth, Products, Margin, CRM
+- [x] 07-03-PLAN.md — Sales chapters: Quotations, Billing, POS
+- [x] 07-04-PLAN.md — Finance chapters: Recipes, Accounting, Dashboard
+- [x] 07-05-PLAN.md — Integration: Storage, Payments, final assembly
 
 ### Phase 1: Foundation & Reset
 **Goal**: Superadmin can reset database safely and system can generate Excel templates for imports
@@ -121,7 +139,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -131,3 +149,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Core Onboarding Wizard | 0/3 | Not started | - |
 | 5. Advanced Onboarding | 0/2 | Not started | - |
 | 6. UX & Polish | 0/2 | Not started | - |
+| 7. User Guide | 5/5 | Ready to execute | - |
