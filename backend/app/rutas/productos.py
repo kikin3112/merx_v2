@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func
 from typing import List, Optional
 from uuid import UUID
+import re
 
 from ..datos.db import get_db
 from ..datos.modelos import Productos, Usuarios
@@ -12,37 +14,81 @@ from ..utils.logger import setup_logger
 router = APIRouter()
 logger = setup_logger(__name__)
 
+SKU_PREFIXES = {
+    "Insumo": "INS",
+    "Producto_Propio": "PPRO",
+    "Producto_Tercero": "PTER",
+    "Servicio": "SERV",
+}
+
+
+@router.get("/siguiente-codigo")
+async def obtener_siguiente_codigo(
+    categoria: str = Query(..., description="Categoría del producto"),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """Genera el siguiente código interno disponible para una categoría."""
+    categorias_validas = ["Insumo", "Producto_Propio", "Producto_Tercero", "Servicio"]
+    if categoria not in categorias_validas:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Categoría inválida. Válidas: {', '.join(categorias_validas)}",
+        )
+
+    prefix = SKU_PREFIXES.get(categoria, "INS")
+
+    ultimo_producto = (
+        db.query(Productos.codigo_interno)
+        .filter(Productos.tenant_id == tenant_id, Productos.codigo_interno.like(f"{prefix}-%"))
+        .order_by(Productos.codigo_interno.desc())
+        .first()
+    )
+
+    siguiente_numero = 1
+    if ultimo_producto:
+        match = re.search(r"(\d+)$", ultimo_producto[0])
+        if match:
+            siguiente_numero = int(match.group(1)) + 1
+
+    nuevo_codigo = f"{prefix}-{siguiente_numero:04d}"
+
+    return {"codigo_interno": nuevo_codigo}
+
 
 @router.post("/", response_model=ProductoResponse, status_code=status.HTTP_201_CREATED)
 async def crear_producto(
-        producto_data: ProductoCreate,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    producto_data: ProductoCreate,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     """Crea un nuevo producto."""
     # Validar código interno único dentro del tenant
-    existing = db.query(Productos).filter(
-        Productos.tenant_id == ctx.tenant_id,
-        Productos.codigo_interno == producto_data.codigo_interno
-    ).first()
+    existing = (
+        db.query(Productos)
+        .filter(Productos.tenant_id == ctx.tenant_id, Productos.codigo_interno == producto_data.codigo_interno)
+        .first()
+    )
 
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ya existe un producto con código interno '{producto_data.codigo_interno}'"
+            detail=f"Ya existe un producto con código interno '{producto_data.codigo_interno}'",
         )
 
     # Validar código de barras único dentro del tenant
     if producto_data.codigo_barras:
-        existing_barcode = db.query(Productos).filter(
-            Productos.tenant_id == ctx.tenant_id,
-            Productos.codigo_barras == producto_data.codigo_barras
-        ).first()
+        existing_barcode = (
+            db.query(Productos)
+            .filter(Productos.tenant_id == ctx.tenant_id, Productos.codigo_barras == producto_data.codigo_barras)
+            .first()
+        )
 
         if existing_barcode:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe un producto con código de barras '{producto_data.codigo_barras}'"
+                detail=f"Ya existe un producto con código de barras '{producto_data.codigo_barras}'",
             )
 
     try:
@@ -56,8 +102,8 @@ async def crear_producto(
             extra={
                 "producto_id": str(nuevo_producto.id),
                 "codigo": nuevo_producto.codigo_interno,
-                "user_id": str(ctx.user.id)
-            }
+                "user_id": str(ctx.user.id),
+            },
         )
 
         return ProductoResponse.model_validate(nuevo_producto)
@@ -66,28 +112,28 @@ async def crear_producto(
         db.rollback()
         logger.error("Error creando producto", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al crear el producto"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear el producto"
         )
 
 
 @router.get("/", response_model=List[ProductoResponse])
 async def listar_productos(
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=1000),
-        categoria: Optional[str] = Query(None),
-        estado: Optional[bool] = Query(None),
-        maneja_inventario: Optional[bool] = Query(None),
-        busqueda: Optional[str] = Query(None, min_length=2),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    categoria: Optional[str] = Query(None),
+    estado: Optional[bool] = Query(None),
+    maneja_inventario: Optional[bool] = Query(None),
+    busqueda: Optional[str] = Query(None, min_length=2),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Lista productos con filtros y búsqueda."""
-    query = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(Productos.tenant_id == tenant_id)
+    query = (
+        db.query(Productos)
+        .options(selectinload(Productos.created_by_user), selectinload(Productos.updated_by_user))
+        .filter(Productos.tenant_id == tenant_id)
+    )
 
     if categoria:
         query = query.filter(Productos.categoria == categoria)
@@ -101,81 +147,64 @@ async def listar_productos(
     if busqueda:
         search_pattern = f"%{busqueda}%"
         query = query.filter(
-            (Productos.nombre.ilike(search_pattern)) |
-            (Productos.codigo_interno.ilike(search_pattern))
+            (Productos.nombre.ilike(search_pattern)) | (Productos.codigo_interno.ilike(search_pattern))
         )
 
-    productos = (
-        query
-        .order_by(Productos.nombre)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    productos = query.order_by(Productos.nombre).offset(skip).limit(limit).all()
 
     return [ProductoResponse.model_validate(p) for p in productos]
 
 
 @router.get("/categorias/{categoria}", response_model=List[ProductoResponse])
 async def listar_por_categoria(
-        categoria: str,
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=500),
-        solo_activos: bool = Query(True),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    categoria: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    solo_activos: bool = Query(True),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Lista productos de una categoría específica."""
-    categorias_validas = ['Insumo', 'Producto_Propio', 'Producto_Tercero', 'Servicio']
+    categorias_validas = ["Insumo", "Producto_Propio", "Producto_Tercero", "Servicio"]
     if categoria not in categorias_validas:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Categoría inválida. Válidas: {', '.join(categorias_validas)}"
+            detail=f"Categoría inválida. Válidas: {', '.join(categorias_validas)}",
         )
 
-    query = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(
-        Productos.tenant_id == tenant_id,
-        Productos.categoria == categoria
+    query = (
+        db.query(Productos)
+        .options(selectinload(Productos.created_by_user), selectinload(Productos.updated_by_user))
+        .filter(Productos.tenant_id == tenant_id, Productos.categoria == categoria)
     )
 
     if solo_activos:
         query = query.filter(Productos.estado == True)
 
-    productos = (
-        query
-        .order_by(Productos.nombre)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    productos = query.order_by(Productos.nombre).offset(skip).limit(limit).all()
 
     return [ProductoResponse.model_validate(p) for p in productos]
 
 
 @router.get("/{producto_id}", response_model=ProductoResponse)
 async def obtener_producto(
-        producto_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    producto_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene un producto por ID."""
-    producto = db.query(Productos).options(
-        selectinload(Productos.created_by_user),
-        selectinload(Productos.updated_by_user)
-    ).filter(
-        Productos.id == producto_id,
-        Productos.tenant_id == tenant_id
-    ).first()
+    producto = (
+        db.query(Productos)
+        .options(selectinload(Productos.created_by_user), selectinload(Productos.updated_by_user))
+        .filter(Productos.id == producto_id, Productos.tenant_id == tenant_id)
+        .first()
+    )
 
     if not producto:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Producto con ID {producto_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Producto con ID {producto_id} no encontrado"
         )
 
     return ProductoResponse.model_validate(producto)
@@ -183,37 +212,37 @@ async def obtener_producto(
 
 @router.patch("/{producto_id}", response_model=ProductoResponse)
 async def actualizar_producto(
-        producto_id: UUID,
-        producto_data: ProductoUpdate,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    producto_id: UUID,
+    producto_data: ProductoUpdate,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     """Actualiza un producto existente."""
-    producto = db.query(Productos).filter(
-        Productos.id == producto_id,
-        Productos.tenant_id == ctx.tenant_id
-    ).first()
+    producto = db.query(Productos).filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id).first()
 
     if not producto:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Producto con ID {producto_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Producto con ID {producto_id} no encontrado"
         )
 
     try:
         update_data = producto_data.model_dump(exclude_unset=True)
 
-        if 'codigo_barras' in update_data and update_data['codigo_barras']:
-            existing = db.query(Productos).filter(
-                Productos.tenant_id == ctx.tenant_id,
-                Productos.codigo_barras == update_data['codigo_barras'],
-                Productos.id != producto_id
-            ).first()
+        if "codigo_barras" in update_data and update_data["codigo_barras"]:
+            existing = (
+                db.query(Productos)
+                .filter(
+                    Productos.tenant_id == ctx.tenant_id,
+                    Productos.codigo_barras == update_data["codigo_barras"],
+                    Productos.id != producto_id,
+                )
+                .first()
+            )
 
             if existing:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Código de barras '{update_data['codigo_barras']}' ya existe en otro producto"
+                    detail=f"Código de barras '{update_data['codigo_barras']}' ya existe en otro producto",
                 )
 
         for field, value in update_data.items():
@@ -224,10 +253,7 @@ async def actualizar_producto(
 
         logger.info(
             f"Producto actualizado: {producto.nombre}",
-            extra={
-                "producto_id": str(producto.id),
-                "user_id": str(ctx.user.id)
-            }
+            extra={"producto_id": str(producto.id), "user_id": str(ctx.user.id)},
         )
 
         return ProductoResponse.model_validate(producto)
@@ -238,27 +264,20 @@ async def actualizar_producto(
         db.rollback()
         logger.error("Error actualizando producto", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al actualizar el producto"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar el producto"
         )
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def eliminar_producto(
-        producto_id: UUID,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin'))
+    producto_id: UUID, db: Session = Depends(get_db), ctx: UserContext = Depends(require_tenant_roles("admin"))
 ):
     """Elimina un producto (soft delete). Solo admin."""
-    producto = db.query(Productos).filter(
-        Productos.id == producto_id,
-        Productos.tenant_id == ctx.tenant_id
-    ).first()
+    producto = db.query(Productos).filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id).first()
 
     if not producto:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Producto con ID {producto_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Producto con ID {producto_id} no encontrado"
         )
 
     try:
@@ -267,16 +286,12 @@ async def eliminar_producto(
 
         logger.warning(
             f"Producto eliminado (soft): {producto.nombre}",
-            extra={
-                "producto_id": str(producto.id),
-                "user_id": str(ctx.user.id)
-            }
+            extra={"producto_id": str(producto.id), "user_id": str(ctx.user.id)},
         )
 
     except Exception as e:
         db.rollback()
         logger.error("Error eliminando producto", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al eliminar el producto"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar el producto"
         )

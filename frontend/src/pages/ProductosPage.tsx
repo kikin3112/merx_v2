@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productos } from '../api/endpoints';
 import { formatCurrency, formatDateTime } from '../utils/format';
@@ -72,6 +72,19 @@ export default function ProductosPage() {
     mutationFn: (id: string) => productos.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['productos'] }),
   });
+
+  useEffect(() => {
+    if (editing || !modalOpen) return;
+    let cancelled = false;
+    productos.siguienteCodigo(form.categoria)
+      .then((res) => {
+        if (!cancelled) {
+          setForm((prev) => ({ ...prev, codigo_interno: res.data.codigo_interno }));
+        }
+      })
+      .catch((err) => console.error('Error generando código:', err));
+    return () => { cancelled = true; };
+  }, [form.categoria, editing, modalOpen]);
 
   function openCreate() {
     setEditing(null);
@@ -287,10 +300,10 @@ export default function ProductosPage() {
               <input
                 type="text"
                 required
-                disabled={!!editing}
+                disabled
                 value={form.codigo_interno}
                 onChange={(e) => setForm({ ...form, codigo_interno: e.target.value })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
             <div>
