@@ -82,6 +82,8 @@ export const productos = {
   update: (id: string, data: ProductoUpdate) =>
     client.patch<Producto>(`/productos/${id}`, data),
   delete: (id: string) => client.delete(`/productos/${id}`),
+  siguienteCodigo: (categoria: string) =>
+    client.get<{ codigo_interno: string }>('/productos/siguiente-codigo', { params: { categoria } }),
 };
 
 // Terceros
