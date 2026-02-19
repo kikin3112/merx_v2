@@ -184,6 +184,8 @@ export const contabilidad = {
 export const configuracionContable = {
   list: () =>
     client.get<ConfiguracionContable[]>('/contabilidad/configuracion/'),
+  inicializar: () =>
+    client.post<{ message: string }>('/contabilidad/configuracion/inicializar'),
   update: (concepto: string, data: unknown) =>
     client.put<ConfiguracionContable>(`/contabilidad/configuracion/${concepto}`, data),
 };

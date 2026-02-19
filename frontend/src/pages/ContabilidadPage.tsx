@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { contabilidad } from '../api/endpoints';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { contabilidad, configuracionContable } from '../api/endpoints';
 import { formatCurrency, formatDate, statusColor } from '../utils/format';
 import DataCard from '../components/ui/DataCard';
-import type { AsientoContable, BalancePrueba } from '../types';
+import type { AsientoContable, BalancePrueba, ConfiguracionContable } from '../types';
 
 function AsientoRow({ asiento }: { asiento: AsientoContable }) {
   const [expanded, setExpanded] = useState(false);
@@ -138,7 +138,8 @@ function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
 }
 
 export default function ContabilidadPage() {
-  const [tab, setTab] = useState<'asientos' | 'balance'>('asientos');
+  const [tab, setTab] = useState<'asientos' | 'balance' | 'configuracion'>('asientos');
+  const queryClient = useQueryClient();
 
   const { data: asientos, isLoading: loadingAsientos } = useQuery<AsientoContable[]>({
     queryKey: ['asientos'],
@@ -152,6 +153,19 @@ export default function ContabilidadPage() {
     enabled: tab === 'balance',
   });
 
+  const { data: configs, isLoading: loadingConfigs } = useQuery<ConfiguracionContable[]>({
+    queryKey: ['configuracion-contable'],
+    queryFn: () => configuracionContable.list().then((r) => r.data),
+    enabled: tab === 'configuracion',
+  });
+
+  const inicializarMutation = useMutation({
+    mutationFn: () => configuracionContable.inicializar(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configuracion-contable'] });
+    },
+  });
+
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-6">Contabilidad</h1>
@@ -161,6 +175,7 @@ export default function ContabilidadPage() {
         {[
           { id: 'asientos' as const, label: 'Asientos Contables' },
           { id: 'balance' as const, label: 'Balance de Prueba' },
+          { id: 'configuracion' as const, label: 'Configuracion' },
         ].map((t) => (
           <button
             key={t.id}
@@ -321,6 +336,70 @@ export default function ContabilidadPage() {
               )}
             </>
           ) : null}
+        </div>
+      )}
+
+      {/* Configuracion Contable */}
+      {tab === 'configuracion' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {loadingConfigs ? (
+            <div className="p-8 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : configs && configs.length > 0 ? (
+            <>
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <p className="text-sm text-gray-600">
+                  Cuentas configuradas para asientos automaticos
+                </p>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Concepto</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta Debito</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta Credito</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Descripcion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {configs.map((c) => (
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900">{c.concepto}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.cuenta_debito_codigo ? `${c.cuenta_debito_codigo} - ${c.cuenta_debito_nombre}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.cuenta_credito_codigo ? `${c.cuenta_credito_codigo} - ${c.cuenta_credito_nombre}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{c.descripcion || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <div className="text-center py-12 px-4">
+              <p className="text-lg mb-2 text-gray-600">Configuracion contable no inicializada</p>
+              <p className="text-sm text-gray-400 mb-4">
+                Inicializa las cuentas contables para habilitar la contabilidad automatica
+              </p>
+              <button
+                onClick={() => inicializarMutation.mutate()}
+                disabled={inicializarMutation.isPending}
+                className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {inicializarMutation.isPending ? 'Inicializando...' : 'Inicializar Configuracion'}
+              </button>
+              {inicializarMutation.isError && (
+                <p className="mt-3 text-sm text-red-600">
+                  Error al inicializar. Intenta de nuevo.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
