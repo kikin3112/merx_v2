@@ -1,26 +1,51 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
 
 from ..datos.db import get_db
 from ..datos.modelos import ConfiguracionContable, CuentasContables
 from ..datos.esquemas import ConfiguracionContableUpdate, ConfiguracionContableResponse
-from ..utils.seguridad import require_tenant_roles, UserContext
+from ..utils.seguridad import require_tenant_roles, UserContext, get_superadmin
 from ..utils.logger import setup_logger
+from ..servicios.servicio_tenants import ServicioTenants
 
 router = APIRouter()
 logger = setup_logger(__name__)
 
 
+@router.post("/inicializar")
+async def inicializar_configuracion(
+        request: Request,
+        db: Session = Depends(get_db),
+        ctx: UserContext = Depends(require_tenant_roles("admin"))
+):
+    """
+    Inicializa la configuración contable básica del tenant.
+    Crea cuentas PUC, configuraciones contables, secuencias y medios de pago.
+    Útil para tenants creados antes de implementar la inicialización automática.
+    """
+    tenant_id = getattr(request.state, 'tenant_id', None) or ctx.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="X-Tenant-ID header requerido")
+
+    servicio = ServicioTenants(db)
+    servicio._inicializar_configuracion_tenant(tenant_id)
+    db.commit()
+
+    return {"message": "Configuración contable inicializada correctamente"}
+
+
 @router.get("/")
 async def listar_configuracion(
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    db: Session = Depends(get_db), ctx: UserContext = Depends(require_tenant_roles("admin", "contador"))
 ):
     """Lista todas las configuraciones contables del tenant con datos de cuentas."""
-    configs = db.query(ConfiguracionContable).filter(
-        ConfiguracionContable.tenant_id == ctx.tenant_id
-    ).order_by(ConfiguracionContable.concepto).all()
+    configs = (
+        db.query(ConfiguracionContable)
+        .filter(ConfiguracionContable.tenant_id == ctx.tenant_id)
+        .order_by(ConfiguracionContable.concepto)
+        .all()
+    )
 
     result = []
     for cfg in configs:
@@ -44,38 +69,38 @@ async def listar_configuracion(
 
 @router.put("/{concepto}")
 async def actualizar_configuracion(
-        concepto: str,
-        data: ConfiguracionContableUpdate,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    concepto: str,
+    data: ConfiguracionContableUpdate,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Actualiza la configuración contable de un concepto."""
-    config = db.query(ConfiguracionContable).filter(
-        ConfiguracionContable.tenant_id == ctx.tenant_id,
-        ConfiguracionContable.concepto == concepto
-    ).first()
+    config = (
+        db.query(ConfiguracionContable)
+        .filter(ConfiguracionContable.tenant_id == ctx.tenant_id, ConfiguracionContable.concepto == concepto)
+        .first()
+    )
 
     if not config:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Configuración '{concepto}' no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Configuración '{concepto}' no encontrada")
 
     # Validate accounts exist if provided
     if data.cuenta_debito_id is not None:
-        cuenta = db.query(CuentasContables).filter(
-            CuentasContables.id == data.cuenta_debito_id,
-            CuentasContables.tenant_id == ctx.tenant_id
-        ).first()
+        cuenta = (
+            db.query(CuentasContables)
+            .filter(CuentasContables.id == data.cuenta_debito_id, CuentasContables.tenant_id == ctx.tenant_id)
+            .first()
+        )
         if not cuenta:
             raise HTTPException(status_code=400, detail="Cuenta débito no encontrada")
         config.cuenta_debito_id = data.cuenta_debito_id
 
     if data.cuenta_credito_id is not None:
-        cuenta = db.query(CuentasContables).filter(
-            CuentasContables.id == data.cuenta_credito_id,
-            CuentasContables.tenant_id == ctx.tenant_id
-        ).first()
+        cuenta = (
+            db.query(CuentasContables)
+            .filter(CuentasContables.id == data.cuenta_credito_id, CuentasContables.tenant_id == ctx.tenant_id)
+            .first()
+        )
         if not cuenta:
             raise HTTPException(status_code=400, detail="Cuenta crédito no encontrada")
         config.cuenta_credito_id = data.cuenta_credito_id
