@@ -3,10 +3,11 @@ Configuración global de la aplicación.
 Utiliza Pydantic Settings para validación y carga desde variables de entorno.
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import PostgresDsn, Field, computed_field, field_validator, ValidationError, model_validator
-from typing import List, Literal, Optional, Any
 import secrets
+from typing import Any, List, Literal, Optional
+
+from pydantic import Field, PostgresDsn, ValidationError, computed_field, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -296,7 +297,7 @@ class Settings(BaseSettings):
             # If SECRET_KEY not set in development, generate one
             environment = data.get("ENVIRONMENT", "development")
             if not data.get("SECRET_KEY") and environment == "development":
-                data["SECRET_KEY"] = "dev_secret_key_for_development_only_min_32_chars"
+                data["SECRET_KEY"] = "dev_secret_key_for_development_only_min_32_chars"  # nosec B105
 
             # In production, both must be set
             if environment == "production":

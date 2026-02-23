@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal';
 import DataCard from '../components/ui/DataCard';
 import type { Inventario, MovimientoInventario, Producto } from '../types';
 
-type Tab = 'valorizado' | 'movimientos' | 'alertas';
+type Tab = 'valorizado' | 'movimientos' | 'alertas' | 'jerarquia';
 
 const TIPO_MOV_LABELS: Record<string, { label: string; color: string }> = {
   ENTRADA: { label: 'Entrada', color: 'bg-green-100 text-green-700' },
@@ -38,6 +38,12 @@ export default function InventarioPage() {
     queryKey: ['inventario-alertas'],
     queryFn: () => inventarios.alertas().then((r) => r.data),
     enabled: tab === 'alertas',
+  });
+
+  const { data: jerarquia, isLoading: loadingJerarquia } = useQuery({
+    queryKey: ['inventario-jerarquia'],
+    queryFn: () => inventarios.jerarquia().then((r) => r.data),
+    enabled: tab === 'jerarquia',
   });
 
   const { data: productosList } = useQuery<Producto[]>({
@@ -104,6 +110,7 @@ export default function InventarioPage() {
           { key: 'valorizado', label: 'Valorizado' },
           { key: 'movimientos', label: 'Movimientos' },
           { key: 'alertas', label: 'Alertas Stock' },
+          { key: 'jerarquia', label: 'Jerarquía' },
         ] as const).map((t) => (
           <button
             key={t.key}
@@ -337,6 +344,39 @@ export default function InventarioPage() {
         )
       )}
 
+      {/* Jerarquía Tab */}
+      {tab === 'jerarquia' && (
+        loadingJerarquia ? (
+          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+        ) : (
+          <div>
+            {jerarquia && (
+              <div className="flex gap-4 mb-4 flex-wrap">
+                <div className="rounded-xl bg-white border border-gray-200 p-4 flex-1 min-w-40">
+                  <p className="text-xs text-gray-500">Total productos</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{jerarquia.total_productos}</p>
+                </div>
+                <div className="rounded-xl bg-white border border-gray-200 p-4 flex-1 min-w-40">
+                  <p className="text-xs text-gray-500">Valor total</p>
+                  <p className="text-2xl font-bold text-primary-600 mt-1">{formatCurrency(jerarquia.valor_total)}</p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-3">
+              {jerarquia?.productos.map((p) => (
+                <JerarquiaProductoCard key={p.producto_id} producto={p} />
+              ))}
+              {jerarquia?.productos.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-lg mb-2">Sin datos de inventario</p>
+                  <p className="text-sm">Registra entradas para ver la jerarquía</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      )}
+
       {/* Entrada Modal */}
       <Modal open={entradaOpen} onClose={() => setEntradaOpen(false)} title="Entrada de Mercancia">
         <EntradaForm
@@ -358,6 +398,94 @@ export default function InventarioPage() {
           onCancel={() => setAjusteOpen(false)}
         />
       </Modal>
+    </div>
+  );
+}
+
+// ---- Jerarquía Card ----
+
+type JerarquiaProducto = {
+  producto_id: string;
+  nombre: string;
+  codigo: string;
+  cantidad: number;
+  costo_promedio: number;
+  valor_total: number;
+  stock_minimo: number | null;
+  alerta: boolean;
+  ultimos_movimientos: Array<{
+    id: string;
+    tipo: string;
+    cantidad: number;
+    fecha: string | null;
+    referencia: string | null;
+  }>;
+};
+
+function JerarquiaProductoCard({ producto }: { producto: JerarquiaProducto }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className={`rounded-xl border bg-white overflow-hidden ${producto.alerta ? 'border-red-300' : 'border-gray-200'}`}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          {producto.alerta && (
+            <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" title="Stock bajo" />
+          )}
+          <div>
+            <p className="text-sm font-medium text-gray-900">{producto.nombre}</p>
+            <p className="text-xs text-gray-500 font-mono">{producto.codigo}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="text-right">
+            <p className={`text-sm font-semibold ${producto.alerta ? 'text-red-600' : 'text-gray-900'}`}>
+              {formatNumber(producto.cantidad)} uds
+            </p>
+            <p className="text-xs text-gray-400">{formatCurrency(producto.valor_total)}</p>
+          </div>
+          <svg
+            className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
+          <div className="flex gap-4 mb-3 text-xs text-gray-500 flex-wrap">
+            <span>Costo promedio: <strong className="text-gray-700">{formatCurrency(producto.costo_promedio)}</strong></span>
+            {producto.stock_minimo != null && (
+              <span>Stock mínimo: <strong className={producto.alerta ? 'text-red-600' : 'text-gray-700'}>{formatNumber(producto.stock_minimo)}</strong></span>
+            )}
+          </div>
+          {producto.ultimos_movimientos.length > 0 ? (
+            <>
+              <p className="text-xs font-medium text-gray-500 mb-2">Últimos movimientos</p>
+              <div className="space-y-1.5">
+                {producto.ultimos_movimientos.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between text-xs">
+                    <span className={`font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)} — {m.tipo}
+                    </span>
+                    <span className="text-gray-400">
+                      {m.fecha ? formatDate(m.fecha) : '-'}
+                      {m.referencia && ` · ${m.referencia}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-gray-400">Sin movimientos recientes</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

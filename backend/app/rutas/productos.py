@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import func
+import base64
+import json
+import re
 from typing import List, Optional
 from uuid import UUID
-import re
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
+from ..datos.esquemas import ProductoCreate, ProductoResponse, ProductoUpdate
 from ..datos.modelos import Productos, Usuarios
-from ..datos.esquemas import ProductoCreate, ProductoUpdate, ProductoResponse
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
 from ..utils.logger import setup_logger
+from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -180,11 +182,78 @@ async def listar_por_categoria(
     )
 
     if solo_activos:
-        query = query.filter(Productos.estado == True)
+        query = query.filter(Productos.estado)
 
     productos = query.order_by(Productos.nombre).offset(skip).limit(limit).all()
 
     return [ProductoResponse.model_validate(p) for p in productos]
+
+
+@router.get("/paginado", response_model=dict)
+async def listar_productos_cursor(
+    cursor: Optional[str] = Query(None, description="Cursor opaco de paginación (base64)"),
+    limit: int = Query(50, ge=1, le=200),
+    categoria: Optional[str] = Query(None),
+    estado: Optional[bool] = Query(None),
+    busqueda: Optional[str] = Query(None, min_length=2),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """
+    Lista productos con paginación por cursor (keyset pagination).
+    Garantiza consistencia al insertar/eliminar registros concurrentemente.
+
+    El cursor codifica la posición (nombre, id) del último ítem retornado.
+    Retorna: { items: [...], next_cursor: str | null, has_more: bool }
+    """
+    query = (
+        db.query(Productos).options(selectinload(Productos.created_by_user)).filter(Productos.tenant_id == tenant_id)
+    )
+
+    if categoria:
+        query = query.filter(Productos.categoria == categoria)
+    if estado is not None:
+        query = query.filter(Productos.estado == estado)
+    if busqueda:
+        pattern = f"%{busqueda}%"
+        query = query.filter((Productos.nombre.ilike(pattern)) | (Productos.codigo_interno.ilike(pattern)))
+
+    # Decodificar cursor si existe
+    if cursor:
+        try:
+            raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+            pos = json.loads(raw)
+            cursor_nombre = pos["nombre"]
+            cursor_id = pos["id"]
+            # Keyset: (nombre > cursor_nombre) OR (nombre == cursor_nombre AND id > cursor_id)
+            from sqlalchemy import and_, or_
+
+            query = query.filter(
+                or_(
+                    Productos.nombre > cursor_nombre,
+                    and_(Productos.nombre == cursor_nombre, Productos.id > cursor_id),
+                )
+            )
+        except Exception:
+            raise HTTPException(status_code=400, detail="Cursor inválido")
+
+    items = query.order_by(Productos.nombre, Productos.id).limit(limit + 1).all()
+
+    has_more = len(items) > limit
+    page_items = items[:limit]
+
+    next_cursor = None
+    if has_more and page_items:
+        last = page_items[-1]
+        pos = {"nombre": last.nombre, "id": str(last.id)}
+        next_cursor = base64.urlsafe_b64encode(json.dumps(pos).encode()).decode()
+
+    return {
+        "items": [ProductoResponse.model_validate(p) for p in page_items],
+        "next_cursor": next_cursor,
+        "has_more": has_more,
+    }
 
 
 @router.get("/{producto_id}", response_model=ProductoResponse)

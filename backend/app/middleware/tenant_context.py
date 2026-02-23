@@ -8,11 +8,11 @@ from contextvars import ContextVar
 from typing import Optional
 from uuid import UUID
 
-from fastapi import Request, HTTPException, status
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
+from fastapi import HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 from ..utils.logger import setup_logger
 
@@ -116,6 +116,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     EXCLUDED_PREFIXES = (
         "/api/v1/superadmin/",  # Rutas de superadmin
         "/api/v1/tenants/",  # Tenant management (superadmin + public routes)
+        "/api/v1/sse/",  # SSE: EventSource no soporta headers custom; tenant validado vía JWT
     )
 
     async def dispatch(self, request: Request, call_next):

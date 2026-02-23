@@ -1,24 +1,27 @@
-from typing import List, Optional
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..datos.db import get_db
 from ..datos.esquemas import (
-    Token,
-    LoginRequest,
     ChangePasswordRequest,
-    UsuarioResponse,
+    LoginRequest,
     TenantBriefResponse,
-    TokenWithTenants,
+    TenantSelectionRequest,
+    Token,
     TokenWithTenant,
-    TenantSelectionRequest
+    TokenWithTenants,
+    UsuarioResponse,
 )
 from ..datos.modelos import Usuarios
-from ..servicios.servicio_tenants import ServicioTenants
 from ..servicios.servicio_audit import ServicioAuditLog
+from ..servicios.servicio_tenants import ServicioTenants
+from ..utils.logger import set_request_context, setup_logger
+from ..utils.rate_limiter import limiter
 from ..utils.seguridad import (
     authenticate_user,
     create_access_token,
@@ -26,12 +29,9 @@ from ..utils.seguridad import (
     decode_refresh_token,
     get_current_user,
     hash_password,
+    require_not_impersonating,
     verify_password,
-    require_not_impersonating
 )
-from ..config import settings
-from ..utils.rate_limiter import limiter
-from ..utils.logger import setup_logger, set_request_context
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -63,15 +63,15 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
             "Intento de login fallido",
             extra={
                 "ip": request.client.host if request.client else "unknown",
-                "user_agent": request.headers.get("user-agent", "unknown")
-            }
+                "user_agent": request.headers.get("user-agent", "unknown"),
+            },
         )
         # Audit: login fallido
         audit.registrar_login(request, credentials.email, exitoso=False)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Verificar que el usuario esté activo
@@ -79,8 +79,7 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
         logger.warning(f"Intento de login con usuario inactivo: {user.email}")
         audit.registrar_login(request, user.email, exitoso=False, user_id=user.id)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario inactivo. Contacte al administrador."
+            status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo. Contacte al administrador."
         )
 
     # Actualizar ultimo_acceso
@@ -100,13 +99,11 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     # Generar tokens (sin tenant_id aún)
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "rol": user.rol},
-        expires_delta=access_token_expires
+        data={"sub": str(user.id), "email": user.email, "rol": user.rol}, expires_delta=access_token_expires
     )
 
     refresh_token = create_refresh_token(
-        data={"sub": str(user.id)},
-        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        data={"sub": str(user.id)}, expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     )
 
     # Establecer contexto de usuario para logs subsecuentes
@@ -118,8 +115,8 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
             "user_id": str(user.id),
             "rol": user.rol,
             "tenants_count": len(tenants_response),
-            "ip": request.client.host if request.client else "unknown"
-        }
+            "ip": request.client.host if request.client else "unknown",
+        },
     )
 
     # Audit: login exitoso
@@ -128,10 +125,10 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     return TokenWithTenants(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # nosec B106
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UsuarioResponse.model_validate(user),
-        tenants=tenants_response
+        tenants=tenants_response,
     )
 
 
@@ -140,7 +137,7 @@ async def select_tenant(
     request: Request,
     selection: TenantSelectionRequest,
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Selecciona un tenant y genera un nuevo token con contexto de tenant.
@@ -152,25 +149,16 @@ async def select_tenant(
     # Validar acceso al tenant
     usuario_tenant = servicio.validar_acceso_tenant(current_user.id, selection.tenant_id)
     if not usuario_tenant:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes acceso a este tenant"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este tenant")
 
     # Obtener información del tenant
     tenant = servicio.obtener_tenant_por_id(selection.tenant_id)
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
 
     # Verificar que el tenant esté activo
     if not tenant.esta_activo:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="El tenant está suspendido o inactivo"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El tenant está suspendido o inactivo")
 
     # Generar nuevos tokens CON tenant_id
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -178,12 +166,11 @@ async def select_tenant(
         data={"sub": str(current_user.id), "email": current_user.email, "rol": current_user.rol},
         expires_delta=access_token_expires,
         tenant_id=selection.tenant_id,
-        rol_en_tenant=usuario_tenant.rol
+        rol_en_tenant=usuario_tenant.rol,
     )
 
     refresh_token = create_refresh_token(
-        data={"sub": str(current_user.id)},
-        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        data={"sub": str(current_user.id)}, expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     )
 
     logger.info(
@@ -192,18 +179,18 @@ async def select_tenant(
             "user_id": str(current_user.id),
             "tenant_id": str(tenant.id),
             "rol_en_tenant": usuario_tenant.rol,
-            "ip": request.client.host if request.client else "unknown"
-        }
+            "ip": request.client.host if request.client else "unknown",
+        },
     )
 
     return TokenWithTenant(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # nosec B106
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UsuarioResponse.model_validate(current_user),
         tenant=TenantBriefResponse.model_validate(tenant),
-        rol_en_tenant=usuario_tenant.rol
+        rol_en_tenant=usuario_tenant.rol,
     )
 
 
@@ -213,7 +200,7 @@ async def refresh_access_token(
     request: Request,
     refresh_token: str = Body(..., embed=True),
     tenant_id: Optional[str] = Body(None, embed=True),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Renueva el access token usando un refresh token válido.
@@ -225,35 +212,23 @@ async def refresh_access_token(
         user_id = payload.get("sub")
 
         if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token inválido"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token inválido")
 
         # Validar usuario en DB
         try:
             user_uuid = UUID(user_id)
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token malformado"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token malformado")
 
         user = db.query(Usuarios).filter(Usuarios.id == user_uuid).first()
 
         if not user:
             logger.warning(f"Refresh token para usuario inexistente: {user_id}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario no encontrado"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado")
 
         if not user.estado:
             logger.warning(f"Refresh token para usuario inactivo: {user.email}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Usuario inactivo"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
         # Validar tenant_id si se proporcionó (preservar contexto de tenant)
         resolved_tenant_id = None
@@ -277,12 +252,11 @@ async def refresh_access_token(
             data={"sub": str(user.id), "email": user.email, "rol": user.rol},
             expires_delta=access_token_expires,
             tenant_id=resolved_tenant_id,
-            rol_en_tenant=resolved_rol_tenant
+            rol_en_tenant=resolved_rol_tenant,
         )
 
         new_refresh_token = create_refresh_token(
-            data={"sub": str(user.id)},
-            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            data={"sub": str(user.id)}, expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         )
 
         logger.info(f"Token renovado para: {user.email}" + (f" (tenant: {tenant_id})" if tenant_id else ""))
@@ -290,23 +264,18 @@ async def refresh_access_token(
         return Token(
             access_token=new_access_token,
             refresh_token=new_refresh_token,
-            token_type="bearer",
+            token_type="bearer",  # nosec B106
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            user=UsuarioResponse.model_validate(user)
+            user=UsuarioResponse.model_validate(user),
         )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(
-            "Error renovando token",
-            exc_info=e,
-            extra={"ip": request.client.host if request.client else "unknown"}
+            "Error renovando token", exc_info=e, extra={"ip": request.client.host if request.client else "unknown"}
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token inválido o expirado"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token inválido o expirado")
 
 
 @router.get("/me", response_model=UsuarioResponse)
@@ -326,7 +295,7 @@ async def change_password(
     password_data: ChangePasswordRequest,
     _: None = Depends(require_not_impersonating),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Cambia la contraseña del usuario autenticado.
@@ -339,13 +308,9 @@ async def change_password(
     # Validar contraseña actual
     if not verify_password(password_data.current_password, current_user.password_hash):
         logger.warning(
-            f"Intento fallido de cambio de contraseña: {current_user.email}",
-            extra={"user_id": str(current_user.id)}
+            f"Intento fallido de cambio de contraseña: {current_user.email}", extra={"user_id": str(current_user.id)}
         )
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Contraseña actual incorrecta"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
 
     # Actualizar contraseña
     current_user.password_hash = hash_password(password_data.new_password)
@@ -353,10 +318,7 @@ async def change_password(
 
     logger.info(
         f"Contraseña cambiada: {current_user.email}",
-        extra={
-            "user_id": str(current_user.id),
-            "ip": request.client.host if request.client else "unknown"
-        }
+        extra={"user_id": str(current_user.id), "ip": request.client.host if request.client else "unknown"},
     )
 
     # Audit: cambio de contraseña
@@ -376,10 +338,7 @@ async def logout(request: Request, current_user: Usuarios = Depends(get_current_
     **Nota:** Con JWT stateless, el logout es del lado del cliente.
     El cliente debe eliminar los tokens de su almacenamiento.
     """
-    logger.info(
-        f"Logout: {current_user.email}",
-        extra={"user_id": str(current_user.id)}
-    )
+    logger.info(f"Logout: {current_user.email}", extra={"user_id": str(current_user.id)})
 
     # Audit: logout
     audit = ServicioAuditLog(db)
