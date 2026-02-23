@@ -20,7 +20,7 @@ from .utils.rate_limiter import limiter
 from .datos.db import engine, SessionLocal
 
 # Sentry integration (production/staging only)
-if settings.ENVIRONMENT in ["production", "staging"] and hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
+if hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
