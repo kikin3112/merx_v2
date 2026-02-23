@@ -1,28 +1,32 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
-from typing import Optional, List
-from datetime import datetime, date, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
+from typing import List, Optional
 from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 # ============================================================================
 # AUTENTICACIÓN
 # ============================================================================
 
+
 class LoginRequest(BaseModel):
     """Schema para request de login"""
+
     email: EmailStr = Field(..., description="Email del usuario")
     password: str = Field(..., min_length=1, description="Contraseña")
 
 
 class ChangePasswordRequest(BaseModel):
     """Schema para cambio de contraseña"""
+
     current_password: str = Field(..., min_length=1, description="Contraseña actual")
     new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
 
 
 class Token(BaseModel):
     """Schema para respuesta de autenticación con tokens"""
+
     access_token: str = Field(..., description="Token de acceso JWT")
     refresh_token: str = Field(..., description="Token de refresh JWT")
     token_type: str = Field(default="bearer", description="Tipo de token")
@@ -34,8 +38,10 @@ class Token(BaseModel):
 # USUARIOS
 # ============================================================================
 
+
 class UsuarioMini(BaseModel):
     """Schema mínimo de usuario para embeddings (creadores, etc.)"""
+
     id: UUID
     nombre: str
     email: str
@@ -52,6 +58,7 @@ class UsuarioBase(BaseModel):
 
 class UsuarioCreate(UsuarioBase):
     """Creación de usuario. El rol 'superadmin' NO es asignable via API."""
+
     rol: str = Field(..., pattern="^(admin|operador|contador|vendedor|readonly)$")
     password: str = Field(..., min_length=8)
 
@@ -76,6 +83,7 @@ class UsuarioResponse(UsuarioBase):
 # ============================================================================
 # TERCEROS
 # ============================================================================
+
 
 class TerceroBase(BaseModel):
     tipo_documento: str = Field(..., pattern="^(CC|NIT|CE|PAS|TI)$")
@@ -127,6 +135,7 @@ class TerceroResponse(TerceroBase):
 # PRODUCTOS
 # ============================================================================
 
+
 class ProductoBase(BaseModel):
     codigo_interno: str = Field(..., max_length=50)
     codigo_barras: Optional[str] = Field(None, max_length=100)
@@ -174,6 +183,7 @@ class ProductoResponse(ProductoBase):
 # ============================================================================
 # INVENTARIOS
 # ============================================================================
+
 
 class InventarioBase(BaseModel):
     producto_id: UUID
@@ -227,6 +237,7 @@ class MovimientoInventarioResponse(MovimientoInventarioBase):
 # VENTAS
 # ============================================================================
 
+
 class VentasDetalleBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
@@ -241,6 +252,7 @@ class VentasDetalleCreate(VentasDetalleBase):
     Los campos calculados (subtotal, base_gravable, valor_iva, total_linea)
     se generan automáticamente via @hybrid_property en el modelo.
     """
+
     pass
 
 
@@ -248,14 +260,26 @@ class VentasDetalleResponse(VentasDetalleBase):
     """
     Schema de respuesta con campos calculados incluidos
     """
+
     id: UUID
     venta_id: UUID
+    nombre: Optional[str] = None
+    categoria: Optional[str] = None
     # Campos calculados (vienen del modelo via @hybrid_property)
     subtotal: Decimal
     base_gravable: Decimal
     valor_iva: Decimal
     total_linea: Decimal
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _add_producto_fields(cls, value, handler):
+        result = handler(value)
+        if hasattr(value, "producto") and value.producto:
+            result.nombre = value.producto.nombre
+            result.categoria = value.producto.categoria
+        return result
 
 
 class VentasBase(BaseModel):
@@ -271,6 +295,7 @@ class VentasCreate(BaseModel):
     NO requiere totales manuales del cliente.
     Los totales se calculan automáticamente en el servicio.
     """
+
     tercero_id: UUID
     fecha_venta: date
     descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Descuento global % (0-100)")
@@ -287,6 +312,7 @@ class VentasResponse(BaseModel):
     """
     Schema de respuesta con todos los campos calculados
     """
+
     id: UUID
     numero_venta: str
     tercero_id: UUID
@@ -319,6 +345,7 @@ class VentasResponse(BaseModel):
 # COMPRAS
 # ============================================================================
 
+
 class ComprasDetalleBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
@@ -329,6 +356,7 @@ class ComprasDetalleBase(BaseModel):
 
 class ComprasDetalleCreate(ComprasDetalleBase):
     """Los campos calculados se generan automáticamente"""
+
     pass
 
 
@@ -352,6 +380,7 @@ class ComprasBase(BaseModel):
 
 class ComprasCreate(BaseModel):
     """NO requiere totales manuales"""
+
     tercero_id: UUID
     fecha_compra: date
     descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
@@ -395,6 +424,7 @@ class ComprasResponse(BaseModel):
 # ÓRDENES DE PRODUCCIÓN
 # ============================================================================
 
+
 class OrdenesProduccionDetalleBase(BaseModel):
     insumo_id: UUID
     cantidad_requerida: Decimal = Field(..., gt=0)
@@ -403,6 +433,7 @@ class OrdenesProduccionDetalleBase(BaseModel):
 
 class OrdenesProduccionDetalleCreate(OrdenesProduccionDetalleBase):
     """Costo total se calcula automáticamente"""
+
     pass
 
 
@@ -424,6 +455,7 @@ class OrdenesProduccionBase(BaseModel):
 
 class OrdenesProduccionCreate(BaseModel):
     """NO requiere costo_estimado manual"""
+
     producto_id: UUID
     cantidad_producir: Decimal = Field(..., gt=0)
     fecha_inicio: date
@@ -468,13 +500,11 @@ class OrdenesProduccionResponse(BaseModel):
 # RECETAS (BOM - Bill of Materials)
 # ============================================================================
 
+
 class RecetaIngredienteBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
-    unidad: str = Field(
-        default="UNIDAD",
-        pattern="^(UNIDAD|GRAMO|KILOGRAMO|MILILITRO|LITRO|METRO|CENTIMETRO)$"
-    )
+    unidad: str = Field(default="UNIDAD", pattern="^(UNIDAD|GRAMO|KILOGRAMO|MILILITRO|LITRO|METRO|CENTIMETRO)$")
     notas: Optional[str] = Field(None, max_length=200)
 
 
@@ -534,6 +564,7 @@ class RecetaResponse(RecetaBase):
 # RECETAS - CALCULAR COSTO
 # ============================================================================
 
+
 class IngredienteCostoDetalle(BaseModel):
     producto_id: str
     producto_nombre: str
@@ -561,6 +592,7 @@ class RecetaCostoResponse(BaseModel):
 # RECETAS - PRODUCCION
 # ============================================================================
 
+
 class ProduccionRequest(BaseModel):
     cantidad: Decimal = Field(..., gt=0, description="Cantidad de lotes a producir")
     observaciones: Optional[str] = None
@@ -582,6 +614,7 @@ class ProduccionResponse(BaseModel):
 # ============================================================================
 # COTIZACIONES
 # ============================================================================
+
 
 class CotizacionesDetalleBase(BaseModel):
     producto_id: UUID
@@ -658,6 +691,7 @@ class CotizacionesResponse(BaseModel):
 # CUENTAS CONTABLES
 # ============================================================================
 
+
 class CuentaContableBase(BaseModel):
     codigo: str = Field(..., max_length=20)
     nombre: str = Field(..., max_length=200)
@@ -689,6 +723,7 @@ class CuentaContableResponse(CuentaContableBase):
 # ============================================================================
 # CONFIGURACIÓN CONTABLE
 # ============================================================================
+
 
 class ConfiguracionContableBase(BaseModel):
     concepto: str = Field(..., max_length=100)
@@ -726,6 +761,7 @@ class ConfiguracionContableResponse(BaseModel):
 # PERÍODOS CONTABLES
 # ============================================================================
 
+
 class PeriodoContableResponse(BaseModel):
     id: UUID
     anio: int
@@ -741,6 +777,7 @@ class PeriodoContableResponse(BaseModel):
 # ============================================================================
 # ASIENTOS CONTABLES
 # ============================================================================
+
 
 class DetalleAsientoBase(BaseModel):
     cuenta_id: UUID
@@ -808,6 +845,7 @@ class AsientoContableResponse(BaseModel):
 # MEDIOS DE PAGO
 # ============================================================================
 
+
 class MedioPagoBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     tipo: str = Field(..., pattern="^(EFECTIVO|TRANSFERENCIA|CHEQUE|TARJETA_CREDITO|TARJETA_DEBITO|OTRO)$")
@@ -835,6 +873,7 @@ class MedioPagoResponse(MedioPagoBase):
 # ============================================================================
 # CARTERA (CUENTAS POR COBRAR/PAGAR)
 # ============================================================================
+
 
 class CarteraBase(BaseModel):
     tipo_cartera: str = Field(..., pattern="^(COBRAR|PAGAR)$")
@@ -888,6 +927,7 @@ class PagoCarteraResponse(PagoCarteraBase):
 # SECUENCIAS
 # ============================================================================
 
+
 class SecuenciaBase(BaseModel):
     nombre: str = Field(..., max_length=50)
     prefijo: str = Field(..., max_length=20)
@@ -913,6 +953,7 @@ class SecuenciaResponse(SecuenciaBase):
 # ============================================================================
 # PLANES (Multi-Tenancy)
 # ============================================================================
+
 
 class PlanBase(BaseModel):
     nombre: str = Field(..., max_length=100)
@@ -952,6 +993,7 @@ class PlanResponse(PlanBase):
 
 class PlanWithStats(PlanResponse):
     """Plan con estadísticas de uso."""
+
     tenant_count: int = 0
 
 
@@ -959,9 +1001,10 @@ class PlanWithStats(PlanResponse):
 # TENANTS (Multi-Tenancy)
 # ============================================================================
 
+
 class TenantBase(BaseModel):
     nombre: str = Field(..., max_length=200)
-    slug: str = Field(..., max_length=100, pattern=r'^[a-z0-9-]+$')
+    slug: str = Field(..., max_length=100, pattern=r"^[a-z0-9-]+$")
     nit: Optional[str] = Field(None, max_length=50)
     email_contacto: EmailStr
     telefono: Optional[str] = Field(None, max_length=50)
@@ -975,6 +1018,7 @@ class TenantBase(BaseModel):
 
 class TenantCreate(TenantBase):
     """Schema para crear un nuevo tenant (onboarding)"""
+
     plan_id: UUID
     # Datos del admin inicial
     admin_nombre: str = Field(..., max_length=100)
@@ -1008,6 +1052,7 @@ class TenantResponse(TenantBase):
 
 class TenantBriefResponse(BaseModel):
     """Respuesta simplificada de tenant para listados"""
+
     id: UUID
     nombre: str
     slug: str
@@ -1019,11 +1064,9 @@ class TenantBriefResponse(BaseModel):
 # USUARIOS-TENANTS (Multi-Tenancy)
 # ============================================================================
 
+
 class UsuarioTenantBase(BaseModel):
-    rol: str = Field(
-        default="operador",
-        pattern="^(admin|operador|contador|vendedor|readonly)$"
-    )
+    rol: str = Field(default="operador", pattern="^(admin|operador|contador|vendedor|readonly)$")
     esta_activo: bool = True
     es_default: bool = False
 
@@ -1053,13 +1096,16 @@ class UsuarioTenantResponse(UsuarioTenantBase):
 # AUTENTICACIÓN CON MULTI-TENANT
 # ============================================================================
 
+
 class TenantSelectionRequest(BaseModel):
     """Request para seleccionar un tenant después del login"""
+
     tenant_id: UUID
 
 
 class TokenWithTenants(BaseModel):
     """Respuesta de login con lista de tenants disponibles"""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -1070,6 +1116,7 @@ class TokenWithTenants(BaseModel):
 
 class TokenWithTenant(BaseModel):
     """Respuesta después de seleccionar un tenant"""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -1083,11 +1130,13 @@ class TokenWithTenant(BaseModel):
 # REGISTRO DE TENANT (Onboarding)
 # ============================================================================
 
+
 class TenantRegisterRequest(BaseModel):
     """Request para registrar un nuevo tenant y su admin"""
+
     # Datos del tenant
     nombre_empresa: str = Field(..., max_length=200)
-    slug: str = Field(..., max_length=100, pattern=r'^[a-z0-9-]+$')
+    slug: str = Field(..., max_length=100, pattern=r"^[a-z0-9-]+$")
     nit: Optional[str] = Field(None, max_length=50)
     email_empresa: EmailStr
     telefono: Optional[str] = Field(None, max_length=50)
@@ -1105,6 +1154,7 @@ class TenantRegisterRequest(BaseModel):
 
 class TenantRegisterResponse(BaseModel):
     """Respuesta del registro de tenant"""
+
     tenant: TenantResponse
     user: UsuarioResponse
     message: str = "Tenant registrado exitosamente"
@@ -1114,18 +1164,22 @@ class TenantRegisterResponse(BaseModel):
 # TENANT ACCIONES (Superadmin)
 # ============================================================================
 
+
 class TenantChangePlanRequest(BaseModel):
     """Request para cambiar el plan de un tenant."""
+
     plan_id: UUID
 
 
 class TenantExtendTrialRequest(BaseModel):
     """Request para extender el periodo trial de un tenant."""
+
     dias_adicionales: int = Field(..., ge=1, le=90)
 
 
 class TenantMetricas(BaseModel):
     """Métricas de uso de un tenant."""
+
     tenant_id: UUID
     usuarios_count: int = 0
     productos_count: int = 0
@@ -1139,17 +1193,19 @@ class TenantMetricas(BaseModel):
 
 class TenantPulse(BaseModel):
     """Health Score de un tenant para predecir churn."""
+
     tenant_id: UUID
-    score: int = Field(..., ge=0, le=100)        # 0-100
-    estado_salud: str                             # 'saludable', 'en_riesgo', 'critico'
-    logins_recientes: int = 0                     # usuarios activos últimos 7 días
-    ventas_mes: int = 0                           # facturas/ventas último mes
-    dias_activo: int = 0                          # antigüedad del tenant
+    score: int = Field(..., ge=0, le=100)  # 0-100
+    estado_salud: str  # 'saludable', 'en_riesgo', 'critico'
+    logins_recientes: int = 0  # usuarios activos últimos 7 días
+    ventas_mes: int = 0  # facturas/ventas último mes
+    dias_activo: int = 0  # antigüedad del tenant
     calculado_en: datetime
 
 
 class SaaSDashboardKPIs(BaseModel):
     """KPIs del dashboard SaaS para superadmin."""
+
     total_tenants: int = 0
     tenants_activos: int = 0
     tenants_trial: int = 0
@@ -1163,6 +1219,7 @@ class SaaSDashboardKPIs(BaseModel):
 
 class SuscripcionResponse(BaseModel):
     """Respuesta de suscripción."""
+
     id: UUID
     tenant_id: UUID
     plan_id: UUID
@@ -1176,6 +1233,7 @@ class SuscripcionResponse(BaseModel):
 
 class PagoHistorialResponse(BaseModel):
     """Respuesta de historial de pagos."""
+
     id: UUID
     suscripcion_id: UUID
     monto: Decimal
@@ -1189,6 +1247,7 @@ class PagoHistorialResponse(BaseModel):
 
 class UsuarioTenantDetailResponse(BaseModel):
     """Respuesta de usuario en tenant con detalle de usuario."""
+
     id: UUID
     usuario_id: UUID
     tenant_id: UUID
@@ -1204,8 +1263,10 @@ class UsuarioTenantDetailResponse(BaseModel):
 # AUDIT LOGS
 # ============================================================================
 
+
 class AuditLogResponse(BaseModel):
     """Respuesta de un registro de auditoría."""
+
     id: UUID
     actor_id: Optional[UUID] = None
     actor_email: str
@@ -1222,6 +1283,7 @@ class AuditLogResponse(BaseModel):
 
 class AuditLogListResponse(BaseModel):
     """Respuesta paginada de audit logs."""
+
     items: List[AuditLogResponse]
     total: int
     page: int
@@ -1232,8 +1294,10 @@ class AuditLogListResponse(BaseModel):
 # GHOST MODE (IMPERSONACIÓN)
 # ============================================================================
 
+
 class ImpersonationResponse(BaseModel):
     """Respuesta al impersonar un usuario. Token de corta duración (15 min)."""
+
     access_token: str
     token_type: str = "bearer"
     expires_in: int = 900  # 15 minutos
@@ -1246,8 +1310,10 @@ class ImpersonationResponse(BaseModel):
 # USER GOVERNANCE (GOD MODE)
 # ============================================================================
 
+
 class GlobalUserCreate(BaseModel):
     """Crear usuario global sin asociación a tenant."""
+
     nombre: str = Field(..., max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
@@ -1257,6 +1323,7 @@ class GlobalUserCreate(BaseModel):
 
 class GlobalUserUpdate(BaseModel):
     """Actualizar datos globales de un usuario."""
+
     nombre: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
     rol: Optional[str] = Field(None, pattern="^(admin|operador|contador|vendedor|readonly)$")
@@ -1265,11 +1332,13 @@ class GlobalUserUpdate(BaseModel):
 
 class GlobalUserResponse(UsuarioResponse):
     """Usuario global con count de tenants."""
+
     tenant_count: int = 0
 
 
 class GlobalUserListResponse(BaseModel):
     """Respuesta paginada de usuarios globales."""
+
     items: List[GlobalUserResponse]
     total: int
     page: int
@@ -1278,6 +1347,7 @@ class GlobalUserListResponse(BaseModel):
 
 class ForcePasswordRequest(BaseModel):
     """Request para forzar reset de contraseña (superadmin)."""
+
     new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
 
 
@@ -1285,9 +1355,11 @@ class ForcePasswordRequest(BaseModel):
 # CRM SCHEMAS
 # ============================================================================
 
+
 # Pipelines
 class CrmPipelineBase(BaseModel):
     """Base schema para CRM Pipeline."""
+
     nombre: str = Field(..., max_length=100)
     descripcion: Optional[str] = None
     es_default: bool = False
@@ -1296,11 +1368,13 @@ class CrmPipelineBase(BaseModel):
 
 class CrmPipelineCreate(CrmPipelineBase):
     """Schema para crear Pipeline."""
+
     pass
 
 
 class CrmPipelineUpdate(BaseModel):
     """Schema para actualizar Pipeline."""
+
     nombre: Optional[str] = Field(None, max_length=100)
     descripcion: Optional[str] = None
     color: Optional[str] = Field(None, max_length=7)
@@ -1308,6 +1382,7 @@ class CrmPipelineUpdate(BaseModel):
 
 class CrmStageBase(BaseModel):
     """Base schema para CRM Stage."""
+
     nombre: str = Field(..., max_length=100)
     orden: int
     probabilidad: int = Field(default=10, ge=0, le=100)
@@ -1315,6 +1390,7 @@ class CrmStageBase(BaseModel):
 
 class CrmStageResponse(CrmStageBase):
     """Schema de respuesta para Stage."""
+
     id: UUID
     pipeline_id: UUID
     requiere_motivo_perdida: bool = False
@@ -1327,6 +1403,7 @@ class CrmStageResponse(CrmStageBase):
 
 class CrmPipelineResponse(CrmPipelineBase):
     """Schema de respuesta para Pipeline con stages."""
+
     id: UUID
     tenant_id: UUID
     created_at: datetime
@@ -1341,12 +1418,14 @@ class CrmPipelineResponse(CrmPipelineBase):
 # Stages
 class CrmStageCreate(CrmStageBase):
     """Schema para crear Stage."""
+
     pipeline_id: UUID
 
 
 # Deals
 class CrmDealBase(BaseModel):
     """Base schema para CRM Deal."""
+
     nombre: str = Field(..., max_length=200)
     tercero_id: UUID
     valor_estimado: Decimal = Field(default=Decimal("0"), decimal_places=2)
@@ -1356,6 +1435,7 @@ class CrmDealBase(BaseModel):
 
 class CrmDealCreate(CrmDealBase):
     """Schema para crear Deal."""
+
     pipeline_id: UUID
     stage_id: UUID
     usuario_id: Optional[UUID] = None
@@ -1363,6 +1443,7 @@ class CrmDealCreate(CrmDealBase):
 
 class CrmDealUpdate(BaseModel):
     """Schema para actualizar Deal."""
+
     nombre: Optional[str] = Field(None, max_length=200)
     valor_estimado: Optional[Decimal] = None
     fecha_cierre_estimada: Optional[date] = None
@@ -1371,6 +1452,7 @@ class CrmDealUpdate(BaseModel):
 
 class CrmDealResponse(CrmDealBase):
     """Schema de respuesta para Deal."""
+
     id: UUID
     stage_id: UUID
     pipeline_id: UUID
@@ -1393,11 +1475,13 @@ class CrmDealResponse(CrmDealBase):
 
 class CrmDealMoveRequest(BaseModel):
     """Request para mover deal a otro stage."""
+
     stage_id: UUID
 
 
 class CrmDealCloseRequest(BaseModel):
     """Request para cerrar deal."""
+
     estado_cierre: str = Field(..., pattern="^(GANADO|PERDIDO|ABANDONADO)$")
     motivo: Optional[str] = None
 
@@ -1405,6 +1489,7 @@ class CrmDealCloseRequest(BaseModel):
 # Activities
 class CrmActivityCreate(BaseModel):
     """Schema para crear Activity."""
+
     deal_id: UUID
     tipo: str = Field(..., pattern="^(NOTA|LLAMADA|EMAIL|REUNION|WHATSAPP|TAREA)$")
     asunto: Optional[str] = Field(None, max_length=200)
@@ -1412,7 +1497,7 @@ class CrmActivityCreate(BaseModel):
     fecha_actividad: Optional[datetime] = None
     duracion_minutos: int = Field(default=0, ge=0)
 
-    @field_validator('fecha_actividad', mode='before')
+    @field_validator("fecha_actividad", mode="before")
     @classmethod
     def set_default_fecha(cls, v):
         return v or datetime.now(timezone.utc)
@@ -1420,6 +1505,7 @@ class CrmActivityCreate(BaseModel):
 
 class CrmActivityResponse(BaseModel):
     """Schema de respuesta para Activity."""
+
     id: UUID
     deal_id: UUID
     usuario_id: Optional[UUID] = None
