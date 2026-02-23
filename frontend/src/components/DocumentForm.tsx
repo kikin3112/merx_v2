@@ -74,20 +74,24 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
 
   const tercerosFiltrados = useMemo(() => {
     if (!listaTerceros) return [];
-    if (!busquedaTercero) return listaTerceros;
-    const q = busquedaTercero.toLowerCase();
-    return listaTerceros.filter(
-      (t) => t.nombre.toLowerCase().includes(q) || t.numero_documento.includes(q)
-    );
+    const base = busquedaTercero
+      ? listaTerceros.filter((t) => {
+          const q = busquedaTercero.toLowerCase();
+          return t.nombre.toLowerCase().includes(q) || t.numero_documento.includes(q);
+        })
+      : listaTerceros;
+    return [...base].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }, [listaTerceros, busquedaTercero]);
 
   const productosFiltrados = useMemo(() => {
     if (!listaProductos) return [];
-    if (!busquedaProducto) return listaProductos;
-    const q = busquedaProducto.toLowerCase();
-    return listaProductos.filter(
-      (p) => p.nombre.toLowerCase().includes(q) || p.codigo_interno.toLowerCase().includes(q)
-    );
+    const base = busquedaProducto
+      ? listaProductos.filter((p) => {
+          const q = busquedaProducto.toLowerCase();
+          return p.nombre.toLowerCase().includes(q) || p.codigo_interno.toLowerCase().includes(q);
+        })
+      : listaProductos;
+    return [...base].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }, [listaProductos, busquedaProducto]);
 
   // Reset form when closing

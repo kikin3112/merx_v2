@@ -380,7 +380,7 @@ function PagoModal({ item, terceroNombre, onClose, onSuccess }: {
                 onChange={e => setMedioPagoId(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                {mediosPago?.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                {[...(mediosPago ?? [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
               </select>
             </div>
             <div>
