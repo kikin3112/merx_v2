@@ -32,10 +32,14 @@ test = [
 ]
 dev = [
     "ruff>=0.1.0",
+    "safety>=3.0.0",
+    "semgrep>=1.70.0",
+    "bandit[toml]>=1.8.0",
+    "pre-commit>=3.7.0",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests"]
+testpaths = ["backend/tests", "tests/security"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
@@ -55,3 +59,19 @@ exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501", "N806"]
+
+[tool.bandit]
+exclude_dirs = ["backend/tests", "tests", "alembic"]
+skips = [
+    "B101",   # assert_used — acceptable in tests
+    "B311",   # random — used for non-security purposes
+]
+tests = [
+    "B102", "B103", "B104", "B105", "B106", "B107",  # Hardcoded credentials
+    "B201", "B202",                                    # Flask debug (won't apply, but safe to include)
+    "B301", "B302", "B303", "B304", "B305", "B306",  # Deserialization
+    "B401", "B402", "B403", "B404", "B405", "B406",  # Import issues
+    "B501", "B502", "B503", "B504", "B505", "B506",  # SSL/TLS
+    "B601", "B602", "B603", "B604", "B605", "B606", "B607", "B608", "B609",  # Shell injection
+    "B701", "B702",                                    # Jinja2
+]

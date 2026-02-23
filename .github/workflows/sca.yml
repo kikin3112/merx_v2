@@ -1,0 +1,57 @@
+name: SCA — Dependency Security Audit
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  python-sca:
+    name: Python — safety check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install safety
+        run: pip install safety
+
+      - name: Run safety check
+        run: |
+          safety check -r requirements.txt \
+            --ignore 70612 \
+            --output screen
+        # Exit code 1 if any HIGH or CRITICAL advisory found
+        # Use --ignore for known false-positives only (document reason above)
+
+  node-sca:
+    name: Node — npm audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+        # Fails on HIGH or CRITICAL vulnerabilities
+        # Use `npm audit --audit-level=high --ignore-scripts` for safer execution

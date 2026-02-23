@@ -1,0 +1,87 @@
+name: DAST — OWASP ZAP Weekly Scan
+
+on:
+  schedule:
+    # Every Sunday at 04:00 UTC
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to scan (overrides ZAP_TARGET_URL secret)'
+        required: false
+        type: string
+
+jobs:
+  zap-baseline:
+    name: ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine target URL
+        id: target
+        run: |
+          TARGET="${{ github.event.inputs.target_url }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="${{ secrets.ZAP_TARGET_URL }}"
+          fi
+          if [ -z "$TARGET" ]; then
+            echo "::error::ZAP_TARGET_URL secret not set and no target_url input provided"
+            exit 1
+          fi
+          echo "url=$TARGET" >> $GITHUB_OUTPUT
+
+      - name: ZAP Baseline scan (unauthenticated)
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          rules_file_name: '.security/zap-rules.tsv'
+          cmd_options: '-a -j'
+          allow_issue_writing: true
+          fail_action: warn
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-baseline-report
+          path: report_html.html
+          retention-days: 30
+
+  zap-authenticated:
+    name: ZAP Authenticated Scan (tenant endpoints)
+    runs-on: ubuntu-latest
+    needs: zap-baseline
+    permissions:
+      contents: read
+      issues: write
+    # Only runs if ZAP credentials are configured
+    if: ${{ secrets.ZAP_TARGET_URL != '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run ZAP authenticated scan via custom script
+        run: bash .security/scripts/zap-scan.sh
+        env:
+          ZAP_TARGET_URL: ${{ secrets.ZAP_TARGET_URL }}
+          ZAP_API_KEY: ${{ secrets.ZAP_API_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.ZAP_TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.ZAP_TEST_USER_PASSWORD }}
+          TEST_TENANT_ID: ${{ secrets.ZAP_TEST_TENANT_ID }}
+        continue-on-error: true
+
+      - name: Upload authenticated scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-authenticated-report
+          path: zap-auth-report.json
+          retention-days: 30

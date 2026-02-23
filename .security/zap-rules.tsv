@@ -1,0 +1,44 @@
+# ZAP Baseline scan rule overrides for Merx v2
+# Format: rule_id	IGNORE|WARN|FAIL	description
+# https://www.zaproxy.org/docs/docker/baseline-scan/
+#
+# FAIL  = blocks CI (equivalent to error)
+# WARN  = warning (default for most rules)
+# IGNORE = suppress this alert entirely
+
+# SQL Injection — always fail
+40018	FAIL	SQL Injection
+40019	FAIL	SQL Injection - MySQL
+40020	FAIL	SQL Injection - Hypersonic SQL
+40021	FAIL	SQL Injection - Oracle
+40022	FAIL	SQL Injection - SQLite
+40024	FAIL	SQL Injection - PostgreSQL
+
+# Authentication
+10202	FAIL	Absence of Anti-CSRF Tokens
+10010	FAIL	Cookie No HttpOnly Flag
+10011	FAIL	Cookie Without Secure Flag
+10012	WARN	Password Autocomplete in Browser
+10015	WARN	Incomplete or No Cache-control Header Set
+
+# Information disclosure
+10027	WARN	Information Disclosure - Suspicious Comments
+10037	WARN	Server Leaks Information via "X-Powered-By" HTTP Response Header
+10096	WARN	Timestamp Disclosure - Unix
+41	WARN	Source Code Disclosure - Git
+
+# Injection
+90019	FAIL	Server Side Code Injection
+90020	FAIL	Remote OS Command Injection
+90022	WARN	Application Error Disclosure
+90033	WARN	Loosely Scoped Cookie
+
+# Security headers — WARN (already configured in nginx but ZAP may flag staging)
+10038	WARN	Content Security Policy (CSP) Header Not Set
+10035	WARN	Strict-Transport-Security Header Not Set
+10036	WARN	Server Leaks Version Information via "Server" HTTP Response Header Field
+10021	WARN	X-Content-Type-Options Header Missing
+
+# False positive suppressions for FastAPI/OpenAPI
+10024	IGNORE	Information Disclosure - Sensitive Information in URL
+10109	IGNORE	Modern Web Application (informational)

@@ -1,0 +1,56 @@
+version: 2
+
+updates:
+  # Python pip dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "luisr"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "deps(python)"
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Node.js npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "luisr"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "deps(npm)"
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps(actions)"

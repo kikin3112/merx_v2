@@ -1,0 +1,103 @@
+rules:
+  # Rule 1: Detect routes that accept tenant data without Depends(get_current_user)
+  - id: fastapi-unauthenticated-tenant-endpoint
+    patterns:
+      - pattern: |
+          @$APP.$METHOD(...)
+          def $FUNC(...):
+            ...
+            tenant_id = ...
+            ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $FUNC(..., current_user = Depends($AUTH_DEP), ...):
+            ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $FUNC(..., $USER: ... = Depends($AUTH_DEP), ...):
+            ...
+    message: >
+      Route '$FUNC' uses tenant_id without requiring authentication
+      (no Depends(get_current_user) or equivalent). Add authentication
+      dependency to prevent unauthorized tenant data access.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: CWE-306
+      owasp: A07:2021 - Identification and Authentication Failures
+      confidence: MEDIUM
+
+  # Rule 2: JWT decode must verify algorithm explicitly
+  - id: fastapi-jwt-no-algorithm
+    patterns:
+      - pattern: jose.jwt.decode($TOKEN, $KEY)
+      - pattern-not: jose.jwt.decode($TOKEN, $KEY, algorithms=[...])
+    message: >
+      JWT decode called without explicit algorithms list. This can allow
+      the "none" algorithm attack. Always pass algorithms=["HS256"] or
+      your configured algorithm.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: CWE-347
+      owasp: A02:2021 - Cryptographic Failures
+      confidence: HIGH
+
+  # Rule 3: CORS allow all origins
+  - id: fastapi-cors-wildcard
+    patterns:
+      - pattern: CORSMiddleware(..., allow_origins=["*"], ...)
+    message: >
+      CORS configured with allow_origins=["*"]. This allows any origin to
+      make cross-origin requests. Use an explicit list of trusted origins
+      from environment configuration.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: CWE-942
+      confidence: HIGH
+
+  # Rule 4: Disabled authentication on non-excluded route
+  - id: fastapi-auth-commented-out
+    pattern: |
+      # current_user = Depends(...)
+    message: >
+      Authentication dependency appears to be commented out. If this was
+      intentional, document why. If not, restore the authentication check.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: CWE-306
+      confidence: LOW
+
+  # Rule 5: Rate limiting missing on sensitive endpoints
+  - id: fastapi-missing-rate-limit-auth
+    patterns:
+      - pattern: |
+          @$APP.post("/api/v1/auth/...")
+          def $FUNC(...):
+            ...
+      - pattern-not: |
+          @$APP.post("/api/v1/auth/...")
+          @$LIMITER.limit(...)
+          def $FUNC(...):
+            ...
+      - pattern-not: |
+          @$LIMITER.limit(...)
+          @$APP.post("/api/v1/auth/...")
+          def $FUNC(...):
+            ...
+    message: >
+      Auth endpoint '$FUNC' does not have a rate limit decorator.
+      Apply @limiter.limit("5/minute") to prevent brute-force attacks.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: CWE-307
+      owasp: A07:2021 - Identification and Authentication Failures
+      confidence: MEDIUM

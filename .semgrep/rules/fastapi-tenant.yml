@@ -1,0 +1,102 @@
+rules:
+  # Rule 1: Every route handler that queries the DB must call set_tenant_context_for_session
+  - id: fastapi-missing-tenant-context
+    patterns:
+      - pattern: |
+          @$APP.$METHOD(...)
+          def $FUNC(..., db: Session = Depends(...), ...):
+            ...
+            db.query(...)
+            ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $FUNC(..., db: Session = Depends(...), ...):
+            ...
+            set_tenant_context_for_session(...)
+            ...
+            db.query(...)
+            ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $FUNC(...):
+            ...
+    message: >
+      FastAPI route '$FUNC' calls db.query() without first calling
+      set_tenant_context_for_session(). Every DB query in a tenant-scoped
+      route must establish RLS context to prevent cross-tenant data leakage.
+      Add: set_tenant_context_for_session(db, tenant_id)
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: CWE-284
+      owasp: A01:2021 - Broken Access Control
+      confidence: HIGH
+
+  # Rule 2: db.execute() raw SQL must include tenant filter
+  - id: fastapi-raw-sql-no-tenant
+    patterns:
+      - pattern: db.execute(text($QUERY), ...)
+      - pattern-not: db.execute(text("SET LOCAL app.tenant_id_actual = ..."), ...)
+      - metavariable-regex:
+          metavariable: $QUERY
+          regex: '(SELECT|UPDATE|DELETE|INSERT).*'
+    message: >
+      Raw SQL execution detected without tenant_id filter in '$QUERY'.
+      Ensure tenant context is set via set_tenant_context_for_session()
+      before executing raw SQL, or include explicit tenant_id WHERE clause.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: CWE-284
+      confidence: MEDIUM
+
+  # Rule 3: Superadmin routes must not expose tenant data without explicit filter
+  - id: fastapi-superadmin-tenant-bypass
+    patterns:
+      - pattern: |
+          @$APP.$METHOD("/api/v1/superadmin/...")
+          def $FUNC(..., db: Session = Depends(...), ...):
+            ...
+            db.query($MODEL).all()
+            ...
+      - pattern-not: |
+          @$APP.$METHOD("/api/v1/superadmin/...")
+          def $FUNC(..., db: Session = Depends(...), ...):
+            ...
+            db.query($MODEL).filter(...tenant_id...).all()
+            ...
+    message: >
+      Superadmin route '$FUNC' queries all rows of '$MODEL' without a
+      tenant_id filter. Add .filter(Model.tenant_id == tenant_id) or
+      document why unrestricted access is intentional.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: CWE-284
+      confidence: LOW
+
+  # Rule 4: get_current_tenant_id() return value must be checked before use
+  - id: fastapi-unchecked-tenant-id
+    patterns:
+      - pattern: |
+          $TID = get_current_tenant_id()
+          ...
+          db.query(...)
+          ...
+      - pattern-not: |
+          $TID = get_current_tenant_id()
+          if $TID is None:
+            ...
+          ...
+    message: >
+      get_current_tenant_id() can return None (unauthenticated or excluded path).
+      Always validate the return value before using it in a DB query.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: CWE-476
+      confidence: HIGH

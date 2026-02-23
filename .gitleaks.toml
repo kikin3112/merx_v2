@@ -1,0 +1,72 @@
+# Gitleaks configuration for Merx v2 / Chandelier ERP
+# https://github.com/gitleaks/gitleaks
+
+title = "Merx v2 Gitleaks Config"
+
+[extend]
+# Extend the default ruleset
+useDefault = true
+
+# -----------------------------------------------------------------------
+# Allowlists — known safe patterns that trigger false positives
+# -----------------------------------------------------------------------
+
+[[allowlists]]
+description = "CI/CD test credentials (never real)"
+regexes = [
+  # Test-only constants in CI workflows
+  '''test-secret-key-for-ci''',
+  '''test123''',
+  '''postgres:postgres''',
+  # SQLite in-memory test DB
+  '''sqlite:\/\/\/:memory:''',
+]
+
+[[allowlists]]
+description = "Placeholder examples in documentation"
+paths = [
+  '''README\.md''',
+  '''QUICKSTART\.md''',
+  '''DEPLOYMENT\.md''',
+  '''FREE-TIER-DEPLOY\.md''',
+  '''Chandelier/.*\.md''',
+  '''\.(planning|claude)/.*''',
+]
+
+[[allowlists]]
+description = "Alembic migration files — may contain schema strings"
+paths = [
+  '''alembic/versions/.*\.py''',
+]
+
+[[allowlists]]
+description = "Test fixture files"
+paths = [
+  '''backend/tests/.*''',
+  '''tests/security/.*''',
+]
+
+# -----------------------------------------------------------------------
+# Custom rules for project-specific patterns
+# -----------------------------------------------------------------------
+
+[[rules]]
+id = "railway-secret"
+description = "Railway deployment token"
+regex = '''RAILWAY_TOKEN[=:]["']?[A-Za-z0-9_\-]{20,}'''
+severity = "critical"
+tags = ["cloud", "railway"]
+
+[[rules]]
+id = "sentry-dsn"
+description = "Sentry DSN in code (should be in env var)"
+regex = '''https://[a-f0-9]{32}@o[0-9]+\.ingest\.sentry\.io/[0-9]+'''
+severity = "warning"
+tags = ["monitoring", "sentry"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key"
+regex = '''sk-ant-[A-Za-z0-9\-_]{32,}'''
+severity = "critical"
+tags = ["ai", "anthropic"]
