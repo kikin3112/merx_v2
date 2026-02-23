@@ -17,6 +17,7 @@ interface Props {
 interface EditLinea {
   producto_id: string;
   nombre: string;
+  categoria?: string;
   cantidad: number;
   precio_unitario: number;
   descuento: number;
@@ -309,6 +310,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
                       <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
+                      <th className="text-left px-2 py-2 font-medium text-gray-500 w-28">Categoría</th>
                       <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
                       <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Precio</th>
                       <th className="text-right px-2 py-2 font-medium text-gray-500 w-20">Desc.%</th>
@@ -323,6 +325,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                       return (
                         <tr key={i} className="border-b border-gray-50">
                           <td className="px-3 py-2 text-xs font-medium text-gray-900">{l.nombre}</td>
+                          <td className="px-2 py-2 text-xs text-gray-500">{l.categoria ?? '-'}</td>
                           <td className="px-2 py-2 text-center">
                             {editing ? (
                               <input
@@ -412,7 +415,10 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   return (
                     <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2">
                       <div className="flex items-start justify-between">
-                        <p className="text-sm font-medium text-gray-900">{l.nombre}</p>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{l.nombre}</p>
+                          {l.categoria && <p className="text-xs text-gray-400">{l.categoria}</p>}
+                        </div>
                         {editing && (
                           <button
                             onClick={() => setLineas((prev) => prev.filter((_, j) => j !== i))}
