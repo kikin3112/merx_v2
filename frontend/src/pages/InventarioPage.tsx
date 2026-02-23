@@ -48,7 +48,7 @@ export default function InventarioPage() {
 
   const { data: productosList } = useQuery<Producto[]>({
     queryKey: ['productos-inventario'],
-    queryFn: () => productos.list({ maneja_inventario: true }).then((r) => r.data),
+    queryFn: () => productos.list({ limit: 500 }).then((r) => r.data),
     enabled: entradaOpen || ajusteOpen,
   });
 
