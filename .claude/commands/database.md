@@ -132,4 +132,4 @@ except Exception:
 - `@hybrid_property` solo funciona en Python, NO en SQL aggregations
 - `generar_numero_secuencia()` requiere `tenant_id` como 3er argumento
 - Pool: `pool_pre_ping=True` evita conexiones muertas
-- DB local: `postgresql://postgres:***REDACTED***@localhost:5432/api_merx_v2`
+- DB local: ver `.env` (no commitear credenciales)

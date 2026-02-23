@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker
 from backend.app.main import app
 from backend.app.datos.db import get_db, Base
 
-TEST_DB_URL = "postgresql://postgres:***REDACTED***@localhost:5432/api_merx_v2_test"
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:<TU_PASSWORD>@localhost:5432/api_merx_v2_test")
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -53,8 +53,8 @@ def client(db_session):
 def auth_headers(client):
     """Headers autenticados con tenant seleccionado."""
     resp = client.post("/api/v1/auth/login", json={
-        "email": "admin@example.com",
-        "password": "admin123"
+        "email": os.environ.get("TEST_ADMIN_EMAIL"),
+        "password": os.environ.get("TEST_ADMIN_PASSWORD")
     })
     data = resp.json()
     token = data["access_token"]

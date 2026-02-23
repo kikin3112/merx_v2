@@ -53,12 +53,15 @@ logs/
 .DS_Store # macOS
 Thumbs.db # Windows
 
-# Environment variables
+# Environment variables — NEVER commit these
 .env
 .env.local
 .env.*.local
 .env.production
 .env.railway
+.env.development
+backend/.env
+frontend/.env.local
 
 # Python version management
 .python-version
