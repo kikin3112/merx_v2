@@ -41,7 +41,7 @@ export default function RecetasPage() {
 
   const { data: listaProductos } = useQuery<Producto[]>({
     queryKey: ['productos-recetas'],
-    queryFn: () => productos.list({ estado: true }).then((r) => r.data),
+    queryFn: () => productos.list({ estado: true, limit: 500 }).then((r) => r.data),
     enabled: showForm || !!selectedReceta,
   });
 

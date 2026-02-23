@@ -52,7 +52,7 @@ export default function POSPage() {
 
   const { data: productosData } = useQuery<Producto[]>({
     queryKey: ['productos'],
-    queryFn: () => productos.list({ estado: true }).then(r => r.data),
+    queryFn: () => productos.list({ estado: true, limit: 500 }).then(r => r.data),
   });
 
   const { data: tercerosData } = useQuery<Tercero[]>({

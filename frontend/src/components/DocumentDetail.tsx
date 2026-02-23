@@ -43,7 +43,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
 
   const { data: productosData } = useQuery<Producto[]>({
     queryKey: ['productos-detail'],
-    queryFn: () => productos.list({ estado: true }).then((r) => r.data),
+    queryFn: () => productos.list({ estado: true, limit: 500 }).then((r) => r.data),
     enabled: open,
   });
 
