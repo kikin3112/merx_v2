@@ -1,18 +1,16 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func, case, desc
-from typing import Optional
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import Optional
 from uuid import UUID
-from collections import defaultdict
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
-from ..datos.modelos import (
-    Ventas, VentasDetalle, Productos, Inventarios, Terceros, Usuarios, Cotizaciones
-)
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
+from ..datos.modelos import Cartera, Inventarios, Productos, Terceros, Ventas, VentasDetalle
 from ..utils.logger import setup_logger
+from ..utils.seguridad import UserContext, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -23,15 +21,12 @@ async def dashboard_kpis(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """KPIs principales del dashboard. Accepts optional date range filters."""
     hoy = date.today()
 
-    query = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"])
-    )
+    query = db.query(Ventas).filter(Ventas.tenant_id == ctx.tenant_id, Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]))
     if fecha_inicio:
         query = query.filter(Ventas.fecha_venta >= fecha_inicio)
     if fecha_fin:
@@ -52,20 +47,30 @@ async def dashboard_kpis(
     total_mes = sum(v.total_venta for v in ventas_mes)
 
     # Stock bajo (always current)
-    alertas_stock = db.query(Inventarios).join(
-        Productos, Productos.id == Inventarios.producto_id
-    ).filter(
-        Inventarios.tenant_id == ctx.tenant_id,
-        Productos.stock_minimo.isnot(None),
-        Inventarios.cantidad_disponible <= Productos.stock_minimo
-    ).count()
+    alertas_stock = (
+        db.query(Inventarios)
+        .join(Productos, Productos.id == Inventarios.producto_id)
+        .filter(
+            Inventarios.tenant_id == ctx.tenant_id,
+            Productos.stock_minimo.isnot(None),
+            Inventarios.cantidad_disponible <= Productos.stock_minimo,
+        )
+        .count()
+    )
 
-    # Facturas pendientes de cobro (always current)
-    facturas_pendientes = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado == "FACTURADA"
-    ).all()
-    total_pendiente = sum(v.total_venta for v in facturas_pendientes)
+    # Facturas pendientes de cobro — consultar Cartera directamente para
+    # reflejar pagos parciales/totales registrados (Ventas.estado siempre
+    # permanece FACTURADA y no refleja cobros).
+    cartera_pendiente = (
+        db.query(Cartera)
+        .filter(
+            Cartera.tenant_id == ctx.tenant_id,
+            Cartera.tipo_cartera == "COBRAR",
+            Cartera.estado.in_(["PENDIENTE", "PARCIAL"]),
+        )
+        .all()
+    )
+    total_pendiente = sum(c.saldo_pendiente for c in cartera_pendiente)
 
     return {
         "total_ventas": float(total_ventas),
@@ -77,7 +82,7 @@ async def dashboard_kpis(
         "ventas_mes": float(total_mes),
         "cantidad_mes": len(ventas_mes),
         "facturas_pendientes": float(total_pendiente),
-        "cantidad_facturas_pendientes": len(facturas_pendientes),
+        "cantidad_facturas_pendientes": len(cartera_pendiente),
     }
 
 
@@ -86,13 +91,10 @@ async def reporte_ventas(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Reporte de ventas por periodo."""
-    query = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado != "ANULADA"
-    )
+    query = db.query(Ventas).filter(Ventas.tenant_id == ctx.tenant_id, Ventas.estado != "ANULADA")
     if fecha_inicio:
         query = query.filter(Ventas.fecha_venta >= fecha_inicio)
     if fecha_fin:
@@ -104,7 +106,7 @@ async def reporte_ventas(
     return {
         "total_ventas": float(total),
         "cantidad": len(ventas),
-        "promedio": float(total / len(ventas)) if ventas else 0
+        "promedio": float(total / len(ventas)) if ventas else 0,
     }
 
 
@@ -114,7 +116,7 @@ async def ventas_diarias(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Ventas agrupadas por día para gráfico de línea.
@@ -131,12 +133,16 @@ async def ventas_diarias(
 
     num_dias = (fin - inicio).days + 1
 
-    ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio,
-        Ventas.fecha_venta <= fin
-    ).all()
+    ventas = (
+        db.query(Ventas)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio,
+            Ventas.fecha_venta <= fin,
+        )
+        .all()
+    )
 
     # Agrupar por fecha
     por_dia: dict[date, dict] = {}
@@ -152,11 +158,7 @@ async def ventas_diarias(
     for i in range(num_dias):
         dia = inicio + timedelta(days=i)
         info = por_dia.get(dia, {"total": Decimal("0"), "cantidad": 0})
-        resultado.append({
-            "fecha": dia.isoformat(),
-            "total": float(info["total"]),
-            "cantidad": info["cantidad"]
-        })
+        resultado.append({"fecha": dia.isoformat(), "total": float(info["total"]), "cantidad": info["cantidad"]})
 
     return resultado
 
@@ -165,28 +167,26 @@ async def ventas_diarias(
 async def productos_top(
     limite: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Top productos por valor de inventario."""
-    inventarios = db.query(
-        Productos.nombre,
-        Productos.codigo_interno,
-        Inventarios.cantidad_disponible,
-        Inventarios.valor_total
-    ).join(
-        Inventarios, Productos.id == Inventarios.producto_id
-    ).filter(
-        Productos.tenant_id == ctx.tenant_id,
-        Productos.deleted_at.is_(None),
-        Inventarios.cantidad_disponible > 0
-    ).order_by(Inventarios.valor_total.desc()).limit(limite).all()
+    inventarios = (
+        db.query(Productos.nombre, Productos.codigo_interno, Inventarios.cantidad_disponible, Inventarios.valor_total)
+        .join(Inventarios, Productos.id == Inventarios.producto_id)
+        .filter(
+            Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None), Inventarios.cantidad_disponible > 0
+        )
+        .order_by(Inventarios.valor_total.desc())
+        .limit(limite)
+        .all()
+    )
 
     return [
         {
             "nombre": row.nombre,
             "codigo": row.codigo_interno,
             "stock": float(row.cantidad_disponible),
-            "valor_total": float(row.valor_total)
+            "valor_total": float(row.valor_total),
         }
         for row in inventarios
     ]
@@ -199,7 +199,7 @@ async def productos_mas_vendidos(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Top productos por cantidad vendida en un período."""
     if fecha_inicio and fecha_fin:
@@ -209,28 +209,33 @@ async def productos_mas_vendidos(
         inicio = date.today() - timedelta(days=dias)
         fin = date.today()
 
-    ventas_activas = db.query(Ventas.id).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio,
-        Ventas.fecha_venta <= fin
-    ).subquery()
+    ventas_activas = (
+        db.query(Ventas.id)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio,
+            Ventas.fecha_venta <= fin,
+        )
+        .subquery()
+    )
 
-    resultados = db.query(
-        Productos.id,
-        Productos.nombre,
-        Productos.codigo_interno,
-        Productos.precio_venta,
-        func.sum(VentasDetalle.cantidad).label("total_cantidad"),
-        func.sum(VentasDetalle.cantidad * VentasDetalle.precio_unitario).label("total_ingresos")
-    ).join(
-        VentasDetalle, Productos.id == VentasDetalle.producto_id
-    ).filter(
-        VentasDetalle.venta_id.in_(ventas_activas),
-        Productos.tenant_id == ctx.tenant_id
-    ).group_by(
-        Productos.id, Productos.nombre, Productos.codigo_interno, Productos.precio_venta
-    ).order_by(desc("total_ingresos")).limit(limite).all()
+    resultados = (
+        db.query(
+            Productos.id,
+            Productos.nombre,
+            Productos.codigo_interno,
+            Productos.precio_venta,
+            func.sum(VentasDetalle.cantidad).label("total_cantidad"),
+            func.sum(VentasDetalle.cantidad * VentasDetalle.precio_unitario).label("total_ingresos"),
+        )
+        .join(VentasDetalle, Productos.id == VentasDetalle.producto_id)
+        .filter(VentasDetalle.venta_id.in_(ventas_activas), Productos.tenant_id == ctx.tenant_id)
+        .group_by(Productos.id, Productos.nombre, Productos.codigo_interno, Productos.precio_venta)
+        .order_by(desc("total_ingresos"))
+        .limit(limite)
+        .all()
+    )
 
     return [
         {
@@ -239,7 +244,7 @@ async def productos_mas_vendidos(
             "codigo": row.codigo_interno,
             "precio_venta": float(row.precio_venta),
             "total_cantidad": float(row.total_cantidad),
-            "total_ingresos": float(row.total_ingresos)
+            "total_ingresos": float(row.total_ingresos),
         }
         for row in resultados
     ]
@@ -252,7 +257,7 @@ async def top_clientes(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Top clientes por monto total de ventas."""
     if fecha_inicio and fecha_fin:
@@ -262,12 +267,16 @@ async def top_clientes(
         inicio = date.today() - timedelta(days=dias)
         fin = date.today()
 
-    ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio,
-        Ventas.fecha_venta <= fin
-    ).all()
+    ventas = (
+        db.query(Ventas)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio,
+            Ventas.fecha_venta <= fin,
+        )
+        .all()
+    )
 
     # Agrupar por tercero
     por_tercero: dict[str, dict] = {}
@@ -294,7 +303,7 @@ async def top_clientes(
             "tercero_id": tid,
             "nombre": nombres.get(tid, "Desconocido"),
             "total_ventas": float(info["total"]),
-            "cantidad_ventas": info["cantidad"]
+            "cantidad_ventas": info["cantidad"],
         }
         for tid, info in ranking
     ]
@@ -304,28 +313,29 @@ async def top_clientes(
 async def rentabilidad_productos(
     limite: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Rentabilidad por producto: precio_venta vs costo_promedio.
     Incluye margen bruto y % margen.
     """
-    resultados = db.query(
-        Productos.id,
-        Productos.nombre,
-        Productos.codigo_interno,
-        Productos.categoria,
-        Productos.precio_venta,
-        Inventarios.costo_promedio_ponderado,
-        Inventarios.cantidad_disponible,
-        Inventarios.valor_total
-    ).join(
-        Inventarios, Productos.id == Inventarios.producto_id
-    ).filter(
-        Productos.tenant_id == ctx.tenant_id,
-        Productos.deleted_at.is_(None),
-        Productos.precio_venta > 0
-    ).order_by(Productos.nombre).limit(limite).all()
+    resultados = (
+        db.query(
+            Productos.id,
+            Productos.nombre,
+            Productos.codigo_interno,
+            Productos.categoria,
+            Productos.precio_venta,
+            Inventarios.costo_promedio_ponderado,
+            Inventarios.cantidad_disponible,
+            Inventarios.valor_total,
+        )
+        .join(Inventarios, Productos.id == Inventarios.producto_id)
+        .filter(Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None), Productos.precio_venta > 0)
+        .order_by(Productos.nombre)
+        .limit(limite)
+        .all()
+    )
 
     return [
         {
@@ -338,9 +348,11 @@ async def rentabilidad_productos(
             "margen_bruto": float(row.precio_venta - row.costo_promedio_ponderado),
             "margen_porcentaje": round(
                 float((row.precio_venta - row.costo_promedio_ponderado) / row.precio_venta * 100), 1
-            ) if row.precio_venta > 0 else 0,
+            )
+            if row.precio_venta > 0
+            else 0,
             "stock": float(row.cantidad_disponible),
-            "valor_inventario": float(row.valor_total)
+            "valor_inventario": float(row.valor_total),
         }
         for row in resultados
     ]
@@ -348,8 +360,7 @@ async def rentabilidad_productos(
 
 @router.get("/abc-inventario")
 async def abc_inventario(
-    db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    db: Session = Depends(get_db), ctx: UserContext = Depends(require_tenant_roles("admin", "contador"))
 ):
     """
     Análisis ABC de inventario.
@@ -358,20 +369,24 @@ async def abc_inventario(
     B = 15% del valor (medio)
     C = 5% del valor (muchos productos de bajo valor)
     """
-    items = db.query(
-        Productos.id,
-        Productos.nombre,
-        Productos.codigo_interno,
-        Inventarios.cantidad_disponible,
-        Inventarios.valor_total
-    ).join(
-        Inventarios, Productos.id == Inventarios.producto_id
-    ).filter(
-        Productos.tenant_id == ctx.tenant_id,
-        Productos.deleted_at.is_(None),
-        Inventarios.cantidad_disponible > 0,
-        Inventarios.valor_total > 0
-    ).order_by(Inventarios.valor_total.desc()).all()
+    items = (
+        db.query(
+            Productos.id,
+            Productos.nombre,
+            Productos.codigo_interno,
+            Inventarios.cantidad_disponible,
+            Inventarios.valor_total,
+        )
+        .join(Inventarios, Productos.id == Inventarios.producto_id)
+        .filter(
+            Productos.tenant_id == ctx.tenant_id,
+            Productos.deleted_at.is_(None),
+            Inventarios.cantidad_disponible > 0,
+            Inventarios.valor_total > 0,
+        )
+        .order_by(Inventarios.valor_total.desc())
+        .all()
+    )
 
     if not items:
         return {"productos": [], "resumen": {"A": 0, "B": 0, "C": 0}}
@@ -395,47 +410,44 @@ async def abc_inventario(
             clasificacion = "C"
 
         conteo[clasificacion] += 1
-        resultado.append({
-            "producto_id": str(item.id),
-            "nombre": item.nombre,
-            "codigo": item.codigo_interno,
-            "stock": float(item.cantidad_disponible),
-            "valor_total": valor,
-            "porcentaje_valor": round(valor / valor_total * 100, 1) if valor_total > 0 else 0,
-            "porcentaje_acumulado": round(porcentaje_acumulado, 1),
-            "clasificacion": clasificacion
-        })
+        resultado.append(
+            {
+                "producto_id": str(item.id),
+                "nombre": item.nombre,
+                "codigo": item.codigo_interno,
+                "stock": float(item.cantidad_disponible),
+                "valor_total": valor,
+                "porcentaje_valor": round(valor / valor_total * 100, 1) if valor_total > 0 else 0,
+                "porcentaje_acumulado": round(porcentaje_acumulado, 1),
+                "clasificacion": clasificacion,
+            }
+        )
 
-    return {
-        "productos": resultado,
-        "resumen": conteo,
-        "valor_total_inventario": valor_total
-    }
+    return {"productos": resultado, "resumen": conteo, "valor_total_inventario": valor_total}
 
 
 @router.get("/rentabilidad-categoria")
 async def rentabilidad_por_categoria(
-    db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    db: Session = Depends(get_db), ctx: UserContext = Depends(require_tenant_roles("admin", "contador"))
 ):
     """
     Rentabilidad agregada por categoría de producto.
     Calcula precio promedio, costo promedio, margen promedio y valor de inventario por categoría.
     """
-    resultados = db.query(
-        Productos.categoria,
-        func.count(Productos.id).label("cantidad_productos"),
-        func.avg(Productos.precio_venta).label("precio_promedio"),
-        func.avg(Inventarios.costo_promedio_ponderado).label("costo_promedio"),
-        func.sum(Inventarios.valor_total).label("valor_inventario"),
-        func.sum(Inventarios.cantidad_disponible).label("stock_total"),
-    ).join(
-        Inventarios, Productos.id == Inventarios.producto_id
-    ).filter(
-        Productos.tenant_id == ctx.tenant_id,
-        Productos.deleted_at.is_(None),
-        Productos.precio_venta > 0
-    ).group_by(Productos.categoria).all()
+    resultados = (
+        db.query(
+            Productos.categoria,
+            func.count(Productos.id).label("cantidad_productos"),
+            func.avg(Productos.precio_venta).label("precio_promedio"),
+            func.avg(Inventarios.costo_promedio_ponderado).label("costo_promedio"),
+            func.sum(Inventarios.valor_total).label("valor_inventario"),
+            func.sum(Inventarios.cantidad_disponible).label("stock_total"),
+        )
+        .join(Inventarios, Productos.id == Inventarios.producto_id)
+        .filter(Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None), Productos.precio_venta > 0)
+        .group_by(Productos.categoria)
+        .all()
+    )
 
     return [
         {
@@ -443,9 +455,9 @@ async def rentabilidad_por_categoria(
             "cantidad_productos": row.cantidad_productos,
             "precio_promedio": round(float(row.precio_promedio or 0), 2),
             "costo_promedio": round(float(row.costo_promedio or 0), 2),
-            "margen_promedio": round(
-                float((row.precio_promedio - row.costo_promedio) / row.precio_promedio * 100), 1
-            ) if row.precio_promedio and row.precio_promedio > 0 else 0,
+            "margen_promedio": round(float((row.precio_promedio - row.costo_promedio) / row.precio_promedio * 100), 1)
+            if row.precio_promedio and row.precio_promedio > 0
+            else 0,
             "valor_inventario": round(float(row.valor_inventario or 0), 2),
             "stock_total": round(float(row.stock_total or 0), 2),
         }
@@ -457,7 +469,7 @@ async def rentabilidad_por_categoria(
 async def comparativa_mensual(
     fecha_referencia: Optional[date] = Query(None, description="Any date in the month to compare. Defaults to today."),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Comparativa mes actual vs mes anterior.
@@ -486,20 +498,28 @@ async def comparativa_mensual(
             fin_mes_actual = ref.replace(month=ref.month + 1, day=1) - timedelta(days=1)
 
     # Ventas mes actual
-    ventas_actual = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio_mes_actual,
-        Ventas.fecha_venta <= fin_mes_actual
-    ).all()
+    ventas_actual = (
+        db.query(Ventas)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio_mes_actual,
+            Ventas.fecha_venta <= fin_mes_actual,
+        )
+        .all()
+    )
 
     # Ventas mes anterior
-    ventas_anterior = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio_mes_anterior,
-        Ventas.fecha_venta <= fin_mes_anterior
-    ).all()
+    ventas_anterior = (
+        db.query(Ventas)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio_mes_anterior,
+            Ventas.fecha_venta <= fin_mes_anterior,
+        )
+        .all()
+    )
 
     total_actual = sum(v.total_venta for v in ventas_actual)
     cant_actual = len(ventas_actual)
@@ -519,19 +539,19 @@ async def comparativa_mensual(
             "total_ventas": float(total_actual),
             "cantidad_ventas": cant_actual,
             "promedio_venta": float(prom_actual),
-            "periodo": f"{inicio_mes_actual.isoformat()} a {fin_mes_actual.isoformat()}"
+            "periodo": f"{inicio_mes_actual.isoformat()} a {fin_mes_actual.isoformat()}",
         },
         "mes_anterior": {
             "total_ventas": float(total_anterior),
             "cantidad_ventas": cant_anterior,
             "promedio_venta": float(prom_anterior),
-            "periodo": f"{inicio_mes_anterior.isoformat()} a {fin_mes_anterior.isoformat()}"
+            "periodo": f"{inicio_mes_anterior.isoformat()} a {fin_mes_anterior.isoformat()}",
         },
         "variacion": {
             "total_ventas": variacion(total_actual, total_anterior),
             "cantidad_ventas": variacion(cant_actual, cant_anterior),
             "promedio_venta": variacion(prom_actual, prom_anterior),
-        }
+        },
     }
 
 
@@ -539,7 +559,7 @@ async def comparativa_mensual(
 async def proyeccion_flujo_caja(
     dias_proyeccion: int = Query(30, ge=7, le=90),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Proyección de flujo de caja basada en histórico de 90 días + facturas pendientes.
@@ -548,22 +568,23 @@ async def proyeccion_flujo_caja(
     hace_90 = hoy - timedelta(days=90)
 
     # Ventas históricas (90 días)
-    ventas = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= hace_90,
-        Ventas.fecha_venta <= hoy
-    ).all()
+    ventas = (
+        db.query(Ventas)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= hace_90,
+            Ventas.fecha_venta <= hoy,
+        )
+        .all()
+    )
 
     total_historico = sum((v.total_venta for v in ventas), Decimal("0"))
     dias_con_datos = (hoy - hace_90).days or 1
     promedio_diario = total_historico / dias_con_datos
 
     # Facturas pendientes (por cobrar)
-    facturas_pendientes = db.query(Ventas).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado == "FACTURADA"
-    ).all()
+    facturas_pendientes = db.query(Ventas).filter(Ventas.tenant_id == ctx.tenant_id, Ventas.estado == "FACTURADA").all()
     total_por_cobrar = sum((v.total_venta for v in facturas_pendientes), Decimal("0"))
 
     # Proyección diaria
@@ -572,11 +593,13 @@ async def proyeccion_flujo_caja(
     for i in range(1, dias_proyeccion + 1):
         dia = hoy + timedelta(days=i)
         acumulado += promedio_diario
-        proyeccion.append({
-            "fecha": dia.isoformat(),
-            "proyectado_dia": float(promedio_diario),
-            "acumulado": float(acumulado),
-        })
+        proyeccion.append(
+            {
+                "fecha": dia.isoformat(),
+                "proyectado_dia": float(promedio_diario),
+                "acumulado": float(acumulado),
+            }
+        )
 
     return {
         "promedio_diario": float(promedio_diario),
@@ -594,7 +617,7 @@ async def margenes_por_categoria(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Márgenes basados en ventas reales por categoría.
@@ -607,28 +630,31 @@ async def margenes_por_categoria(
         inicio = date.today() - timedelta(days=dias)
         fin = date.today()
 
-    ventas_activas = db.query(Ventas.id).filter(
-        Ventas.tenant_id == ctx.tenant_id,
-        Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
-        Ventas.fecha_venta >= inicio,
-        Ventas.fecha_venta <= fin
-    ).subquery()
+    ventas_activas = (
+        db.query(Ventas.id)
+        .filter(
+            Ventas.tenant_id == ctx.tenant_id,
+            Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
+            Ventas.fecha_venta >= inicio,
+            Ventas.fecha_venta <= fin,
+        )
+        .subquery()
+    )
 
     # Detalles con info de producto e inventario
-    detalles = db.query(
-        Productos.categoria,
-        VentasDetalle.cantidad,
-        VentasDetalle.precio_unitario,
-        VentasDetalle.descuento,
-        Inventarios.costo_promedio_ponderado,
-    ).join(
-        Productos, VentasDetalle.producto_id == Productos.id
-    ).outerjoin(
-        Inventarios, Productos.id == Inventarios.producto_id
-    ).filter(
-        VentasDetalle.venta_id.in_(ventas_activas),
-        Productos.tenant_id == ctx.tenant_id
-    ).all()
+    detalles = (
+        db.query(
+            Productos.categoria,
+            VentasDetalle.cantidad,
+            VentasDetalle.precio_unitario,
+            VentasDetalle.descuento,
+            Inventarios.costo_promedio_ponderado,
+        )
+        .join(Productos, VentasDetalle.producto_id == Productos.id)
+        .outerjoin(Inventarios, Productos.id == Inventarios.producto_id)
+        .filter(VentasDetalle.venta_id.in_(ventas_activas), Productos.tenant_id == ctx.tenant_id)
+        .all()
+    )
 
     # Agrupar por categoría
     por_categoria: dict = {}
@@ -651,13 +677,15 @@ async def margenes_por_categoria(
         margen = ingresos - costo
         margen_pct = (margen / ingresos * 100) if ingresos > 0 else 0
 
-        resultado.append({
-            "categoria": cat,
-            "ingresos": round(ingresos, 2),
-            "costo": round(costo, 2),
-            "margen": round(margen, 2),
-            "margen_porcentaje": round(margen_pct, 1),
-            "cantidad_items": data["cantidad_items"],
-        })
+        resultado.append(
+            {
+                "categoria": cat,
+                "ingresos": round(ingresos, 2),
+                "costo": round(costo, 2),
+                "margen": round(margen, 2),
+                "margen_porcentaje": round(margen_pct, 1),
+                "cantidad_items": data["cantidad_items"],
+            }
+        )
 
     return resultado

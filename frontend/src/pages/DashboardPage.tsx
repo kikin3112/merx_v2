@@ -6,6 +6,9 @@ import PeriodSelector, { getDefaultPeriod } from '../components/PeriodSelector';
 import type { PeriodValue } from '../components/PeriodSelector';
 import type { DashboardKPIs, AlertaStock, VentaDiaria, ProductoMasVendido, TopCliente } from '../types';
 import { useAuthStore } from '../stores/authStore';
+import { useSSE } from '../hooks/useSSE';
+import { useDashboardStore } from '../stores/dashboardStore';
+import type { FacturaEvento } from '../stores/dashboardStore';
 import {
   ResponsiveContainer,
   LineChart,
@@ -33,6 +36,50 @@ function KPICard({ title, value, subtitle, color }: {
   );
 }
 
+function SSEIndicator({ connected }: { connected: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
+      connected ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+    }`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+      {connected ? 'En vivo' : 'Desconectado'}
+    </span>
+  );
+}
+
+function FacturaEventFeed({ events }: { events: FacturaEvento[] }) {
+  if (events.length === 0) {
+    return (
+      <p className="text-xs text-gray-400 py-4 text-center">
+        Sin actividad reciente. Los eventos aparecen en tiempo real.
+      </p>
+    );
+  }
+  const ESTADO_STYLES: Record<string, string> = {
+    emitida: 'bg-green-100 text-green-700',
+    anulada: 'bg-red-100 text-red-700',
+    pagada: 'bg-blue-100 text-blue-700',
+  };
+  return (
+    <ul className="space-y-2">
+      {events.map((ev) => (
+        <li key={`${ev.factura_id}-${ev.timestamp}`} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+          <div>
+            <span className="text-sm font-medium text-gray-900">{ev.numero}</span>
+            <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_STYLES[ev.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+              {ev.estado}
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold text-gray-900">{formatCurrency(ev.total)}</p>
+            <p className="text-xs text-gray-400">{new Date(ev.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function formatShortDate(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
   return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
@@ -56,6 +103,17 @@ export default function DashboardPage() {
 
   // Solo admin y contador pueden ver reportes detallados
   const canViewReports = effectiveRole === 'admin' || effectiveRole === 'contador';
+
+  // SSE: tiempo real
+  const { setSSEConnected, addFacturaEvento, addAlertaEvento, sseConnected, recentFacturaEvents } = useDashboardStore();
+  useSSE({
+    onConnect: () => setSSEConnected(true),
+    onDisconnect: () => setSSEConnected(false),
+    onEvent: (type, data) => {
+      if (type === 'factura_estado_cambiado') addFacturaEvento(data as Parameters<typeof addFacturaEvento>[0]);
+      if (type === 'alerta_stock') addAlertaEvento(data as Parameters<typeof addAlertaEvento>[0]);
+    },
+  });
 
   const dateParams = { fecha_inicio: period.fecha_inicio, fecha_fin: period.fecha_fin };
 
@@ -176,7 +234,10 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <SSEIndicator connected={sseConnected} />
+        </div>
         <PeriodSelector value={period} onChange={setPeriod} />
       </div>
 
@@ -349,6 +410,15 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Feed SSE de eventos en tiempo real */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">Actividad en Tiempo Real</h2>
+          <SSEIndicator connected={sseConnected} />
+        </div>
+        <FacturaEventFeed events={recentFacturaEvents} />
+      </div>
     </div>
   );
 }

@@ -123,6 +123,33 @@ export const inventarios = {
     client.post<MovimientoInventario>('/inventarios/ajuste', data),
   entrada: (data: { producto_id: string; cantidad: number; costo_unitario: number; documento_referencia?: string; observaciones?: string }) =>
     client.post<MovimientoInventario>('/inventarios/entrada', data),
+  paginado: (params?: { cursor?: string; limit?: number }) =>
+    client.get<{ items: Inventario[]; next_cursor: string | null; has_more: boolean }>(
+      '/inventarios/paginado',
+      { params },
+    ),
+  jerarquia: () =>
+    client.get<{
+      total_productos: number;
+      valor_total: number;
+      productos: Array<{
+        producto_id: string;
+        nombre: string;
+        codigo: string;
+        cantidad: number;
+        costo_promedio: number;
+        valor_total: number;
+        stock_minimo: number | null;
+        alerta: boolean;
+        ultimos_movimientos: Array<{
+          id: string;
+          tipo: string;
+          cantidad: number;
+          fecha: string | null;
+          referencia: string | null;
+        }>;
+      }>;
+    }>('/inventarios/jerarquia'),
 };
 
 // Recetas

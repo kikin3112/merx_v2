@@ -1,23 +1,21 @@
+import time
+import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-import uuid
-import time
 
-from sqlalchemy import text
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
-
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
-from .utils.logger import setup_logger, set_request_context, clear_request_context, log_performance
+from .datos.db import engine
+from .utils.logger import clear_request_context, set_request_context, setup_logger
 from .utils.rate_limiter import limiter
-from .datos.db import engine, SessionLocal
 
 # Sentry integration (production/staging only)
 if hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
@@ -49,6 +47,9 @@ if hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
     setup_logger(__name__).info(f"✅ Sentry initialized for {settings.ENVIRONMENT}")
 
 # Importar todos los routers
+# Middleware de contexto de tenant y usuario
+from .middleware.tenant_context import TenantContextMiddleware
+from .middleware.user_context import UserContextMiddleware
 from .rutas import (
     auth,
     cartera,
@@ -67,15 +68,12 @@ from .rutas import (
     productos,
     recetas,
     reportes,
+    sse,
+    tenants,
     terceros,
     usuarios,
     ventas,
-    tenants,
 )
-
-# Middleware de contexto de tenant y usuario
-from .middleware.tenant_context import TenantContextMiddleware
-from .middleware.user_context import UserContextMiddleware
 
 # Configuración de Logger
 logger = setup_logger(__name__)
@@ -276,8 +274,8 @@ app.add_middleware(
     allow_origins=settings.cors_origins_list,
     allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # Explícito, no "*"
-    allow_headers=["Authorization", "Content-Type", "X-Tenant-ID", "Accept"],
-    expose_headers=["X-Request-ID"],
+    allow_headers=["Authorization", "Content-Type", "X-Tenant-ID", "Accept", "Cache-Control"],
+    expose_headers=["X-Request-ID", "Content-Type"],
     max_age=settings.CORS_MAX_AGE,
 )
 
@@ -462,6 +460,9 @@ app.include_router(reportes.router, prefix=f"{prefix}/reportes", tags=["Reportes
 # Recetas
 app.include_router(recetas.router, prefix=f"{prefix}/recetas", tags=["Recetas"])
 
+# SSE - Server-Sent Events para tiempo real
+app.include_router(sse.router, prefix=f"{prefix}/sse", tags=["Tiempo Real (SSE)"])
+
 
 # ============================================================================
 # ENDPOINTS DE ADMINISTRACIÓN
@@ -506,7 +507,7 @@ def ejecutar_seeds(
 
 if __name__ == "__main__":
     # Configuración desde environment o defaults
-    host = "0.0.0.0"
+    host = "0.0.0.0"  # nosec B104
     port = 8000
     reload = settings.DEBUG  # Auto-reload solo en desarrollo
 
