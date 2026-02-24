@@ -60,6 +60,11 @@ import type {
   CrmDealUpdate,
   CrmActivity,
   CrmActivityCreate,
+  TenantRegisterRequest,
+  TenantRegisterResponse,
+  TicketPQRS,
+  TicketPQRSCreate,
+  TicketPQRSUpdate,
 } from '../types';
 
 // Auth
@@ -227,6 +232,14 @@ export const periodosContables = {
     client.post<PeriodoContable>(`/contabilidad/periodos/${anio}/${mes}/reabrir`),
 };
 
+// Registro público de tenant
+export const registro = {
+  register: (data: TenantRegisterRequest) =>
+    client.post<TenantRegisterResponse>('/tenants/register', data),
+  planes: () =>
+    client.get<PlanWithStats[]>('/tenants/planes/'),
+};
+
 // Tenants (superadmin)
 export const tenants = {
   list: (params?: Record<string, unknown>) =>
@@ -375,4 +388,16 @@ export const crm = {
     delete: (activityId: string) =>
       client.delete(`/crm/activities/${activityId}`),
   },
+};
+
+// PQRS (Soporte)
+export const pqrs = {
+  list: (params?: { tipo?: string; estado?: string; prioridad?: string }) =>
+    client.get<TicketPQRS[]>('/pqrs/', { params }),
+  get: (id: string) => client.get<TicketPQRS>(`/pqrs/${id}`),
+  create: (data: TicketPQRSCreate) => client.post<TicketPQRS>('/pqrs/', data),
+  update: (id: string, data: TicketPQRSUpdate) =>
+    client.patch<TicketPQRS>(`/pqrs/${id}`, data),
+  responder: (id: string, contenido: string) =>
+    client.post<TicketPQRS>(`/pqrs/${id}/respuestas`, { contenido }),
 };

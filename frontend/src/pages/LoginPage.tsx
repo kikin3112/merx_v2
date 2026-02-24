@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
 export default function LoginPage() {
@@ -81,6 +81,13 @@ export default function LoginPage() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          ¿No tienes cuenta?{' '}
+          <Link to="/registro" className="text-primary-500 hover:text-primary-600 font-medium">
+            Regístrate gratis
+          </Link>
+        </p>
       </div>
     </div>
   );

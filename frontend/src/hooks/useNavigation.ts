@@ -14,6 +14,7 @@ import {
   CreditCardIcon,
   BriefcaseIcon,
   ArchiveBoxIcon,
+  LifebuoyIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/authStore';
 
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { to: '/contabilidad', label: 'Contabilidad', icon: CalculatorIcon, roles: ['admin', 'contador'] },
   { to: '/reportes', label: 'Reportes', icon: ChartPieIcon, roles: ['admin', 'contador'] },
   { to: '/config', label: 'Config', icon: CogIcon, roles: ['admin'] },
+  { to: '/soporte', label: 'Soporte', icon: LifebuoyIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
 ];
 
 const superadminItems: NavItem[] = [

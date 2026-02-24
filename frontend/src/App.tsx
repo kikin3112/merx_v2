@@ -7,6 +7,7 @@ import ImpersonationBanner from './components/ImpersonationBanner';
 import RoleGuard from './components/auth/RoleGuard';
 import SuperadminGuard from './components/auth/SuperadminGuard';
 import LoginPage from './pages/LoginPage';
+import RegistroPage from './pages/RegistroPage';
 import SelectTenantPage from './pages/SelectTenantPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductosPage from './pages/ProductosPage';
@@ -23,6 +24,7 @@ import ReportesPage from './pages/ReportesPage';
 import POSPage from './pages/POSPage';
 import CarteraPage from './pages/CarteraPage';
 import CRMPage from './pages/CRMPage';
+import SoportePage from './pages/SoportePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +75,7 @@ export default function App() {
         <ImpersonationBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<RegistroPage />} />
 
           <Route element={<RequireToken />}>
             <Route path="/select-tenant" element={<SelectTenantPage />} />
@@ -89,6 +92,7 @@ export default function App() {
               <Route path="/crm" element={<CRMPage />} />
               <Route path="/terceros" element={<TercerosPage />} />
               <Route path="/pos" element={<POSPage />} />
+              <Route path="/soporte" element={<SoportePage />} />
 
               {/* Admin + Operador only */}
               <Route path="/productos" element={
