@@ -65,6 +65,7 @@ from .rutas import (
     medios_pago,
     ordenes_produccion,
     periodos_contables,
+    pqrs,
     productos,
     recetas,
     reportes,
@@ -462,6 +463,9 @@ app.include_router(recetas.router, prefix=f"{prefix}/recetas", tags=["Recetas"])
 
 # SSE - Server-Sent Events para tiempo real
 app.include_router(sse.router, prefix=f"{prefix}/sse", tags=["Tiempo Real (SSE)"])
+
+# PQRS - Sistema de soporte
+app.include_router(pqrs.router, prefix=f"{prefix}/pqrs", tags=["PQRS / Soporte"])
 
 
 # ============================================================================

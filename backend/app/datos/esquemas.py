@@ -1524,3 +1524,47 @@ class CrmActivityResponse(BaseModel):
     updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+# ============================================================================
+# PQRS (Soporte / Tickets)
+# ============================================================================
+
+
+class TicketPQRSCreate(BaseModel):
+    """Request para crear un ticket PQRS"""
+
+    tipo: str = Field(default="SOPORTE", description="PETICION|QUEJA|RECLAMO|SUGERENCIA|SOPORTE")
+    asunto: str = Field(..., max_length=300)
+    descripcion: str = Field(..., min_length=10)
+    prioridad: str = Field(default="MEDIA", description="BAJA|MEDIA|ALTA|CRITICA")
+
+
+class TicketPQRSUpdate(BaseModel):
+    """Request para actualizar un ticket (admin)"""
+
+    estado: Optional[str] = Field(None, description="ABIERTO|EN_PROCESO|RESUELTO|CERRADO")
+    prioridad: Optional[str] = Field(None, description="BAJA|MEDIA|ALTA|CRITICA")
+
+
+class RespuestaTicket(BaseModel):
+    """Request para agregar una respuesta a un ticket"""
+
+    contenido: str = Field(..., min_length=1)
+
+
+class TicketPQRSResponse(BaseModel):
+    """Response de un ticket PQRS"""
+
+    id: UUID
+    tipo: str
+    asunto: str
+    descripcion: str
+    estado: str
+    prioridad: str
+    usuario_id: Optional[UUID] = None
+    respuestas: Optional[list] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -9,6 +9,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useSSE } from '../hooks/useSSE';
 import { useDashboardStore } from '../stores/dashboardStore';
 import type { FacturaEvento } from '../stores/dashboardStore';
+import { useOnboarding } from '../hooks/useOnboarding';
+import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import {
   ResponsiveContainer,
   LineChart,
@@ -97,6 +99,7 @@ function formatTooltipValue(value: number): string {
 export default function DashboardPage() {
   const [period, setPeriod] = useState<PeriodValue>(getDefaultPeriod);
   const { user, impersonation } = useAuthStore();
+  const onboarding = useOnboarding();
 
   // Determinar rol efectivo
   const effectiveRole = impersonation ? impersonation.rolEnTenant : user?.rol;
@@ -233,6 +236,16 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {onboarding.shouldShow && (
+        <OnboardingWizard
+          currentStep={onboarding.currentStep}
+          completedSteps={onboarding.completedSteps}
+          totalSteps={onboarding.totalSteps}
+          onCompleteStep={onboarding.completeStep}
+          onDismiss={onboarding.dismiss}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>

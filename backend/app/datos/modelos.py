@@ -1,23 +1,34 @@
 import uuid
-from datetime import datetime
 from decimal import Decimal
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
-    Column, Integer, String, Boolean, ForeignKey, Numeric,
-    DateTime, Date, Text, CheckConstraint, Index, UniqueConstraint, func, Enum
+    Boolean,
+    CheckConstraint,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
 )
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 
 from .db import Base
-from .mixins import TenantMixin, SoftDeleteMixin, TenantAuditMixin
-
+from .mixins import TenantAuditMixin, TenantMixin
 
 # ============================================================================
 # ENUMS PARA ESTADOS
 # ============================================================================
+
 
 class EstadoVenta(str, PyEnum):
     PENDIENTE = "PENDIENTE"
@@ -51,11 +62,13 @@ class TipoMovimiento(str, PyEnum):
 # MODELO: Usuarios
 # ============================================================================
 
+
 class Usuarios(Base):
     """
     Usuarios del sistema (tabla global, sin RLS).
     Un usuario puede pertenecer a múltiples tenants via UsuariosTenants.
     """
+
     __tablename__ = "usuarios"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -70,17 +83,10 @@ class Usuarios(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relación con tenants
-    tenants = relationship(
-        "UsuariosTenants",
-        back_populates="usuario",
-        cascade="all, delete-orphan"
-    )
+    tenants = relationship("UsuariosTenants", back_populates="usuario", cascade="all, delete-orphan")
 
     __table_args__ = (
-        CheckConstraint(
-            "rol IN ('superadmin', 'admin', 'operador', 'contador')",
-            name="check_rol_valido"
-        ),
+        CheckConstraint("rol IN ('superadmin', 'admin', 'operador', 'contador')", name="check_rol_valido"),
     )
 
 
@@ -88,11 +94,13 @@ class Usuarios(Base):
 # MODELO: Terceros
 # ============================================================================
 
+
 class Terceros(TenantAuditMixin, Base):
     """
     Clientes, proveedores y otros terceros.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "terceros"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -119,16 +127,10 @@ class Terceros(TenantAuditMixin, Base):
     compras = relationship("Compras", back_populates="tercero")
 
     __table_args__ = (
-        CheckConstraint(
-            "tipo_documento IN ('CC', 'NIT', 'CE', 'PAS', 'TI')",
-            name="check_tipo_documento_valido"
-        ),
-        CheckConstraint(
-            "tipo_tercero IN ('CLIENTE', 'PROVEEDOR', 'AMBOS')",
-            name="check_tipo_tercero_valido"
-        ),
+        CheckConstraint("tipo_documento IN ('CC', 'NIT', 'CE', 'PAS', 'TI')", name="check_tipo_documento_valido"),
+        CheckConstraint("tipo_tercero IN ('CLIENTE', 'PROVEEDOR', 'AMBOS')", name="check_tipo_tercero_valido"),
         # Número de documento único por tenant
-        Index('idx_terceros_tenant_documento', 'tenant_id', 'numero_documento', unique=True),
+        Index("idx_terceros_tenant_documento", "tenant_id", "numero_documento", unique=True),
     )
 
 
@@ -136,11 +138,13 @@ class Terceros(TenantAuditMixin, Base):
 # MODELO: Productos
 # ============================================================================
 
+
 class Productos(TenantAuditMixin, Base):
     """
     Productos e insumos del inventario.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "productos"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -164,30 +168,29 @@ class Productos(TenantAuditMixin, Base):
     inventarios = relationship("Inventarios", back_populates="producto", uselist=False)
     movimientos = relationship("MovimientosInventario", back_populates="producto")
     recetas_como_resultado = relationship(
-        "Recetas",
-        foreign_keys="Recetas.producto_resultado_id",
-        back_populates="producto_resultado"
+        "Recetas", foreign_keys="Recetas.producto_resultado_id", back_populates="producto_resultado"
     )
 
     __table_args__ = (
         CheckConstraint(
-            "categoria IN ('Insumo', 'Producto_Propio', 'Producto_Tercero', 'Servicio')",
-            name="check_categoria_valida"
+            "categoria IN ('Insumo', 'Producto_Propio', 'Producto_Tercero', 'Servicio')", name="check_categoria_valida"
         ),
         CheckConstraint(
             "unidad_medida IN ('UNIDAD', 'KILOGRAMO', 'GRAMO', 'LITRO', 'METRO', 'CAJA', 'SET')",
-            name="check_unidad_medida_valida"
+            name="check_unidad_medida_valida",
         ),
-        CheckConstraint(
-            "tipo_iva IN ('Excluido', 'Exento', 'Gravado')",
-            name="check_tipo_iva_valido"
-        ),
+        CheckConstraint("tipo_iva IN ('Excluido', 'Exento', 'Gravado')", name="check_tipo_iva_valido"),
         CheckConstraint("precio_venta >= 0", name="check_precio_venta_positivo"),
         # Código interno único por tenant
-        Index('idx_productos_tenant_codigo', 'tenant_id', 'codigo_interno', unique=True),
+        Index("idx_productos_tenant_codigo", "tenant_id", "codigo_interno", unique=True),
         # Código de barras único por tenant (si existe)
-        Index('idx_productos_tenant_barras', 'tenant_id', 'codigo_barras', unique=True,
-              postgresql_where=Column('codigo_barras').isnot(None)),
+        Index(
+            "idx_productos_tenant_barras",
+            "tenant_id",
+            "codigo_barras",
+            unique=True,
+            postgresql_where=Column("codigo_barras").isnot(None),
+        ),
     )
 
 
@@ -195,16 +198,17 @@ class Productos(TenantAuditMixin, Base):
 # MODELO: Inventarios
 # ============================================================================
 
+
 class Inventarios(TenantMixin, Base):
     """
     Estado actual del inventario por producto.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "inventarios"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producto_id = Column(UUID(as_uuid=True), ForeignKey("productos.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
+    producto_id = Column(UUID(as_uuid=True), ForeignKey("productos.id", ondelete="CASCADE"), nullable=False, index=True)
     cantidad_disponible = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
     costo_promedio_ponderado = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
     valor_total = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
@@ -219,7 +223,7 @@ class Inventarios(TenantMixin, Base):
         CheckConstraint("costo_promedio_ponderado >= 0", name="check_costo_positivo"),
         CheckConstraint("valor_total >= 0", name="check_valor_positivo"),
         # Producto único por tenant
-        Index('idx_inventarios_tenant_producto', 'tenant_id', 'producto_id', unique=True),
+        Index("idx_inventarios_tenant_producto", "tenant_id", "producto_id", unique=True),
     )
 
 
@@ -227,11 +231,13 @@ class Inventarios(TenantMixin, Base):
 # MODELO: MovimientosInventario
 # ============================================================================
 
+
 class MovimientosInventario(TenantAuditMixin, Base):
     """
     Historial de movimientos de inventario.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "movimientos_inventario"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -249,7 +255,7 @@ class MovimientosInventario(TenantAuditMixin, Base):
     producto = relationship("Productos", back_populates="movimientos")
 
     __table_args__ = (
-        Index('idx_movimientos_tenant_producto_fecha', 'tenant_id', 'producto_id', 'fecha_movimiento'),
+        Index("idx_movimientos_tenant_producto_fecha", "tenant_id", "producto_id", "fecha_movimiento"),
         CheckConstraint("cantidad != 0", name="check_cantidad_no_cero"),
     )
 
@@ -258,11 +264,13 @@ class MovimientosInventario(TenantAuditMixin, Base):
 # MODELO: Ventas
 # ============================================================================
 
+
 class Ventas(TenantAuditMixin, Base):
     """
     Ventas realizadas.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "ventas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -286,10 +294,7 @@ class Ventas(TenantAuditMixin, Base):
         """Suma de (cantidad * precio_unitario) de todos los detalles"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(
-            (detalle.cantidad * detalle.precio_unitario)
-            for detalle in self.detalles
-        )
+        return sum((detalle.cantidad * detalle.precio_unitario) for detalle in self.detalles)
 
     @hybrid_property
     def total_descuento(self) -> Decimal:
@@ -327,10 +332,10 @@ class Ventas(TenantAuditMixin, Base):
         return self.base_gravable + self.total_iva
 
     __table_args__ = (
-        Index('idx_ventas_tenant_fecha_estado', 'tenant_id', 'fecha_venta', 'estado'),
-        Index('idx_ventas_tenant_tercero', 'tenant_id', 'tercero_id'),
+        Index("idx_ventas_tenant_fecha_estado", "tenant_id", "fecha_venta", "estado"),
+        Index("idx_ventas_tenant_tercero", "tenant_id", "tercero_id"),
         # Número de venta único por tenant
-        Index('idx_ventas_tenant_numero', 'tenant_id', 'numero_venta', unique=True),
+        Index("idx_ventas_tenant_numero", "tenant_id", "numero_venta", unique=True),
     )
 
 
@@ -338,11 +343,13 @@ class Ventas(TenantAuditMixin, Base):
 # MODELO: VentasDetalle
 # ============================================================================
 
+
 class VentasDetalle(TenantMixin, Base):
     """
     Detalles de ventas.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "ventas_detalle"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -384,8 +391,8 @@ class VentasDetalle(TenantMixin, Base):
         return self.base_gravable + self.valor_iva
 
     __table_args__ = (
-        Index('idx_ventas_detalle_tenant_venta', 'tenant_id', 'venta_id'),
-        Index('idx_ventas_detalle_tenant_producto', 'tenant_id', 'producto_id'),
+        Index("idx_ventas_detalle_tenant_venta", "tenant_id", "venta_id"),
+        Index("idx_ventas_detalle_tenant_producto", "tenant_id", "producto_id"),
         CheckConstraint("cantidad > 0", name="check_venta_cantidad_positiva"),
         CheckConstraint("precio_unitario >= 0", name="check_venta_precio_positivo"),
         CheckConstraint("descuento >= 0", name="check_venta_descuento_positivo"),
@@ -396,11 +403,13 @@ class VentasDetalle(TenantMixin, Base):
 # MODELO: Compras
 # ============================================================================
 
+
 class Compras(TenantAuditMixin, Base):
     """
     Compras realizadas a proveedores.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "compras"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -455,10 +464,10 @@ class Compras(TenantAuditMixin, Base):
         return self.base_gravable + self.total_iva
 
     __table_args__ = (
-        Index('idx_compras_tenant_fecha_estado', 'tenant_id', 'fecha_compra', 'estado'),
-        Index('idx_compras_tenant_tercero', 'tenant_id', 'tercero_id'),
+        Index("idx_compras_tenant_fecha_estado", "tenant_id", "fecha_compra", "estado"),
+        Index("idx_compras_tenant_tercero", "tenant_id", "tercero_id"),
         # Número de compra único por tenant
-        Index('idx_compras_tenant_numero', 'tenant_id', 'numero_compra', unique=True),
+        Index("idx_compras_tenant_numero", "tenant_id", "numero_compra", unique=True),
     )
 
 
@@ -466,11 +475,13 @@ class Compras(TenantAuditMixin, Base):
 # MODELO: ComprasDetalle
 # ============================================================================
 
+
 class ComprasDetalle(TenantMixin, Base):
     """
     Detalles de compras.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "compras_detalle"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -512,8 +523,8 @@ class ComprasDetalle(TenantMixin, Base):
         return self.base_gravable + self.valor_iva
 
     __table_args__ = (
-        Index('idx_compras_detalle_tenant_compra', 'tenant_id', 'compra_id'),
-        Index('idx_compras_detalle_tenant_producto', 'tenant_id', 'producto_id'),
+        Index("idx_compras_detalle_tenant_compra", "tenant_id", "compra_id"),
+        Index("idx_compras_detalle_tenant_producto", "tenant_id", "producto_id"),
         CheckConstraint("cantidad > 0", name="check_compra_cantidad_positiva"),
         CheckConstraint("precio_unitario >= 0", name="check_compra_precio_positivo"),
         CheckConstraint("descuento >= 0", name="check_compra_descuento_positivo"),
@@ -524,11 +535,13 @@ class ComprasDetalle(TenantMixin, Base):
 # MODELO: OrdenesProduccion
 # ============================================================================
 
+
 class OrdenesProduccion(TenantAuditMixin, Base):
     """
     Órdenes de producción.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "ordenes_produccion"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -553,10 +566,7 @@ class OrdenesProduccion(TenantAuditMixin, Base):
         """Suma del costo total de todos los insumos utilizados"""
         if not self.detalles:
             return Decimal("0.00")
-        return sum(
-            (detalle.cantidad_requerida * detalle.costo_unitario)
-            for detalle in self.detalles
-        )
+        return sum((detalle.cantidad_requerida * detalle.costo_unitario) for detalle in self.detalles)
 
     @hybrid_property
     def costo_unitario(self) -> Decimal:
@@ -566,9 +576,9 @@ class OrdenesProduccion(TenantAuditMixin, Base):
         return self.costo_estimado / self.cantidad_producir
 
     __table_args__ = (
-        Index('idx_ordenes_tenant_fecha_estado', 'tenant_id', 'fecha_inicio', 'estado'),
-        Index('idx_ordenes_tenant_producto', 'tenant_id', 'producto_id'),
-        Index('idx_ordenes_tenant_numero', 'tenant_id', 'numero_orden', unique=True),
+        Index("idx_ordenes_tenant_fecha_estado", "tenant_id", "fecha_inicio", "estado"),
+        Index("idx_ordenes_tenant_producto", "tenant_id", "producto_id"),
+        Index("idx_ordenes_tenant_numero", "tenant_id", "numero_orden", unique=True),
         CheckConstraint("cantidad_producir > 0", name="check_cantidad_producir_positiva"),
     )
 
@@ -577,11 +587,13 @@ class OrdenesProduccion(TenantAuditMixin, Base):
 # MODELO: OrdenesProduccionDetalle
 # ============================================================================
 
+
 class OrdenesProduccionDetalle(TenantMixin, Base):
     """
     Detalles de órdenes de producción.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "ordenes_produccion_detalle"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -601,8 +613,8 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
         return self.cantidad_requerida * self.costo_unitario
 
     __table_args__ = (
-        Index('idx_ordenes_detalle_tenant_orden', 'tenant_id', 'orden_id'),
-        Index('idx_ordenes_detalle_tenant_insumo', 'tenant_id', 'insumo_id'),
+        Index("idx_ordenes_detalle_tenant_orden", "tenant_id", "orden_id"),
+        Index("idx_ordenes_detalle_tenant_insumo", "tenant_id", "insumo_id"),
         CheckConstraint("cantidad_requerida > 0", name="check_cantidad_requerida_positiva"),
         CheckConstraint("costo_unitario >= 0", name="check_costo_unitario_positivo"),
     )
@@ -612,22 +624,21 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
 # MODELO: Recetas (BOM - Bill of Materials para produccion de velas)
 # ============================================================================
 
+
 class Recetas(TenantAuditMixin, Base):
     """
     Recetas para produccion de velas.
     Define los ingredientes necesarios para producir un producto terminado.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "recetas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(200), nullable=False)
     descripcion = Column(Text)
     producto_resultado_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("productos.id", ondelete="RESTRICT"),
-        nullable=False,
-        index=True
+        UUID(as_uuid=True), ForeignKey("productos.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     cantidad_resultado = Column(Numeric(10, 2), nullable=False, default=Decimal("1.00"))
     costo_mano_obra = Column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
@@ -639,11 +650,7 @@ class Recetas(TenantAuditMixin, Base):
 
     # Relaciones
     producto_resultado = relationship("Productos", foreign_keys=[producto_resultado_id])
-    ingredientes = relationship(
-        "RecetasIngredientes",
-        back_populates="receta",
-        cascade="all, delete-orphan"
-    )
+    ingredientes = relationship("RecetasIngredientes", back_populates="receta", cascade="all, delete-orphan")
 
     @hybrid_property
     def costo_ingredientes(self) -> Decimal:
@@ -673,8 +680,8 @@ class Recetas(TenantAuditMixin, Base):
         CheckConstraint("cantidad_resultado > 0", name="check_receta_cantidad_positiva"),
         CheckConstraint("costo_mano_obra >= 0", name="check_receta_mano_obra_positiva"),
         # Nombre unico por tenant
-        Index('idx_recetas_tenant_nombre', 'tenant_id', 'nombre', unique=True),
-        Index('idx_recetas_tenant_producto', 'tenant_id', 'producto_resultado_id'),
+        Index("idx_recetas_tenant_nombre", "tenant_id", "nombre", unique=True),
+        Index("idx_recetas_tenant_producto", "tenant_id", "producto_resultado_id"),
     )
 
 
@@ -682,25 +689,19 @@ class Recetas(TenantAuditMixin, Base):
 # MODELO: RecetasIngredientes
 # ============================================================================
 
+
 class RecetasIngredientes(Base):
     """
     Ingredientes de una receta.
     No tiene TenantMixin porque hereda el tenant de la receta padre.
     """
+
     __tablename__ = "recetas_ingredientes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    receta_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("recetas.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    receta_id = Column(UUID(as_uuid=True), ForeignKey("recetas.id", ondelete="CASCADE"), nullable=False, index=True)
     producto_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("productos.id", ondelete="RESTRICT"),
-        nullable=False,
-        index=True
+        UUID(as_uuid=True), ForeignKey("productos.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     cantidad = Column(Numeric(10, 4), nullable=False)
     unidad = Column(String(20), nullable=False, default="UNIDAD")
@@ -722,10 +723,10 @@ class RecetasIngredientes(Base):
         CheckConstraint("cantidad > 0", name="check_ingrediente_cantidad_positiva"),
         CheckConstraint(
             "unidad IN ('UNIDAD', 'GRAMO', 'KILOGRAMO', 'MILILITRO', 'LITRO', 'METRO', 'CENTIMETRO')",
-            name="check_ingrediente_unidad_valida"
+            name="check_ingrediente_unidad_valida",
         ),
         # Un producto solo puede estar una vez por receta
-        Index('idx_ingredientes_receta_producto', 'receta_id', 'producto_id', unique=True),
+        Index("idx_ingredientes_receta_producto", "receta_id", "producto_id", unique=True),
     )
 
 
@@ -733,11 +734,13 @@ class RecetasIngredientes(Base):
 # MODELO: Cotizaciones
 # ============================================================================
 
+
 class Cotizaciones(TenantAuditMixin, Base):
     """
     Cotizaciones a clientes.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "cotizaciones"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -790,12 +793,11 @@ class Cotizaciones(TenantAuditMixin, Base):
         return self.subtotal - self.total_descuento + self.total_iva
 
     __table_args__ = (
-        Index('idx_cotizaciones_tenant_fecha', 'tenant_id', 'fecha_cotizacion'),
-        Index('idx_cotizaciones_tenant_tercero', 'tenant_id', 'tercero_id'),
-        Index('idx_cotizaciones_tenant_numero', 'tenant_id', 'numero_cotizacion', unique=True),
+        Index("idx_cotizaciones_tenant_fecha", "tenant_id", "fecha_cotizacion"),
+        Index("idx_cotizaciones_tenant_tercero", "tenant_id", "tercero_id"),
+        Index("idx_cotizaciones_tenant_numero", "tenant_id", "numero_cotizacion", unique=True),
         CheckConstraint(
-            "estado IN ('VIGENTE', 'VENCIDA', 'ACEPTADA', 'RECHAZADA')",
-            name="check_estado_cotizacion_valido"
+            "estado IN ('VIGENTE', 'VENCIDA', 'ACEPTADA', 'RECHAZADA')", name="check_estado_cotizacion_valido"
         ),
     )
 
@@ -804,11 +806,13 @@ class Cotizaciones(TenantAuditMixin, Base):
 # MODELO: CotizacionesDetalle
 # ============================================================================
 
+
 class CotizacionesDetalle(TenantMixin, Base):
     """
     Detalles de cotizaciones.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "cotizaciones_detalle"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -846,8 +850,8 @@ class CotizacionesDetalle(TenantMixin, Base):
         return self.base_gravable + self.valor_iva
 
     __table_args__ = (
-        Index('idx_cotizaciones_detalle_tenant_cot', 'tenant_id', 'cotizacion_id'),
-        Index('idx_cotizaciones_detalle_tenant_producto', 'tenant_id', 'producto_id'),
+        Index("idx_cotizaciones_detalle_tenant_cot", "tenant_id", "cotizacion_id"),
+        Index("idx_cotizaciones_detalle_tenant_producto", "tenant_id", "producto_id"),
         CheckConstraint("cantidad > 0", name="check_cotizacion_cantidad_positiva"),
         CheckConstraint("precio_unitario >= 0", name="check_cotizacion_precio_positivo"),
     )
@@ -857,11 +861,13 @@ class CotizacionesDetalle(TenantMixin, Base):
 # MODELO: CuentasContables
 # ============================================================================
 
+
 class CuentasContables(TenantMixin, Base):
     """
     Plan de cuentas contables (PUC).
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "cuentas_contables"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -882,15 +888,12 @@ class CuentasContables(TenantMixin, Base):
     __table_args__ = (
         CheckConstraint(
             "tipo_cuenta IN ('ACTIVO', 'PASIVO', 'PATRIMONIO', 'INGRESO', 'EGRESO', 'COSTOS')",
-            name="check_tipo_cuenta_valido"
+            name="check_tipo_cuenta_valido",
         ),
-        CheckConstraint(
-            "naturaleza IN ('DEBITO', 'CREDITO')",
-            name="check_naturaleza_valida"
-        ),
+        CheckConstraint("naturaleza IN ('DEBITO', 'CREDITO')", name="check_naturaleza_valida"),
         CheckConstraint("nivel >= 1 AND nivel <= 6", name="check_nivel_valido"),
         # Código único por tenant
-        Index('idx_cuentas_contables_tenant_codigo', 'tenant_id', 'codigo', unique=True),
+        Index("idx_cuentas_contables_tenant_codigo", "tenant_id", "codigo", unique=True),
     )
 
 
@@ -898,11 +901,13 @@ class CuentasContables(TenantMixin, Base):
 # MODELO: ConfiguracionContable
 # ============================================================================
 
+
 class ConfiguracionContable(TenantMixin, Base):
     """
     Configuración de cuentas contables por concepto.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "configuracion_contable"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -919,7 +924,7 @@ class ConfiguracionContable(TenantMixin, Base):
 
     __table_args__ = (
         # Concepto único por tenant
-        Index('idx_config_contable_tenant_concepto', 'tenant_id', 'concepto', unique=True),
+        Index("idx_config_contable_tenant_concepto", "tenant_id", "concepto", unique=True),
     )
 
 
@@ -927,11 +932,13 @@ class ConfiguracionContable(TenantMixin, Base):
 # MODELO: PeriodosContables
 # ============================================================================
 
+
 class PeriodosContables(TenantMixin, Base):
     """
     Períodos contables mensuales.
     Controla si se pueden registrar asientos en un mes/año dado.
     """
+
     __tablename__ = "periodos_contables"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -947,12 +954,9 @@ class PeriodosContables(TenantMixin, Base):
     usuario_cierre = relationship("Usuarios", foreign_keys=[cerrado_por])
 
     __table_args__ = (
-        UniqueConstraint('tenant_id', 'anio', 'mes', name='uq_periodos_tenant_anio_mes'),
-        CheckConstraint('mes >= 1 AND mes <= 12', name='ck_periodos_mes_valid'),
-        CheckConstraint(
-            "estado IN ('ABIERTO', 'CERRADO_PARCIAL', 'CERRADO')",
-            name='ck_periodos_estado_valid'
-        ),
+        UniqueConstraint("tenant_id", "anio", "mes", name="uq_periodos_tenant_anio_mes"),
+        CheckConstraint("mes >= 1 AND mes <= 12", name="ck_periodos_mes_valid"),
+        CheckConstraint("estado IN ('ABIERTO', 'CERRADO_PARCIAL', 'CERRADO')", name="ck_periodos_estado_valid"),
     )
 
 
@@ -960,11 +964,13 @@ class PeriodosContables(TenantMixin, Base):
 # MODELO: AsientosContables
 # ============================================================================
 
+
 class AsientosContables(TenantAuditMixin, Base):
     """
     Asientos contables del libro diario.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """
+
     __tablename__ = "asientos_contables"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -989,18 +995,15 @@ class AsientosContables(TenantAuditMixin, Base):
         return self.tercero.nombre if self.tercero else None
 
     __table_args__ = (
-        Index('idx_asientos_tenant_fecha', 'tenant_id', 'fecha'),
-        Index('idx_asientos_tenant_numero', 'tenant_id', 'numero_asiento', unique=True),
-        Index('idx_asientos_tenant_tercero', 'tenant_id', 'tercero_id'),
-        Index('idx_asientos_periodo', 'periodo_id'),
+        Index("idx_asientos_tenant_fecha", "tenant_id", "fecha"),
+        Index("idx_asientos_tenant_numero", "tenant_id", "numero_asiento", unique=True),
+        Index("idx_asientos_tenant_tercero", "tenant_id", "tercero_id"),
+        Index("idx_asientos_periodo", "periodo_id"),
         CheckConstraint(
             "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'OTRO')",
-            name="check_tipo_asiento_valido"
+            name="check_tipo_asiento_valido",
         ),
-        CheckConstraint(
-            "estado IN ('ACTIVO', 'ANULADO')",
-            name="check_estado_asiento_valido"
-        ),
+        CheckConstraint("estado IN ('ACTIVO', 'ANULADO')", name="check_estado_asiento_valido"),
     )
 
 
@@ -1008,11 +1011,13 @@ class AsientosContables(TenantAuditMixin, Base):
 # MODELO: DetallesAsiento
 # ============================================================================
 
+
 class DetallesAsiento(TenantMixin, Base):
     """
     Líneas de asientos contables.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "detalles_asiento"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1035,14 +1040,11 @@ class DetallesAsiento(TenantMixin, Base):
         return self.cuenta.nombre if self.cuenta else None
 
     __table_args__ = (
-        Index('idx_detalles_asiento_tenant_asiento', 'tenant_id', 'asiento_id'),
-        Index('idx_detalles_asiento_tenant_cuenta', 'tenant_id', 'cuenta_id'),
+        Index("idx_detalles_asiento_tenant_asiento", "tenant_id", "asiento_id"),
+        Index("idx_detalles_asiento_tenant_cuenta", "tenant_id", "cuenta_id"),
         CheckConstraint("debito >= 0", name="check_debito_positivo"),
         CheckConstraint("credito >= 0", name="check_credito_positivo"),
-        CheckConstraint(
-            "(debito > 0 AND credito = 0) OR (debito = 0 AND credito > 0)",
-            name="check_debito_o_credito"
-        ),
+        CheckConstraint("(debito > 0 AND credito = 0) OR (debito = 0 AND credito > 0)", name="check_debito_o_credito"),
     )
 
 
@@ -1050,11 +1052,13 @@ class DetallesAsiento(TenantMixin, Base):
 # MODELO: MediosPago
 # ============================================================================
 
+
 class MediosPago(TenantMixin, Base):
     """
     Medios de pago configurados.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "medios_pago"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1068,10 +1072,10 @@ class MediosPago(TenantMixin, Base):
     __table_args__ = (
         CheckConstraint(
             "tipo IN ('EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA_CREDITO', 'TARJETA_DEBITO', 'OTRO')",
-            name="check_tipo_medio_pago_valido"
+            name="check_tipo_medio_pago_valido",
         ),
         # Nombre único por tenant
-        Index('idx_medios_pago_tenant_nombre', 'tenant_id', 'nombre', unique=True),
+        Index("idx_medios_pago_tenant_nombre", "tenant_id", "nombre", unique=True),
     )
 
 
@@ -1079,11 +1083,13 @@ class MediosPago(TenantMixin, Base):
 # MODELO: Cartera (Cuentas por Cobrar/Pagar)
 # ============================================================================
 
+
 class Cartera(TenantMixin, Base):
     """
     Cuentas por cobrar y por pagar.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "cartera"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1104,16 +1110,12 @@ class Cartera(TenantMixin, Base):
     pagos = relationship("PagosCartera", back_populates="cartera", cascade="all, delete-orphan")
 
     __table_args__ = (
-        Index('idx_cartera_tenant_tipo_estado', 'tenant_id', 'tipo_cartera', 'estado'),
-        Index('idx_cartera_tenant_tercero', 'tenant_id', 'tercero_id'),
-        Index('idx_cartera_tenant_documento', 'tenant_id', 'documento_referencia'),
+        Index("idx_cartera_tenant_tipo_estado", "tenant_id", "tipo_cartera", "estado"),
+        Index("idx_cartera_tenant_tercero", "tenant_id", "tercero_id"),
+        Index("idx_cartera_tenant_documento", "tenant_id", "documento_referencia"),
+        CheckConstraint("tipo_cartera IN ('COBRAR', 'PAGAR')", name="check_tipo_cartera_valido"),
         CheckConstraint(
-            "tipo_cartera IN ('COBRAR', 'PAGAR')",
-            name="check_tipo_cartera_valido"
-        ),
-        CheckConstraint(
-            "estado IN ('PENDIENTE', 'PARCIAL', 'PAGADA', 'VENCIDA', 'ANULADA')",
-            name="check_estado_cartera_valido"
+            "estado IN ('PENDIENTE', 'PARCIAL', 'PAGADA', 'VENCIDA', 'ANULADA')", name="check_estado_cartera_valido"
         ),
         CheckConstraint("valor_total >= 0", name="check_valor_total_positivo"),
         CheckConstraint("saldo_pendiente >= 0", name="check_saldo_positivo"),
@@ -1124,11 +1126,13 @@ class Cartera(TenantMixin, Base):
 # MODELO: PagosCartera
 # ============================================================================
 
+
 class PagosCartera(TenantMixin, Base):
     """
     Pagos aplicados a cartera.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "pagos_cartera"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1145,8 +1149,8 @@ class PagosCartera(TenantMixin, Base):
     medio_pago = relationship("MediosPago")
 
     __table_args__ = (
-        Index('idx_pagos_cartera_tenant_cartera', 'tenant_id', 'cartera_id'),
-        Index('idx_pagos_cartera_tenant_fecha', 'tenant_id', 'fecha_pago'),
+        Index("idx_pagos_cartera_tenant_cartera", "tenant_id", "cartera_id"),
+        Index("idx_pagos_cartera_tenant_fecha", "tenant_id", "fecha_pago"),
         CheckConstraint("valor_pago > 0", name="check_valor_pago_positivo"),
     )
 
@@ -1155,11 +1159,13 @@ class PagosCartera(TenantMixin, Base):
 # MODELO: Secuencias (Numeración automática)
 # ============================================================================
 
+
 class Secuencias(TenantMixin, Base):
     """
     Secuencias de numeración para documentos.
     Modelo con multi-tenancy.
     """
+
     __tablename__ = "secuencias"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1174,7 +1180,7 @@ class Secuencias(TenantMixin, Base):
         CheckConstraint("siguiente_numero >= 1", name="check_siguiente_numero_positivo"),
         CheckConstraint("longitud_numero >= 1 AND longitud_numero <= 10", name="check_longitud_valida"),
         # Nombre único por tenant
-        Index('idx_secuencias_tenant_nombre', 'tenant_id', 'nombre', unique=True),
+        Index("idx_secuencias_tenant_nombre", "tenant_id", "nombre", unique=True),
     )
 
 
@@ -1183,7 +1189,10 @@ class Secuencias(TenantMixin, Base):
 # ============================================================================
 
 # Agregar la relación de usuario a UsuariosTenants
-from .modelos_tenant import UsuariosTenants
+# CRM y PQRS (importados para que Alembic auto-detecte las tablas)
+from .modelos_crm import CrmActivity, CrmDeal, CrmPipeline, CrmStage  # noqa: F401, E402
+from .modelos_pqrs import TicketsPQRS  # noqa: F401, E402
+from .modelos_tenant import UsuariosTenants  # noqa: E402
 
 # Completar la relación bidireccional
 UsuariosTenants.usuario = relationship("Usuarios", back_populates="tenants")

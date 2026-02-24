@@ -887,3 +887,63 @@ export interface CrmActivityCreate {
   fecha_actividad?: string | null;
   duracion_minutos?: number;
 }
+
+// ---- Registro de Tenant ----
+
+export interface TenantRegisterRequest {
+  nombre_empresa: string;
+  slug: string;
+  nit?: string | null;
+  email_empresa: string;
+  telefono?: string | null;
+  ciudad?: string | null;
+  departamento?: string | null;
+  admin_nombre: string;
+  admin_email: string;
+  admin_password: string;
+  plan_id?: string | null;
+}
+
+export interface TenantRegisterResponse {
+  tenant: TenantDetail;
+  user: User;
+  message: string;
+}
+
+// ---- PQRS (Soporte / Tickets) ----
+
+export type TipoPQRS = 'PETICION' | 'QUEJA' | 'RECLAMO' | 'SUGERENCIA' | 'SOPORTE';
+export type EstadoTicket = 'ABIERTO' | 'EN_PROCESO' | 'RESUELTO' | 'CERRADO';
+export type PrioridadTicket = 'BAJA' | 'MEDIA' | 'ALTA' | 'CRITICA';
+
+export interface RespuestaTicket {
+  autor_id: string;
+  autor_nombre: string;
+  contenido: string;
+  fecha: string;
+}
+
+export interface TicketPQRS {
+  id: string;
+  tipo: TipoPQRS;
+  asunto: string;
+  descripcion: string;
+  estado: EstadoTicket;
+  prioridad: PrioridadTicket;
+  usuario_id: string | null;
+  respuestas: RespuestaTicket[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketPQRSCreate {
+  tipo?: TipoPQRS;
+  asunto: string;
+  descripcion: string;
+  prioridad?: PrioridadTicket;
+}
+
+export interface TicketPQRSUpdate {
+  estado?: EstadoTicket;
+  prioridad?: PrioridadTicket;
+}

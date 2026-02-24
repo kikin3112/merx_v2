@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import MobileDrawer from './MobileDrawer';
+import WhatsAppButton from '../ui/WhatsAppButton';
 
 export default function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function AppShell() {
       </main>
       <BottomNav onMenuOpen={() => setDrawerOpen(true)} />
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <WhatsAppButton />
     </div>
   );
 }
