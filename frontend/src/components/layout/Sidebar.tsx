@@ -11,9 +11,7 @@ export default function Sidebar() {
     <aside className="hidden lg:flex h-screen w-60 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
       <div className="flex items-center gap-2 px-4 py-5 border-b border-gray-100">
-        <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center">
-          <span className="text-white font-bold text-sm">C</span>
-        </div>
+        <img src="/logo.png" alt="Chandelier" className="h-8 w-8 rounded-full object-cover shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">Chandelier</p>
           <p className="text-xs text-gray-500 truncate">
