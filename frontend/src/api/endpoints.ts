@@ -65,6 +65,7 @@ import type {
   TicketPQRS,
   TicketPQRSCreate,
   TicketPQRSUpdate,
+  GastosVsIngresos,
 } from '../types';
 
 // Auth
@@ -332,6 +333,8 @@ export const reportes = {
     client.get<ProyeccionFlujoCaja>('/reportes/proyeccion-flujo-caja', { params: { dias_proyeccion: dias } }),
   margenesCategoria: (params?: { dias?: number; fecha_inicio?: string; fecha_fin?: string }) =>
     client.get<MargenCategoria[]>('/reportes/margenes-categoria', { params }),
+  gastosVsIngresos: (params?: { fecha_inicio?: string; fecha_fin?: string }) =>
+    client.get<GastosVsIngresos>('/reportes/gastos-vs-ingresos', { params }),
 };
 
 // Cartera

@@ -559,6 +559,13 @@ export interface MargenCategoria {
   cantidad_items: number;
 }
 
+export interface GastosVsIngresos {
+  ingresos: number;
+  gastos: number;
+  margen: number;
+  margen_porcentaje: number;
+}
+
 // ---- Cartera ----
 
 export interface CarteraItem {
