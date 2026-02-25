@@ -8,11 +8,11 @@ from decimal import Decimal
 
 def test_vendedor_cannot_delete_producto(client, vendedor_token, tenant_admin_token, db_session):
     """Vendedor role should not be able to delete products (403 Forbidden)."""
-    from uuid import uuid4
+    from uuid import UUID
 
     from app.datos.modelos import Productos
 
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     # Create a product as admin
     producto = Productos(
@@ -59,11 +59,11 @@ def test_vendedor_cannot_access_contabilidad(client, vendedor_token):
 
 def test_admin_can_anular_factura(client, tenant_admin_token, db_session):
     """Only admin can annul invoices."""
-    from uuid import uuid4
+    from uuid import UUID
 
     from app.datos.modelos import Terceros, Ventas
 
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     # Create client
     tercero = Terceros(
@@ -103,11 +103,11 @@ def test_admin_can_anular_factura(client, tenant_admin_token, db_session):
 
 def test_vendedor_cannot_anular_factura(client, vendedor_token, tenant_admin_token, db_session):
     """Vendedor cannot annul invoices (403 Forbidden)."""
-    from uuid import uuid4
+    from uuid import UUID
 
     from app.datos.modelos import Terceros, Ventas
 
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     tercero = Terceros(
         tenant_id=tenant_id,
@@ -150,7 +150,7 @@ def test_superadmin_bypasses_tenant_role_checks(client, db_session):
     superadmin = Usuarios(
         email="superadmin@test.com",
         nombre="Super Admin",
-        hash_password=hash_password("test123"),
+        password_hash=hash_password("test123"),
         rol="admin",
         estado=True,
         es_superadmin=True,

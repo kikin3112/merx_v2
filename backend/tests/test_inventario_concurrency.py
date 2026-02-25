@@ -5,7 +5,7 @@ Verifies that race conditions are prevented during concurrent stock operations.
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID
 
 import pytest
 from app.datos.modelos import Inventarios, Productos
@@ -22,7 +22,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
     - Expected: Only 1 succeeds, 2 fail with "Stock insuficiente"
     - Final stock: 2 (10 - 8)
     """
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     # Create product with stock=10
     producto = Productos(
@@ -90,7 +90,7 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
     - 2 concurrent entries: +5 @ $6000 and +5 @ $7000
     - Expected final: stock=20, avg_cost calculated correctly
     """
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     producto = Productos(
         tenant_id=tenant_id,
