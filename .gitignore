@@ -72,3 +72,6 @@ uv.lock
 # Cursor IDE
 .cursor/.env
 .vercel
+
+# Windows crash dumps
+*.stackdump
