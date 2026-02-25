@@ -76,8 +76,14 @@ def seed_planes(db: Session) -> UUID:
                 plan_default_id = plan.id
             logger.info(f"  Plan creado: {plan_data['nombre']}")
         else:
+            # Actualizar límites del plan existente para reflejar cambios de configuración
+            for field in ("max_usuarios", "max_productos", "max_facturas_mes", "max_storage_mb"):
+                if field in plan_data:
+                    setattr(existing, field, plan_data[field])
+            db.flush()
             if plan_data["es_default"]:
                 plan_default_id = existing.id
+            logger.info(f"  Plan actualizado: {plan_data['nombre']}")
 
     db.commit()
     return plan_default_id
