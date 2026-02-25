@@ -5,12 +5,13 @@ Creates professional multi-page PDF documents with table of contents.
 
 import io
 from datetime import date
-from typing import List, Optional
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
-from reportlab.platypus.tableofcontents import TableOfContents
+from typing import Optional
+
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from reportlab.lib import colors
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus.tableofcontents import TableOfContents
 
 
 class GeneratorGuiaUsuario:

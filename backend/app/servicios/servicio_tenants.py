@@ -4,38 +4,36 @@ Maneja CRUD de tenants, onboarding, y asignación de usuarios.
 """
 
 import re
-from typing import Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
 
+from sqlalchemy import func as sqla_func
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func as sqla_func
 
-from ..datos.modelos import (
-    Usuarios,
-    Productos,
-    Ventas,
-    Terceros,
-    CuentasContables,
-    ConfiguracionContable,
-    MediosPago,
-    Secuencias,
-)
-from ..datos.modelos_tenant import Planes, Tenants, UsuariosTenants, Suscripciones, HistorialPagos
 from ..datos.esquemas import (
-    TenantCreate,
-    TenantUpdate,
-    TenantRegisterRequest,
-    UsuarioTenantCreate,
-    UsuarioTenantUpdate,
-    PlanCreate,
-    PlanUpdate,
     GlobalUserCreate,
     GlobalUserUpdate,
+    PlanCreate,
+    PlanUpdate,
+    TenantCreate,
+    TenantRegisterRequest,
+    TenantUpdate,
 )
-from ..datos.db import set_tenant_context
-from ..utils.seguridad import hash_password
+from ..datos.modelos import (
+    ConfiguracionContable,
+    CuentasContables,
+    MediosPago,
+    Productos,
+    Secuencias,
+    Terceros,
+    Usuarios,
+    Ventas,
+)
+from ..datos.modelos_tenant import HistorialPagos, Planes, Suscripciones, Tenants, UsuariosTenants
 from ..utils.logger import setup_logger
+from ..utils.seguridad import hash_password
 
 logger = setup_logger(__name__)
 
@@ -54,7 +52,7 @@ class ServicioTenants:
 
     def obtener_planes_activos(self) -> List[Planes]:
         """Obtiene todos los planes activos."""
-        return self.db.query(Planes).filter(Planes.esta_activo == True).order_by(Planes.precio_mensual).all()
+        return self.db.query(Planes).filter(Planes.esta_activo).order_by(Planes.precio_mensual).all()
 
     def obtener_plan_por_id(self, plan_id: UUID) -> Optional[Planes]:
         """Obtiene un plan por su ID."""
@@ -62,7 +60,7 @@ class ServicioTenants:
 
     def obtener_plan_default(self) -> Optional[Planes]:
         """Obtiene el plan marcado como default."""
-        return self.db.query(Planes).filter(Planes.es_default == True, Planes.esta_activo == True).first()
+        return self.db.query(Planes).filter(Planes.es_default, Planes.esta_activo).first()
 
     # ========================================================================
     # TENANTS - CRUD
@@ -352,7 +350,7 @@ class ServicioTenants:
         """Obtiene los tenants a los que pertenece un usuario."""
         return (
             self.db.query(UsuariosTenants)
-            .filter(UsuariosTenants.usuario_id == usuario_id, UsuariosTenants.esta_activo == True)
+            .filter(UsuariosTenants.usuario_id == usuario_id, UsuariosTenants.esta_activo)
             .all()
         )
 
@@ -360,7 +358,7 @@ class ServicioTenants:
         """Obtiene los usuarios de un tenant."""
         return (
             self.db.query(UsuariosTenants)
-            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo == True)
+            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo)
             .all()
         )
 
@@ -407,7 +405,7 @@ class ServicioTenants:
                 .filter(
                     UsuariosTenants.tenant_id == tenant_id,
                     UsuariosTenants.rol == "admin",
-                    UsuariosTenants.esta_activo == True,
+                    UsuariosTenants.esta_activo,
                 )
                 .first()
             )
@@ -439,7 +437,7 @@ class ServicioTenants:
         # Si es default, quitar default de otros
         if es_default:
             self.db.query(UsuariosTenants).filter(
-                UsuariosTenants.usuario_id == usuario_id, UsuariosTenants.es_default == True
+                UsuariosTenants.usuario_id == usuario_id, UsuariosTenants.es_default
             ).update({"es_default": False})
 
         # Crear relación
@@ -475,7 +473,7 @@ class ServicioTenants:
                 .filter(
                     UsuariosTenants.tenant_id == tenant_id,
                     UsuariosTenants.rol == "admin",
-                    UsuariosTenants.esta_activo == True,
+                    UsuariosTenants.esta_activo,
                     UsuariosTenants.usuario_id != usuario_id,
                 )
                 .first()
@@ -528,7 +526,7 @@ class ServicioTenants:
             .filter(
                 UsuariosTenants.usuario_id == usuario_id,
                 UsuariosTenants.tenant_id == tenant_id,
-                UsuariosTenants.esta_activo == True,
+                UsuariosTenants.esta_activo,
             )
             .first()
         )
@@ -715,7 +713,7 @@ class ServicioTenants:
 
         usuarios_count = (
             self.db.query(sqla_func.count(UsuariosTenants.id))
-            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo == True)
+            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo)
             .scalar()
             or 0
         )
@@ -798,7 +796,7 @@ class ServicioTenants:
 
         # Revenue por plan
         revenue_por_plan = []
-        planes = self.db.query(Planes).filter(Planes.esta_activo == True).all()
+        planes = self.db.query(Planes).filter(Planes.esta_activo).all()
         for plan in planes:
             count = (
                 self.db.query(sqla_func.count(Tenants.id))
@@ -836,7 +834,7 @@ class ServicioTenants:
         resultados = (
             self.db.query(UsuariosTenants, Usuarios)
             .join(Usuarios, Usuarios.id == UsuariosTenants.usuario_id)
-            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo == True)
+            .filter(UsuariosTenants.tenant_id == tenant_id, UsuariosTenants.esta_activo)
             .all()
         )
 
@@ -988,9 +986,7 @@ class ServicioTenants:
         # No permitir desactivar al último superadmin activo
         if usuario.es_superadmin and usuario.estado:
             activos_count = (
-                self.db.query(sqla_func.count(Usuarios.id))
-                .filter(Usuarios.es_superadmin == True, Usuarios.estado == True)
-                .scalar()
+                self.db.query(sqla_func.count(Usuarios.id)).filter(Usuarios.es_superadmin, Usuarios.estado).scalar()
                 or 0
             )
             if activos_count <= 1:
@@ -1173,7 +1169,6 @@ class ServicioTenants:
         - Medios de pago
         - Cliente Mostrador
         """
-        from decimal import Decimal
 
         logger.info(f"Inicializando configuración para tenant {tenant_id}...")
 

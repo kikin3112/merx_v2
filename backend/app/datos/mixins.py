@@ -4,6 +4,7 @@ Proporcionan campos comunes para multi-tenancy, auditoría y soft deletes.
 """
 
 from datetime import datetime, timezone
+
 from sqlalchemy import Column, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declared_attr, relationship
@@ -24,13 +25,8 @@ class TenantMixin:
     """
 
     @declared_attr
-    def tenant_id(cls):
-        return Column(
-            UUID(as_uuid=True),
-            ForeignKey("tenants.id", ondelete="CASCADE"),
-            nullable=False,
-            index=True
-        )
+    def tenant_id(self):
+        return Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
 
 
 class SoftDeleteMixin:
@@ -48,16 +44,12 @@ class SoftDeleteMixin:
     """
 
     @declared_attr
-    def deleted_at(cls):
+    def deleted_at(self):
         return Column(DateTime(timezone=True), nullable=True, index=True)
 
     @declared_attr
-    def deleted_by(cls):
-        return Column(
-            UUID(as_uuid=True),
-            ForeignKey("usuarios.id", ondelete="SET NULL"),
-            nullable=True
-        )
+    def deleted_by(self):
+        return Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     @property
     def is_deleted(self) -> bool:
@@ -87,54 +79,37 @@ class AuditMixin:
     """
 
     @declared_attr
-    def created_at(cls):
-        return Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            nullable=False
-        )
+    def created_at(self):
+        return Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     @declared_attr
-    def updated_at(cls):
-        return Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False
-        )
+    def updated_at(self):
+        return Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     @declared_attr
-    def created_by(cls):
-        return Column(
-            UUID(as_uuid=True),
-            ForeignKey("usuarios.id", ondelete="SET NULL"),
-            nullable=True
-        )
+    def created_by(self):
+        return Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     @declared_attr
-    def updated_by(cls):
-        return Column(
-            UUID(as_uuid=True),
-            ForeignKey("usuarios.id", ondelete="SET NULL"),
-            nullable=True
-        )
+    def updated_by(self):
+        return Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     @declared_attr
-    def created_by_user(cls):
+    def created_by_user(self):
         """Relación con el usuario creador (para eager loading)"""
         return relationship(
             "Usuarios",
-            foreign_keys=f"[{cls.__name__}.created_by]",
-            lazy="noload"  # Requiere eager loading explícito
+            foreign_keys=f"[{self.__name__}.created_by]",
+            lazy="noload",  # Requiere eager loading explícito
         )
 
     @declared_attr
-    def updated_by_user(cls):
+    def updated_by_user(self):
         """Relación con el usuario que hizo la última modificación"""
         return relationship(
             "Usuarios",
-            foreign_keys=f"[{cls.__name__}.updated_by]",
-            lazy="noload"  # Requiere eager loading explícito
+            foreign_keys=f"[{self.__name__}.updated_by]",
+            lazy="noload",  # Requiere eager loading explícito
         )
 
 
@@ -159,6 +134,7 @@ class TenantAuditMixin(TenantMixin, SoftDeleteMixin, AuditMixin):
         - created_by: Usuario que creó
         - updated_by: Usuario que modificó
     """
+
     pass
 
 
@@ -167,4 +143,5 @@ class TenantSoftDeleteMixin(TenantMixin, SoftDeleteMixin):
     Mixin para modelos que solo necesitan tenant + soft delete.
     Sin campos de auditoría de usuario (created_by, updated_by).
     """
+
     pass

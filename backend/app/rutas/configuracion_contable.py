@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from ..datos.db import get_db
+from ..datos.esquemas import ConfiguracionContableUpdate
 from ..datos.modelos import ConfiguracionContable, CuentasContables
-from ..datos.esquemas import ConfiguracionContableUpdate, ConfiguracionContableResponse
-from ..utils.seguridad import require_tenant_roles, UserContext, get_superadmin
-from ..utils.logger import setup_logger
 from ..servicios.servicio_tenants import ServicioTenants
+from ..utils.logger import setup_logger
+from ..utils.seguridad import UserContext, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -15,16 +14,14 @@ logger = setup_logger(__name__)
 
 @router.post("/inicializar")
 async def inicializar_configuracion(
-        request: Request,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles("admin"))
+    request: Request, db: Session = Depends(get_db), ctx: UserContext = Depends(require_tenant_roles("admin"))
 ):
     """
     Inicializa la configuración contable básica del tenant.
     Crea cuentas PUC, configuraciones contables, secuencias y medios de pago.
     Útil para tenants creados antes de implementar la inicialización automática.
     """
-    tenant_id = getattr(request.state, 'tenant_id', None) or ctx.tenant_id
+    tenant_id = getattr(request.state, "tenant_id", None) or ctx.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=400, detail="X-Tenant-ID header requerido")
 

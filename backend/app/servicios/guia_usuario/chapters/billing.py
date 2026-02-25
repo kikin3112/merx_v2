@@ -4,6 +4,7 @@ Gestión de facturas, generación de PDF, numeración por tenant y asientos cont
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

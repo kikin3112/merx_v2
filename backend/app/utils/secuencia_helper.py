@@ -1,5 +1,7 @@
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 from ..datos.modelos import Secuencias
 
 
@@ -21,10 +23,7 @@ def generar_numero_secuencia(db: Session, nombre_secuencia: str, tenant_id: UUID
     # Obtener secuencia con lock FOR UPDATE (evita race conditions)
     secuencia = (
         db.query(Secuencias)
-        .filter(
-            Secuencias.tenant_id == tenant_id,
-            Secuencias.nombre == nombre_secuencia
-        )
+        .filter(Secuencias.tenant_id == tenant_id, Secuencias.nombre == nombre_secuencia)
         .with_for_update()
         .first()
     )
@@ -45,11 +44,7 @@ def generar_numero_secuencia(db: Session, nombre_secuencia: str, tenant_id: UUID
 
 
 def crear_secuencia_si_no_existe(
-        db: Session,
-        nombre: str,
-        prefijo: str,
-        tenant_id: UUID,
-        longitud_numero: int = 6
+    db: Session, nombre: str, prefijo: str, tenant_id: UUID, longitud_numero: int = 6
 ) -> None:
     """
     Crea una secuencia si no existe (útil para seeders).
@@ -61,18 +56,11 @@ def crear_secuencia_si_no_existe(
         tenant_id: UUID del tenant
         longitud_numero: Longitud del número (default 6)
     """
-    existe = db.query(Secuencias).filter(
-        Secuencias.tenant_id == tenant_id,
-        Secuencias.nombre == nombre
-    ).first()
+    existe = db.query(Secuencias).filter(Secuencias.tenant_id == tenant_id, Secuencias.nombre == nombre).first()
 
     if not existe:
         nueva_secuencia = Secuencias(
-            tenant_id=tenant_id,
-            nombre=nombre,
-            prefijo=prefijo,
-            siguiente_numero=1,
-            longitud_numero=longitud_numero
+            tenant_id=tenant_id, nombre=nombre, prefijo=prefijo, siguiente_numero=1, longitud_numero=longitud_numero
         )
         db.add(nueva_secuencia)
 
@@ -90,12 +78,7 @@ def obtener_siguiente_numero_preview(db: Session, nombre_secuencia: str, tenant_
         String formateado del siguiente número (sin consumir la secuencia)
     """
     secuencia = (
-        db.query(Secuencias)
-        .filter(
-            Secuencias.tenant_id == tenant_id,
-            Secuencias.nombre == nombre_secuencia
-        )
-        .first()
+        db.query(Secuencias).filter(Secuencias.tenant_id == tenant_id, Secuencias.nombre == nombre_secuencia).first()
     )
 
     if not secuencia:

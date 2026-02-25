@@ -4,6 +4,7 @@ KPIs, gráficos visuales y reportes avanzados para la toma de decisiones.
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

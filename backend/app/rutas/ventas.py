@@ -1,25 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
-from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
-from ..datos.esquemas import VentasCreate, VentasUpdate, VentasResponse
-from ..datos.modelos import Usuarios, Terceros, Ventas, VentasDetalle, Productos, Cartera
+from ..datos.esquemas import VentasCreate, VentasResponse, VentasUpdate
+from ..datos.modelos import Productos, Usuarios, VentasDetalle
+from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
+from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_ventas import (
-    crear_venta,
-    listar_ventas,
-    obtener_venta,
     actualizar_venta,
     anular_venta,
     confirmar_venta,
-    obtener_estadisticas_ventas
+    crear_venta,
+    listar_ventas,
+    obtener_estadisticas_ventas,
+    obtener_venta,
 )
-from ..servicios.servicio_contabilidad import ServicioContabilidad
-from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 from ..utils.logger import setup_logger
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -27,10 +28,10 @@ logger = setup_logger(__name__)
 
 @router.post("/", response_model=VentasResponse, status_code=status.HTTP_201_CREATED)
 async def crear_nueva_venta(
-        venta_data: VentasCreate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_data: VentasCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Crea una nueva venta."""
     try:
@@ -42,55 +43,44 @@ async def crear_nueva_venta(
             extra={
                 "venta_id": str(nueva_venta.id),
                 "total": float(nueva_venta.total_venta),
-                "user_id": str(current_user.id)
-            }
+                "user_id": str(current_user.id),
+            },
         )
 
         return VentasResponse.model_validate(nueva_venta)
 
     except ValueError as e:
         logger.warning(f"Validación fallida al crear venta: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         db.rollback()
         logger.error("Error creando venta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al procesar la venta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al procesar la venta"
         )
 
 
 @router.get("/", response_model=List[VentasResponse])
 async def listar_ventas_endpoint(
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=1000),
-        tercero_id: Optional[UUID] = Query(None),
-        estado: Optional[str] = Query(None),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    tercero_id: Optional[UUID] = Query(None),
+    estado: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Lista ventas con filtros opcionales."""
-    ventas = listar_ventas(
-        db,
-        tenant_id=tenant_id,
-        skip=skip,
-        limit=limit,
-        tercero_id=tercero_id,
-        estado=estado
-    )
+    ventas = listar_ventas(db, tenant_id=tenant_id, skip=skip, limit=limit, tercero_id=tercero_id, estado=estado)
 
     return [VentasResponse.model_validate(v) for v in ventas]
 
 
 @router.get("/estadisticas", response_model=dict)
 async def obtener_estadisticas(
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene estadísticas de ventas."""
     return obtener_estadisticas_ventas(db, tenant_id)
@@ -98,10 +88,10 @@ async def obtener_estadisticas(
 
 @router.get("/{venta_id}", response_model=VentasResponse)
 async def obtener_venta_endpoint(
-        venta_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene una venta por ID."""
     venta = obtener_venta(db, venta_id, tenant_id)
@@ -110,11 +100,11 @@ async def obtener_venta_endpoint(
 
 @router.patch("/{venta_id}", response_model=VentasResponse)
 async def actualizar_venta_endpoint(
-        venta_id: UUID,
-        venta_data: VentasUpdate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    venta_data: VentasUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Actualiza una venta existente."""
     try:
@@ -123,37 +113,30 @@ async def actualizar_venta_endpoint(
 
         logger.info(
             f"Venta actualizada: {venta.numero_venta}",
-            extra={
-                "venta_id": str(venta.id),
-                "user_id": str(current_user.id)
-            }
+            extra={"venta_id": str(venta.id), "user_id": str(current_user.id)},
         )
 
         return VentasResponse.model_validate(venta)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
         logger.error("Error actualizando venta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al actualizar la venta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar la venta"
         )
 
 
 @router.put("/{venta_id}", response_model=VentasResponse)
 async def reemplazar_venta(
-        venta_id: UUID,
-        data: VentasCreate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    data: VentasCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     Reemplaza los detalles de una venta PENDIENTE.
@@ -165,37 +148,25 @@ async def reemplazar_venta(
     if venta.estado != "PENDIENTE":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Solo se pueden editar ventas en estado PENDIENTE. Estado actual: {venta.estado}"
+            detail=f"Solo se pueden editar ventas en estado PENDIENTE. Estado actual: {venta.estado}",
         )
 
     # Actualizar campos de cabecera
     venta.tercero_id = data.tercero_id
     venta.fecha_venta = data.fecha_venta
-    venta.descuento_global = getattr(data, 'descuento_global', Decimal("0.00")) or Decimal("0.00")
+    venta.descuento_global = getattr(data, "descuento_global", Decimal("0.00")) or Decimal("0.00")
     venta.observaciones = data.observaciones
 
     # Borrar detalles existentes
-    db.query(VentasDetalle).filter(
-        VentasDetalle.venta_id == venta_id,
-        VentasDetalle.tenant_id == tenant_id
-    ).delete()
+    db.query(VentasDetalle).filter(VentasDetalle.venta_id == venta_id, VentasDetalle.tenant_id == tenant_id).delete()
 
     # Crear nuevos detalles
     for det in data.detalles:
-        producto = db.query(Productos).filter(
-            Productos.id == det.producto_id,
-            Productos.tenant_id == tenant_id
-        ).first()
+        producto = db.query(Productos).filter(Productos.id == det.producto_id, Productos.tenant_id == tenant_id).first()
         if not producto:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Producto {det.producto_id} no encontrado"
-            )
+            raise HTTPException(status_code=404, detail=f"Producto {det.producto_id} no encontrado")
         if not producto.estado:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Producto {producto.nombre} está inactivo"
-            )
+            raise HTTPException(status_code=400, detail=f"Producto {producto.nombre} está inactivo")
 
         precio = det.precio_unitario if det.precio_unitario > 0 else producto.precio_venta
         iva = det.porcentaje_iva if det.porcentaje_iva > 0 else producto.porcentaje_iva
@@ -207,7 +178,7 @@ async def reemplazar_venta(
             cantidad=det.cantidad,
             precio_unitario=precio,
             descuento=det.descuento,
-            porcentaje_iva=iva
+            porcentaje_iva=iva,
         )
         db.add(detalle)
 
@@ -220,10 +191,10 @@ async def reemplazar_venta(
 
 @router.post("/{venta_id}/confirmar", response_model=VentasResponse)
 async def confirmar_venta_endpoint(
-        venta_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Confirma una venta (PENDIENTE -> CONFIRMADA). Descuenta inventario."""
     try:
@@ -236,37 +207,30 @@ async def confirmar_venta_endpoint(
 
         logger.info(
             f"Venta confirmada: {venta.numero_venta}",
-            extra={
-                "venta_id": str(venta.id),
-                "user_id": str(current_user.id)
-            }
+            extra={"venta_id": str(venta.id), "user_id": str(current_user.id)},
         )
 
         return VentasResponse.model_validate(venta)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
         logger.error("Error confirmando venta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al confirmar la venta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al confirmar la venta"
         )
 
 
 @router.post("/{venta_id}/anular", response_model=VentasResponse)
 async def anular_venta_endpoint(
-        venta_id: UUID,
-        motivo: Optional[str] = Query(None),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    motivo: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Anula una venta. Revierte inventario si estaba confirmada."""
     try:
@@ -280,37 +244,29 @@ async def anular_venta_endpoint(
 
         logger.warning(
             f"Venta anulada: {venta.numero_venta}",
-            extra={
-                "venta_id": str(venta.id),
-                "motivo": motivo,
-                "user_id": str(current_user.id)
-            }
+            extra={"venta_id": str(venta.id), "motivo": motivo, "user_id": str(current_user.id)},
         )
 
         return VentasResponse.model_validate(venta)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
         logger.error("Error anulando venta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al anular la venta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al anular la venta"
         )
 
 
 @router.post("/{venta_id}/facturar", response_model=VentasResponse)
 async def facturar_venta_endpoint(
-        venta_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     Factura una venta (PENDIENTE|CONFIRMADA -> FACTURADA).
@@ -326,7 +282,7 @@ async def facturar_venta_endpoint(
     if venta.estado not in ("PENDIENTE", "CONFIRMADA"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Solo se pueden facturar ventas en estado PENDIENTE o CONFIRMADA. Estado actual: {venta.estado}"
+            detail=f"Solo se pueden facturar ventas en estado PENDIENTE o CONFIRMADA. Estado actual: {venta.estado}",
         )
 
     # Auto-confirmar si está PENDIENTE (descuenta inventario)
@@ -342,19 +298,17 @@ async def facturar_venta_endpoint(
         total_iva=venta.total_iva,
         total=venta.total_venta,
         documento_referencia=venta.numero_venta,
-        tercero_id=venta.tercero_id
+        tercero_id=venta.tercero_id,
     )
 
     # Generar PDF
     try:
         from ..rutas.facturas import _generar_pdf_factura
+
         pdf_bytes = _generar_pdf_factura(db, venta, tenant_id)
         storage = ServicioAlmacenamiento()
         if storage.is_enabled:
-            key = storage.subir_pdf(
-                pdf_bytes, str(tenant_id),
-                "facturas", venta.numero_venta
-            )
+            key = storage.subir_pdf(pdf_bytes, str(tenant_id), "facturas", venta.numero_venta)
             if key:
                 venta.url_pdf = key
     except Exception as e:
@@ -364,6 +318,7 @@ async def facturar_venta_endpoint(
 
     # Crear cuenta por cobrar
     from ..rutas.facturas import _crear_cartera_cobrar
+
     _crear_cartera_cobrar(db, venta, tenant_id)
 
     db.commit()
@@ -375,10 +330,10 @@ async def facturar_venta_endpoint(
 
 @router.post("/pos", response_model=VentasResponse, status_code=status.HTTP_201_CREATED)
 async def pos_venta_rapida(
-        venta_data: VentasCreate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    venta_data: VentasCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     POS: Crea y confirma una venta en un solo paso.
@@ -396,8 +351,8 @@ async def pos_venta_rapida(
             extra={
                 "venta_id": str(venta_confirmada.id),
                 "total": float(venta_confirmada.total_venta),
-                "user_id": str(current_user.id)
-            }
+                "user_id": str(current_user.id),
+            },
         )
 
         return VentasResponse.model_validate(venta_confirmada)
@@ -405,10 +360,7 @@ async def pos_venta_rapida(
     except ValueError as e:
         db.rollback()
         logger.warning(f"POS validación fallida: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         db.rollback()
         raise
@@ -416,6 +368,5 @@ async def pos_venta_rapida(
         db.rollback()
         logger.error("Error en POS venta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al procesar la venta POS"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al procesar la venta POS"
         )

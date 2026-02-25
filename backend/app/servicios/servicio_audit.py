@@ -4,9 +4,9 @@ Registra acciones críticas del sistema de forma inmutable.
 Usa su propia sesión para no fallar si la transacción principal falla.
 """
 
-from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
 
 from fastapi import Request
 from sqlalchemy import desc
@@ -61,15 +61,14 @@ class ServicioAuditLog:
             audit_db.refresh(log_entry)
 
             logger.info(
-                f"Audit: {action} by {actor_email} on {resource_type}"
-                + (f"/{resource_id}" if resource_id else ""),
+                f"Audit: {action} by {actor_email} on {resource_type}" + (f"/{resource_id}" if resource_id else ""),
                 extra={
                     "audit_action": action,
                     "actor_email": actor_email,
                     "resource_type": resource_type,
                     "resource_id": str(resource_id) if resource_id else None,
                     "tenant_id": str(tenant_id) if tenant_id else None,
-                }
+                },
             )
             return log_entry
         except Exception as e:
@@ -160,12 +159,6 @@ class ServicioAuditLog:
 
         total = query.count()
 
-        items = (
-            query
-            .order_by(desc(AuditLog.created_at))
-            .offset((page - 1) * limit)
-            .limit(limit)
-            .all()
-        )
+        items = query.order_by(desc(AuditLog.created_at)).offset((page - 1) * limit).limit(limit).all()
 
         return items, total

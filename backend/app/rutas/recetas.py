@@ -2,24 +2,28 @@
 Rutas para gestion de Recetas (BOM) y produccion.
 """
 
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
-from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, selectinload
-from pydantic import BaseModel, Field
 
 from ..datos.db import get_db
-from ..datos.modelos import Recetas, RecetasIngredientes, Productos, Usuarios
 from ..datos.esquemas import (
-    RecetaCreate, RecetaUpdate, RecetaResponse,
-    RecetaIngredienteCreate, RecetaCostoResponse, ProduccionRequest, ProduccionResponse
+    ProduccionRequest,
+    ProduccionResponse,
+    RecetaCostoResponse,
+    RecetaCreate,
+    RecetaIngredienteCreate,
+    RecetaResponse,
+    RecetaUpdate,
 )
+from ..datos.modelos import Productos, Recetas, RecetasIngredientes, Usuarios
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
 from ..utils.logger import setup_logger
+from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -29,11 +33,12 @@ logger = setup_logger(__name__)
 # CRUD RECETAS
 # ============================================================================
 
+
 @router.post("/", response_model=RecetaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_receta(
     receta_data: RecetaCreate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     tenant_id = ctx.tenant_id  # Compatibilidad
     """
@@ -45,30 +50,30 @@ async def crear_receta(
     - Ingredientes deben existir y ser diferentes al producto resultado
     """
     # Validar nombre unico
-    existente = db.query(Recetas).filter(
-        Recetas.tenant_id == tenant_id,
-        Recetas.nombre == receta_data.nombre,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    existente = (
+        db.query(Recetas)
+        .filter(Recetas.tenant_id == tenant_id, Recetas.nombre == receta_data.nombre, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if existente:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ya existe una receta con el nombre '{receta_data.nombre}'"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Ya existe una receta con el nombre '{receta_data.nombre}'"
         )
 
     # Validar producto resultado
-    producto_resultado = db.query(Productos).filter(
-        Productos.id == receta_data.producto_resultado_id,
-        Productos.tenant_id == tenant_id,
-        Productos.deleted_at.is_(None)
-    ).first()
+    producto_resultado = (
+        db.query(Productos)
+        .filter(
+            Productos.id == receta_data.producto_resultado_id,
+            Productos.tenant_id == tenant_id,
+            Productos.deleted_at.is_(None),
+        )
+        .first()
+    )
 
     if not producto_resultado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Producto resultado no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto resultado no encontrado")
 
     try:
         # Crear receta
@@ -81,7 +86,7 @@ async def crear_receta(
             costo_mano_obra=receta_data.costo_mano_obra,
             tiempo_produccion_minutos=receta_data.tiempo_produccion_minutos,
             notas=receta_data.notas,
-            estado=True
+            estado=True,
         )
         db.add(receta)
         db.flush()
@@ -92,20 +97,24 @@ async def crear_receta(
             if ing_data.producto_id == receta_data.producto_resultado_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="El producto resultado no puede ser ingrediente de si mismo"
+                    detail="El producto resultado no puede ser ingrediente de si mismo",
                 )
 
             # Validar que el producto exista
-            producto_ing = db.query(Productos).filter(
-                Productos.id == ing_data.producto_id,
-                Productos.tenant_id == tenant_id,
-                Productos.deleted_at.is_(None)
-            ).first()
+            producto_ing = (
+                db.query(Productos)
+                .filter(
+                    Productos.id == ing_data.producto_id,
+                    Productos.tenant_id == tenant_id,
+                    Productos.deleted_at.is_(None),
+                )
+                .first()
+            )
 
             if not producto_ing:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Ingrediente con ID {ing_data.producto_id} no encontrado"
+                    detail=f"Ingrediente con ID {ing_data.producto_id} no encontrado",
                 )
 
             ingrediente = RecetasIngredientes(
@@ -113,7 +122,7 @@ async def crear_receta(
                 producto_id=ing_data.producto_id,
                 cantidad=ing_data.cantidad,
                 unidad=ing_data.unidad,
-                notas=ing_data.notas
+                notas=ing_data.notas,
             )
             db.add(ingrediente)
 
@@ -122,11 +131,7 @@ async def crear_receta(
 
         logger.info(
             f"Receta creada: {receta.nombre}",
-            extra={
-                "tenant_id": str(tenant_id),
-                "receta_id": str(receta.id),
-                "user_id": str(current_user.id)
-            }
+            extra={"tenant_id": str(tenant_id), "receta_id": str(receta.id), "user_id": str(ctx.user.id)},
         )
 
         return RecetaResponse.model_validate(receta)
@@ -137,8 +142,7 @@ async def crear_receta(
         db.rollback()
         logger.error("Error creando receta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al crear la receta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear la receta"
         )
 
 
@@ -150,21 +154,19 @@ async def listar_recetas(
     busqueda: Optional[str] = Query(None, min_length=2),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     Lista recetas con filtros opcionales.
     """
-    query = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
+    query = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
     )
 
     if solo_activas:
-        query = query.filter(Recetas.estado == True)
+        query = query.filter(Recetas.estado)
 
     if busqueda:
         query = query.filter(Recetas.nombre.ilike(f"%{busqueda}%"))
@@ -178,25 +180,20 @@ async def obtener_receta(
     receta_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     Obtiene una receta por ID con sus ingredientes.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
     return RecetaResponse.model_validate(receta)
 
@@ -206,40 +203,39 @@ async def actualizar_receta(
     receta_id: UUID,
     receta_data: RecetaUpdate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Actualiza una receta existente.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
     # Validar nombre unico si se cambia
     if receta_data.nombre and receta_data.nombre != receta.nombre:
-        existente = db.query(Recetas).filter(
-            Recetas.tenant_id == tenant_id,
-            Recetas.nombre == receta_data.nombre,
-            Recetas.id != receta_id,
-            Recetas.deleted_at.is_(None)
-        ).first()
+        existente = (
+            db.query(Recetas)
+            .filter(
+                Recetas.tenant_id == tenant_id,
+                Recetas.nombre == receta_data.nombre,
+                Recetas.id != receta_id,
+                Recetas.deleted_at.is_(None),
+            )
+            .first()
+        )
 
         if existente:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe una receta con el nombre '{receta_data.nombre}'"
+                detail=f"Ya existe una receta con el nombre '{receta_data.nombre}'",
             )
 
     try:
@@ -258,8 +254,7 @@ async def actualizar_receta(
         db.rollback()
         logger.error("Error actualizando receta", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al actualizar la receta"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar la receta"
         )
 
 
@@ -267,7 +262,7 @@ async def actualizar_receta(
 async def eliminar_receta(
     receta_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     tenant_id = ctx.tenant_id  # Compatibilidad
     """
@@ -275,20 +270,15 @@ async def eliminar_receta(
     """
     from datetime import datetime
 
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
     receta.deleted_at = datetime.utcnow()
     db.commit()
@@ -300,70 +290,66 @@ async def eliminar_receta(
 # INGREDIENTES
 # ============================================================================
 
+
 @router.post("/{receta_id}/ingredientes", response_model=RecetaResponse)
 async def agregar_ingrediente(
     receta_id: UUID,
     ingrediente_data: RecetaIngredienteCreate,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Agrega un ingrediente a una receta existente.
     """
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
     # Validar que el ingrediente no sea el producto resultado
     if ingrediente_data.producto_id == receta.producto_resultado_id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El producto resultado no puede ser ingrediente de si mismo"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El producto resultado no puede ser ingrediente de si mismo"
         )
 
     # Validar que no exista el ingrediente
-    existente = db.query(RecetasIngredientes).filter(
-        RecetasIngredientes.receta_id == receta_id,
-        RecetasIngredientes.producto_id == ingrediente_data.producto_id
-    ).first()
+    existente = (
+        db.query(RecetasIngredientes)
+        .filter(
+            RecetasIngredientes.receta_id == receta_id, RecetasIngredientes.producto_id == ingrediente_data.producto_id
+        )
+        .first()
+    )
 
     if existente:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Este ingrediente ya existe en la receta"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este ingrediente ya existe en la receta")
 
     # Validar producto
-    producto = db.query(Productos).filter(
-        Productos.id == ingrediente_data.producto_id,
-        Productos.tenant_id == tenant_id,
-        Productos.deleted_at.is_(None)
-    ).first()
+    producto = (
+        db.query(Productos)
+        .filter(
+            Productos.id == ingrediente_data.producto_id,
+            Productos.tenant_id == tenant_id,
+            Productos.deleted_at.is_(None),
+        )
+        .first()
+    )
 
     if not producto:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Producto ingrediente no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto ingrediente no encontrado")
 
     ingrediente = RecetasIngredientes(
         receta_id=receta_id,
         producto_id=ingrediente_data.producto_id,
         cantidad=ingrediente_data.cantidad,
         unidad=ingrediente_data.unidad,
-        notas=ingrediente_data.notas
+        notas=ingrediente_data.notas,
     )
     db.add(ingrediente)
     db.commit()
@@ -377,38 +363,31 @@ async def eliminar_ingrediente(
     receta_id: UUID,
     ingrediente_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina un ingrediente de una receta.
     """
     # Verificar receta
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
-    ingrediente = db.query(RecetasIngredientes).filter(
-        RecetasIngredientes.id == ingrediente_id,
-        RecetasIngredientes.receta_id == receta_id
-    ).first()
+    ingrediente = (
+        db.query(RecetasIngredientes)
+        .filter(RecetasIngredientes.id == ingrediente_id, RecetasIngredientes.receta_id == receta_id)
+        .first()
+    )
 
     if not ingrediente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Ingrediente no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingrediente no encontrado")
 
     db.delete(ingrediente)
     db.commit()
@@ -418,11 +397,12 @@ async def eliminar_ingrediente(
 # CALCULAR COSTO
 # ============================================================================
 
+
 @router.post("/{receta_id}/calcular-costo", response_model=RecetaCostoResponse)
 async def calcular_costo_receta(
     receta_id: UUID,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     """
     Calcula el costo detallado de una receta.
@@ -435,28 +415,26 @@ async def calcular_costo_receta(
     - Costo unitario por producto resultado
     - Margen actual si tiene precio de venta
     """
-    calculadora = CalculadoraMargenes(db, tenant_id)
+    calculadora = CalculadoraMargenes(db, ctx.tenant_id)
 
     try:
         resultado = calculadora.calcular_costo_receta(receta_id)
         return RecetaCostoResponse(**resultado)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 # ============================================================================
 # PRODUCIR
 # ============================================================================
 
+
 @router.post("/{receta_id}/producir", response_model=ProduccionResponse)
 async def producir_desde_receta(
     receta_id: UUID,
     produccion_data: ProduccionRequest,
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles('admin', 'operador'))
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
     """
     Produce productos terminados desde una receta.
@@ -476,16 +454,13 @@ async def producir_desde_receta(
         resultado = servicio.producir_desde_receta(
             receta_id=receta_id,
             cantidad_producir=produccion_data.cantidad,
-            usuario_id=current_user.id,
-            observaciones=produccion_data.observaciones
+            usuario_id=ctx.user.id,
+            observaciones=produccion_data.observaciones,
         )
         return ProduccionResponse(**resultado)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{receta_id}/validar-stock")
@@ -494,7 +469,7 @@ async def validar_stock_receta(
     cantidad: Decimal = Query(..., gt=0, description="Cantidad a producir"),
     db: Session = Depends(get_db),
     current_user: Usuarios = Depends(get_current_user),
-    tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """
     Valida si hay stock suficiente para producir la cantidad indicada.
@@ -502,20 +477,15 @@ async def validar_stock_receta(
     Retorna lista de ingredientes faltantes (vacia si hay stock suficiente).
     """
     # Obtener receta
-    receta = db.query(Recetas).options(
-        selectinload(Recetas.created_by_user),
-        selectinload(Recetas.updated_by_user)
-    ).filter(
-        Recetas.id == receta_id,
-        Recetas.tenant_id == tenant_id,
-        Recetas.deleted_at.is_(None)
-    ).first()
+    receta = (
+        db.query(Recetas)
+        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
 
     if not receta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Receta no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
 
     servicio = ServicioInventario(db, tenant_id)
     faltantes = servicio.validar_stock_receta(receta, cantidad)
@@ -524,5 +494,5 @@ async def validar_stock_receta(
         "receta_id": str(receta_id),
         "cantidad_solicitada": float(cantidad),
         "stock_suficiente": len(faltantes) == 0,
-        "ingredientes_faltantes": faltantes
+        "ingredientes_faltantes": faltantes,
     }

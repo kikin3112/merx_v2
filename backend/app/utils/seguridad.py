@@ -5,18 +5,19 @@ Soporte multi-tenant con tenant_id en JWT payload.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Callable, List, NamedTuple
+from typing import Callable, NamedTuple, Optional
+from uuid import UUID
+
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from ..config import settings
 from ..datos.db import get_db
 from ..datos.modelos import Usuarios
-from ..utils.logger import setup_logger, set_request_context
+from ..utils.logger import set_request_context, setup_logger
 
 logger = setup_logger(__name__)
 
@@ -25,11 +26,14 @@ logger = setup_logger(__name__)
 # TIPOS DE DATOS PARA CONTEXTO DE USUARIO
 # ============================================================================
 
+
 class UserContext(NamedTuple):
     """Contexto del usuario autenticado con información del tenant."""
+
     user: Usuarios
     tenant_id: Optional[UUID]
     rol_en_tenant: Optional[str]
+
 
 # ============================================================================
 # CONFIGURACIÓN DE HASHING
@@ -42,7 +46,7 @@ pwd_context = CryptContext(
     deprecated="auto",
     argon2__memory_cost=65536,  # 64 MB
     argon2__time_cost=3,  # 3 iteraciones
-    argon2__parallelism=4  # 4 hilos paralelos
+    argon2__parallelism=4,  # 4 hilos paralelos
 )
 
 # ============================================================================
@@ -52,13 +56,14 @@ pwd_context = CryptContext(
 security = HTTPBearer(
     scheme_name="JWT",
     description="Token JWT en header Authorization: Bearer {token}",
-    auto_error=True  # Lanza error automáticamente si falta el token
+    auto_error=True,  # Lanza error automáticamente si falta el token
 )
 
 
 # ============================================================================
 # FUNCIONES DE HASHING
 # ============================================================================
+
 
 def hash_password(password: str) -> str:
     """
@@ -100,11 +105,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # FUNCIONES JWT - ACCESS TOKEN
 # ============================================================================
 
+
 def create_access_token(
     data: dict,
     expires_delta: Optional[timedelta] = None,
     tenant_id: Optional[UUID] = None,
-    rol_en_tenant: Optional[str] = None
+    rol_en_tenant: Optional[str] = None,
 ) -> str:
     """
     Crea un access token JWT con soporte multi-tenant.
@@ -135,11 +141,13 @@ def create_access_token(
     else:
         expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({
-        "exp": expire,
-        "iat": now,  # Issued at
-        "type": "access"
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": now,  # Issued at
+            "type": "access",
+        }
+    )
 
     # Agregar tenant_id si está presente
     if tenant_id:
@@ -149,11 +157,7 @@ def create_access_token(
     if rol_en_tenant:
         to_encode["rol_tenant"] = rol_en_tenant
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     return encoded_jwt
 
@@ -172,18 +176,14 @@ def decode_access_token(token: str) -> dict:
         HTTPException 401: Si el token es inválido, expirado o no es access token
     """
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
         # Validar que sea access token
         if payload.get("type") != "access":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: tipo incorrecto",
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
 
         return payload
@@ -193,13 +193,14 @@ def decode_access_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
 # ============================================================================
 # FUNCIONES JWT - REFRESH TOKEN
 # ============================================================================
+
 
 def create_refresh_token(data: dict, expires_delta: timedelta) -> str:
     """
@@ -222,17 +223,9 @@ def create_refresh_token(data: dict, expires_delta: timedelta) -> str:
     now = datetime.now(timezone.utc)
     expire = now + expires_delta
 
-    to_encode.update({
-        "exp": expire,
-        "iat": now,
-        "type": "refresh"
-    })
+    to_encode.update({"exp": expire, "iat": now, "type": "refresh"})
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     return encoded_jwt
 
@@ -251,18 +244,14 @@ def decode_refresh_token(token: str) -> dict:
         HTTPException 401: Si el token es inválido o no es tipo refresh
     """
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
         # Validar que sea refresh token
         if payload.get("type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: no es un refresh token",
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
 
         return payload
@@ -272,7 +261,7 @@ def decode_refresh_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token inválido o expirado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
@@ -280,9 +269,9 @@ def decode_refresh_token(token: str) -> dict:
 # DEPENDENCIAS DE AUTENTICACIÓN
 # ============================================================================
 
+
 def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
 ) -> Usuarios:
     """
     Dependencia de FastAPI para obtener el usuario autenticado.
@@ -315,7 +304,7 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: falta subject",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Validar formato UUID
@@ -325,7 +314,7 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: ID de usuario malformado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Buscar usuario en DB
@@ -335,15 +324,12 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Validar que esté activo
     if not user.estado:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario inactivo"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
     # Establecer contexto de usuario para logging
     set_request_context(user_id=str(user.id))
@@ -352,9 +338,7 @@ def get_current_user(
 
 
 def get_current_user_with_tenant(
-        request: Request,
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: Session = Depends(get_db)
+    request: Request, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
 ) -> UserContext:
     """
     Dependencia de FastAPI para obtener usuario con contexto de tenant.
@@ -383,7 +367,7 @@ def get_current_user_with_tenant(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: falta subject",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Validar formato UUID del usuario
@@ -393,7 +377,7 @@ def get_current_user_with_tenant(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: ID de usuario malformado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Buscar usuario en DB
@@ -403,22 +387,19 @@ def get_current_user_with_tenant(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Validar que esté activo
     if not user.estado:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario inactivo"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
     # Extraer tenant_id del token
     token_tenant_id_str = payload.get("tenant_id")
     rol_en_tenant = payload.get("rol_tenant")
 
     # Obtener tenant_id del header (establecido por middleware)
-    header_tenant_id = getattr(request.state, 'tenant_id', None)
+    header_tenant_id = getattr(request.state, "tenant_id", None)
 
     tenant_id = None
 
@@ -429,14 +410,13 @@ def get_current_user_with_tenant(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: tenant_id malformado",
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
 
         # Si hay tenant_id en header, validar que coincida con el del token
         if header_tenant_id and header_tenant_id != tenant_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="El tenant_id del header no coincide con el del token"
+                status_code=status.HTTP_403_FORBIDDEN, detail="El tenant_id del header no coincide con el del token"
             )
 
     # Establecer contexto de usuario para logging
@@ -445,9 +425,7 @@ def get_current_user_with_tenant(
     return UserContext(user=user, tenant_id=tenant_id, rol_en_tenant=rol_en_tenant)
 
 
-def get_current_active_admin(
-        current_user: Usuarios = Depends(get_current_user)
-) -> Usuarios:
+def get_current_active_admin(current_user: Usuarios = Depends(get_current_user)) -> Usuarios:
     """
     Dependencia para rutas que requieren rol admin o superadmin.
 
@@ -464,8 +442,7 @@ def get_current_active_admin(
     """
     if current_user.rol != "admin" and not current_user.es_superadmin:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permisos insuficientes. Se requiere rol admin"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permisos insuficientes. Se requiere rol admin"
         )
     return current_user
 
@@ -496,7 +473,7 @@ def require_roles(*allowed_roles: str) -> Callable:
         if current_user.rol not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permisos insuficientes. Se requiere uno de los roles: {', '.join(allowed_roles)}"
+                detail=f"Permisos insuficientes. Se requiere uno de los roles: {', '.join(allowed_roles)}",
             )
         return current_user
 
@@ -527,9 +504,7 @@ def require_tenant_roles(*allowed_roles: str) -> Callable:
     """
 
     def tenant_role_checker(
-        request: Request,
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: Session = Depends(get_db)
+        request: Request, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
     ) -> UserContext:
         ctx = get_current_user_with_tenant(request, credentials, db)
 
@@ -541,7 +516,7 @@ def require_tenant_roles(*allowed_roles: str) -> Callable:
         if ctx.rol_en_tenant not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permisos insuficientes en este tenant. Se requiere uno de los roles: {', '.join(allowed_roles)}"
+                detail=f"Permisos insuficientes en este tenant. Se requiere uno de los roles: {', '.join(allowed_roles)}",
             )
 
         return ctx
@@ -550,8 +525,7 @@ def require_tenant_roles(*allowed_roles: str) -> Callable:
 
 
 def get_superadmin(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    current_user: Usuarios = Depends(get_current_user)
+    credentials: HTTPAuthorizationCredentials = Depends(security), current_user: Usuarios = Depends(get_current_user)
 ) -> Usuarios:
     """
     Dependencia para rutas que requieren ser superadmin del sistema.
@@ -570,30 +544,22 @@ def get_superadmin(
     # Bloquear tokens de impersonación en rutas superadmin
     try:
         payload = jwt.decode(
-            credentials.credentials,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-            options={"verify_exp": False}
+            credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"verify_exp": False}
         )
         if payload.get("impersonating"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acceso a rutas de superadmin no permitido en modo impersonación"
+                detail="Acceso a rutas de superadmin no permitido en modo impersonación",
             )
     except JWTError:
         pass  # Si no se puede decodificar, get_current_user ya falló antes
 
     if not current_user.es_superadmin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Se requiere ser SuperAdmin del sistema"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere ser SuperAdmin del sistema")
     return current_user
 
 
-def require_not_impersonating(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> None:
+def require_not_impersonating(credentials: HTTPAuthorizationCredentials = Depends(security)) -> None:
     """
     Dependencia que bloquea acciones sensibles durante impersonación.
     Usar en endpoints donde el usuario no debe poder actuar como otro (ej: change-password).
@@ -603,15 +569,11 @@ def require_not_impersonating(
     """
     try:
         payload = jwt.decode(
-            credentials.credentials,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-            options={"verify_exp": False}
+            credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"verify_exp": False}
         )
         if payload.get("impersonating"):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acción no permitida en modo impersonación"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Acción no permitida en modo impersonación"
             )
     except JWTError:
         pass  # Token inválido/expirado: get_current_user ya manejará el error
@@ -620,6 +582,7 @@ def require_not_impersonating(
 # ============================================================================
 # FUNCIÓN DE AUTENTICACIÓN
 # ============================================================================
+
 
 def authenticate_user(email: str, password: str, db: Session) -> Optional[Usuarios]:
     """
@@ -661,6 +624,7 @@ def authenticate_user(email: str, password: str, db: Session) -> Optional[Usuari
 # FUNCIONES AUXILIARES
 # ============================================================================
 
+
 def get_token_expiration(token: str) -> Optional[datetime]:
     """
     Obtiene la fecha de expiración de un token sin validarlo completamente.
@@ -676,7 +640,7 @@ def get_token_expiration(token: str) -> Optional[datetime]:
             token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
-            options={"verify_exp": False}  # No validar expiración
+            options={"verify_exp": False},  # No validar expiración
         )
         exp_timestamp = payload.get("exp")
         if exp_timestamp:
@@ -702,9 +666,7 @@ def is_token_expired(token: str) -> bool:
     return datetime.now(timezone.utc) > expiration
 
 
-def get_tenant_id_from_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> UUID:
+def get_tenant_id_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UUID:
     """
     Dependencia para extraer tenant_id directamente del token JWT.
 
@@ -731,7 +693,7 @@ def get_tenant_id_from_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token no contiene tenant_id. Seleccione un tenant primero.",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     try:
@@ -740,5 +702,5 @@ def get_tenant_id_from_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: tenant_id malformado",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )

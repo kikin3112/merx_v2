@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
 from ..datos.db import get_db
-from ..datos.modelos import Terceros, Usuarios, Ventas, Cotizaciones
-from ..datos.esquemas import TerceroCreate, TerceroUpdate, TerceroResponse
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token
+from ..datos.esquemas import TerceroCreate, TerceroResponse, TerceroUpdate
+from ..datos.modelos import Cotizaciones, Terceros, Usuarios, Ventas
 from ..utils.logger import setup_logger
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -15,23 +16,23 @@ logger = setup_logger(__name__)
 
 @router.post("/", response_model=TerceroResponse, status_code=status.HTTP_201_CREATED)
 async def crear_tercero(
-        tercero_data: TerceroCreate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tercero_data: TerceroCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Crea un nuevo tercero."""
-    if current_user.rol not in ['admin', 'operador']:
+    if current_user.rol not in ["admin", "operador"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 
-    existing = db.query(Terceros).filter(
-        Terceros.tenant_id == tenant_id,
-        Terceros.numero_documento == tercero_data.numero_documento
-    ).first()
+    existing = (
+        db.query(Terceros)
+        .filter(Terceros.tenant_id == tenant_id, Terceros.numero_documento == tercero_data.numero_documento)
+        .first()
+    )
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Documento {tercero_data.numero_documento} ya existe"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Documento {tercero_data.numero_documento} ya existe"
         )
 
     try:
@@ -49,14 +50,14 @@ async def crear_tercero(
 
 @router.get("/", response_model=List[TerceroResponse])
 async def listar_terceros(
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=1000),
-        tipo_tercero: Optional[str] = Query(None),
-        estado: Optional[bool] = Query(None),
-        busqueda: Optional[str] = Query(None),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    tipo_tercero: Optional[str] = Query(None),
+    estado: Optional[bool] = Query(None),
+    busqueda: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Lista terceros con filtros opcionales."""
     query = db.query(Terceros).filter(Terceros.tenant_id == tenant_id)
@@ -72,16 +73,13 @@ async def listar_terceros(
 
 @router.get("/{tercero_id}", response_model=TerceroResponse)
 async def obtener_tercero(
-        tercero_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tercero_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene un tercero por ID."""
-    tercero = db.query(Terceros).filter(
-        Terceros.id == tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
+    tercero = db.query(Terceros).filter(Terceros.id == tercero_id, Terceros.tenant_id == tenant_id).first()
     if not tercero:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tercero no encontrado")
     return TerceroResponse.model_validate(tercero)
@@ -89,20 +87,17 @@ async def obtener_tercero(
 
 @router.patch("/{tercero_id}", response_model=TerceroResponse)
 async def actualizar_tercero(
-        tercero_id: UUID,
-        tercero_data: TerceroUpdate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tercero_id: UUID,
+    tercero_data: TerceroUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Actualiza un tercero existente."""
-    if current_user.rol not in ['admin', 'operador']:
+    if current_user.rol not in ["admin", "operador"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 
-    tercero = db.query(Terceros).filter(
-        Terceros.id == tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
+    tercero = db.query(Terceros).filter(Terceros.id == tercero_id, Terceros.tenant_id == tenant_id).first()
     if not tercero:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tercero no encontrado")
 
@@ -121,18 +116,15 @@ async def actualizar_tercero(
 
 @router.delete("/{tercero_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def eliminar_tercero(
-        tercero_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tercero_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Elimina un tercero (soft delete)."""
-    if current_user.rol != 'admin':
+    if current_user.rol != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin")
-    tercero = db.query(Terceros).filter(
-        Terceros.id == tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
+    tercero = db.query(Terceros).filter(Terceros.id == tercero_id, Terceros.tenant_id == tenant_id).first()
     if not tercero:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tercero no encontrado")
     tercero.estado = False
@@ -142,18 +134,15 @@ async def eliminar_tercero(
 
 @router.get("/{tercero_id}/historial")
 async def obtener_historial(
-        tercero_id: UUID,
-        skip: int = Query(0, ge=0),
-        limit: int = Query(50, ge=1, le=200),
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    tercero_id: UUID,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene historial de ventas y cotizaciones de un tercero."""
-    tercero = db.query(Terceros).filter(
-        Terceros.id == tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
+    tercero = db.query(Terceros).filter(Terceros.id == tercero_id, Terceros.tenant_id == tenant_id).first()
     if not tercero:
         raise HTTPException(status_code=404, detail="Tercero no encontrado")
 
@@ -161,7 +150,8 @@ async def obtener_historial(
         db.query(Ventas)
         .filter(Ventas.tercero_id == tercero_id, Ventas.tenant_id == tenant_id)
         .order_by(Ventas.fecha_venta.desc())
-        .offset(skip).limit(limit)
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 
@@ -169,7 +159,8 @@ async def obtener_historial(
         db.query(Cotizaciones)
         .filter(Cotizaciones.tercero_id == tercero_id, Cotizaciones.tenant_id == tenant_id)
         .order_by(Cotizaciones.fecha_cotizacion.desc())
-        .offset(skip).limit(limit)
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 

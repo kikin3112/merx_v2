@@ -4,28 +4,38 @@ Estas tablas NO tienen RLS - son globales para toda la aplicación.
 """
 
 import uuid
-from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
-    Column, Integer, String, Boolean, ForeignKey, Numeric,
-    DateTime, Text, UniqueConstraint, CheckConstraint, Index, func
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
 )
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from .db import Base
-
 
 # ============================================================================
 # MODELO: Planes (Global - Sin RLS)
 # ============================================================================
+
 
 class Planes(Base):
     """
     Planes de suscripción SaaS.
     Tabla global sin RLS.
     """
+
     __tablename__ = "planes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -62,11 +72,13 @@ class Planes(Base):
 # MODELO: Tenants (Global - Sin RLS)
 # ============================================================================
 
+
 class Tenants(Base):
     """
     Empresas/Organizaciones (tenants) del sistema.
     Tabla global sin RLS.
     """
+
     __tablename__ = "tenants"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -89,11 +101,7 @@ class Tenants(Base):
     color_secundario = Column(String(20), default="#424242")
 
     # Plan y estado
-    plan_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("planes.id", ondelete="RESTRICT"),
-        nullable=False
-    )
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("planes.id", ondelete="RESTRICT"), nullable=False)
     estado = Column(String(50), nullable=False, default="activo")
 
     # Suscripción
@@ -114,22 +122,22 @@ class Tenants(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "estado IN ('activo', 'suspendido', 'cancelado', 'trial', 'pendiente')",
-            name="check_estado_tenant_valido"
+            "estado IN ('activo', 'suspendido', 'cancelado', 'trial', 'pendiente')", name="check_estado_tenant_valido"
         ),
-        Index('idx_tenants_estado', 'estado'),
-        Index('idx_tenants_plan', 'plan_id'),
+        Index("idx_tenants_estado", "estado"),
+        Index("idx_tenants_plan", "plan_id"),
     )
 
     @property
     def esta_activo(self) -> bool:
         """Verifica si el tenant está operativo"""
-        return self.estado in ('activo', 'trial')
+        return self.estado in ("activo", "trial")
 
 
 # ============================================================================
 # MODELO: UsuariosTenants (Global - Sin RLS)
 # ============================================================================
+
 
 class UsuariosTenants(Base):
     """
@@ -137,20 +145,13 @@ class UsuariosTenants(Base):
     Permite que un usuario pertenezca a múltiples organizaciones.
     Tabla global sin RLS.
     """
+
     __tablename__ = "usuarios_tenants"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    usuario_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("usuarios.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    tenant_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("tenants.id", ondelete="CASCADE"),
-        nullable=False
-    )
+    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
 
     # Rol dentro del tenant (puede ser diferente al rol global del usuario)
     rol = Column(String(50), nullable=False, default="operador")
@@ -173,13 +174,12 @@ class UsuariosTenants(Base):
     # usuario se define en modelos.py para evitar import circular
 
     __table_args__ = (
-        UniqueConstraint('usuario_id', 'tenant_id', name='uq_usuario_tenant'),
+        UniqueConstraint("usuario_id", "tenant_id", name="uq_usuario_tenant"),
         CheckConstraint(
-            "rol IN ('admin', 'operador', 'contador', 'vendedor', 'readonly')",
-            name="check_rol_tenant_valido"
+            "rol IN ('admin', 'operador', 'contador', 'vendedor', 'readonly')", name="check_rol_tenant_valido"
         ),
-        Index('idx_usuarios_tenants_usuario', 'usuario_id'),
-        Index('idx_usuarios_tenants_tenant', 'tenant_id'),
+        Index("idx_usuarios_tenants_usuario", "usuario_id"),
+        Index("idx_usuarios_tenants_tenant", "tenant_id"),
     )
 
 
@@ -187,26 +187,19 @@ class UsuariosTenants(Base):
 # MODELO: Suscripciones (Global - Sin RLS)
 # ============================================================================
 
+
 class Suscripciones(Base):
     """
     Historial de suscripciones de tenants.
     Permite tracking de cambios de plan y pagos.
     """
+
     __tablename__ = "suscripciones"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    tenant_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("tenants.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
-    plan_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("planes.id", ondelete="RESTRICT"),
-        nullable=False
-    )
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("planes.id", ondelete="RESTRICT"), nullable=False)
 
     # Período de suscripción
     periodo_inicio = Column(DateTime, nullable=False)
@@ -226,9 +219,9 @@ class Suscripciones(Base):
     __table_args__ = (
         CheckConstraint(
             "estado IN ('activo', 'suspendido', 'cancelado', 'expirado', 'trial')",
-            name="check_estado_suscripcion_valido"
+            name="check_estado_suscripcion_valido",
         ),
-        Index('idx_suscripciones_tenant_estado', 'tenant_id', 'estado'),
+        Index("idx_suscripciones_tenant_estado", "tenant_id", "estado"),
     )
 
 
@@ -236,19 +229,18 @@ class Suscripciones(Base):
 # MODELO: HistorialPagos (Global - Sin RLS)
 # ============================================================================
 
+
 class HistorialPagos(Base):
     """
     Registro de pagos de suscripciones.
     """
+
     __tablename__ = "historial_pagos"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     suscripcion_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("suscripciones.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        UUID(as_uuid=True), ForeignKey("suscripciones.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Detalles del pago
@@ -268,8 +260,7 @@ class HistorialPagos(Base):
     __table_args__ = (
         CheckConstraint("monto > 0", name="check_monto_pago_positivo"),
         CheckConstraint(
-            "estado IN ('pendiente', 'aprobado', 'rechazado', 'reembolsado')",
-            name="check_estado_pago_valido"
+            "estado IN ('pendiente', 'aprobado', 'rechazado', 'reembolsado')", name="check_estado_pago_valido"
         ),
     )
 
@@ -278,31 +269,24 @@ class HistorialPagos(Base):
 # MODELO: AuditLog (Global - Sin RLS)
 # ============================================================================
 
+
 class AuditLog(Base):
     """
     Registro inmutable de auditoría para acciones críticas del sistema.
     Tabla global sin RLS - los logs de superadmin no tienen tenant.
     NO se permite UPDATE ni DELETE a nivel de servicio.
     """
+
     __tablename__ = "audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Quién realizó la acción
-    actor_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("usuarios.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
-    )
+    actor_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
     actor_email = Column(String(100), nullable=False)
 
     # Contexto de tenant (null para acciones globales/superadmin)
-    tenant_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("tenants.id", ondelete="SET NULL"),
-        nullable=True
-    )
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="SET NULL"), nullable=True)
 
     # Qué se hizo
     action = Column(String(100), nullable=False, index=True)
@@ -320,7 +304,7 @@ class AuditLog(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        Index('idx_audit_logs_tenant_created', 'tenant_id', 'created_at'),
-        Index('idx_audit_logs_resource', 'resource_type', 'resource_id'),
-        Index('idx_audit_logs_action', 'action'),
+        Index("idx_audit_logs_tenant_created", "tenant_id", "created_at"),
+        Index("idx_audit_logs_resource", "resource_type", "resource_id"),
+        Index("idx_audit_logs_action", "action"),
     )

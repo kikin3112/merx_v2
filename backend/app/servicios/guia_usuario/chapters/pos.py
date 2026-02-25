@@ -4,6 +4,7 @@ Interfaz móvil-first para ventas rápidas con grid de productos y carrito.
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

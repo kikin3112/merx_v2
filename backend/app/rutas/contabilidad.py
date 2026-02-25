@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session, selectinload
+from datetime import date
 from typing import Optional
 from uuid import UUID
-from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
-from ..datos.modelos import AsientosContables, DetallesAsiento, CuentasContables, Usuarios
 from ..datos.esquemas import AsientoContableCreate
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token, require_tenant_roles, UserContext
+from ..datos.modelos import AsientosContables
 from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..utils.logger import setup_logger
+from ..utils.seguridad import UserContext, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -17,20 +18,19 @@ logger = setup_logger(__name__)
 
 @router.get("/asientos")
 async def listar_asientos(
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=500),
-        tipo_asiento: Optional[str] = Query(None),
-        fecha_inicio: Optional[date] = Query(None),
-        fecha_fin: Optional[date] = Query(None),
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    tipo_asiento: Optional[str] = Query(None),
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Lista asientos contables del tenant con filtros."""
-    query = db.query(AsientosContables).options(
-        selectinload(AsientosContables.created_by_user),
-        selectinload(AsientosContables.updated_by_user)
-    ).filter(
-        AsientosContables.tenant_id == ctx.tenant_id
+    query = (
+        db.query(AsientosContables)
+        .options(selectinload(AsientosContables.created_by_user), selectinload(AsientosContables.updated_by_user))
+        .filter(AsientosContables.tenant_id == ctx.tenant_id)
     )
 
     if tipo_asiento:
@@ -47,18 +47,17 @@ async def listar_asientos(
 
 @router.get("/asientos/{asiento_id}")
 async def obtener_asiento(
-        asiento_id: UUID,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    asiento_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """Obtiene un asiento contable con sus detalles."""
-    asiento = db.query(AsientosContables).options(
-        selectinload(AsientosContables.created_by_user),
-        selectinload(AsientosContables.updated_by_user)
-    ).filter(
-        AsientosContables.id == asiento_id,
-        AsientosContables.tenant_id == ctx.tenant_id
-    ).first()
+    asiento = (
+        db.query(AsientosContables)
+        .options(selectinload(AsientosContables.created_by_user), selectinload(AsientosContables.updated_by_user))
+        .filter(AsientosContables.id == asiento_id, AsientosContables.tenant_id == ctx.tenant_id)
+        .first()
+    )
     if not asiento:
         raise HTTPException(status_code=404, detail="Asiento no encontrado")
     return asiento
@@ -66,9 +65,9 @@ async def obtener_asiento(
 
 @router.post("/asientos", status_code=status.HTTP_201_CREATED)
 async def crear_asiento(
-        data: AsientoContableCreate,
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    data: AsientoContableCreate,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Crea un asiento contable manual.
@@ -77,12 +76,7 @@ async def crear_asiento(
     servicio = ServicioContabilidad(db, ctx.tenant_id)
 
     detalles = [
-        {
-            "cuenta_id": det.cuenta_id,
-            "debito": det.debito,
-            "credito": det.credito,
-            "descripcion": det.descripcion
-        }
+        {"cuenta_id": det.cuenta_id, "debito": det.debito, "credito": det.credito, "descripcion": det.descripcion}
         for det in data.detalles
     ]
 
@@ -92,7 +86,7 @@ async def crear_asiento(
         concepto=data.concepto,
         detalles=detalles,
         documento_referencia=data.documento_referencia,
-        tercero_id=data.tercero_id
+        tercero_id=data.tercero_id,
     )
 
     db.commit()
@@ -102,10 +96,10 @@ async def crear_asiento(
 
 @router.get("/balance-prueba")
 async def balance_prueba(
-        fecha_inicio: Optional[date] = Query(None),
-        fecha_fin: Optional[date] = Query(None),
-        db: Session = Depends(get_db),
-        ctx: UserContext = Depends(require_tenant_roles('admin', 'contador'))
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Genera balance de prueba.
@@ -123,5 +117,5 @@ async def balance_prueba(
         "total_debito": total_debito,
         "total_credito": total_credito,
         "diferencia": total_debito - total_credito,
-        "balanceado": abs(total_debito - total_credito) < 0.01
+        "balanceado": abs(total_debito - total_credito) < 0.01,
     }

@@ -4,6 +4,7 @@ Gestión de archivos en la nube mediante S3/R2 para logos, facturas y cotizacion
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

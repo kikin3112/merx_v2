@@ -2,22 +2,15 @@
 Servicio CRM: Lógica de negocio para gestión de pipelines, deals y activities.
 """
 
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, func
-from uuid import UUID
-from typing import List, Optional, Dict, Any
-from decimal import Decimal
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from ..datos.modelos_crm import (
-    CrmPipeline, CrmStage, CrmDeal, CrmActivity,
-    EstadoDeal, TipoActividadCRM
-)
-from ..datos.esquemas import (
-    CrmPipelineCreate, CrmPipelineUpdate,
-    CrmDealCreate, CrmDealUpdate,
-    CrmActivityCreate
-)
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
+
+from ..datos.esquemas import CrmActivityCreate, CrmDealCreate, CrmDealUpdate, CrmPipelineCreate, CrmPipelineUpdate
+from ..datos.modelos_crm import CrmActivity, CrmDeal, CrmPipeline, CrmStage, EstadoDeal, TipoActividadCRM
 
 
 class ServicioCRM:
@@ -34,7 +27,7 @@ class ServicioCRM:
         """Lista pipelines del tenant con sus stages (eager load)."""
         return (
             self.db.query(CrmPipeline)
-            .filter(CrmPipeline.tenant_id == tenant_id, CrmPipeline.deleted_at == None)
+            .filter(CrmPipeline.tenant_id == tenant_id, CrmPipeline.deleted_at is None)
             .options(joinedload(CrmPipeline.etapas))
             .order_by(CrmPipeline.es_default.desc(), CrmPipeline.nombre)
             .all()
@@ -44,11 +37,7 @@ class ServicioCRM:
         """Obtiene un pipeline por ID."""
         return (
             self.db.query(CrmPipeline)
-            .filter(
-                CrmPipeline.id == pipeline_id,
-                CrmPipeline.tenant_id == tenant_id,
-                CrmPipeline.deleted_at == None
-            )
+            .filter(CrmPipeline.id == pipeline_id, CrmPipeline.tenant_id == tenant_id, CrmPipeline.deleted_at is None)
             .options(joinedload(CrmPipeline.etapas))
             .first()
         )
@@ -57,23 +46,17 @@ class ServicioCRM:
         """Crea un nuevo pipeline. Si es_default=True, quita default de otros."""
         # Si es default, quitar default de los demás
         if data.es_default:
-            self.db.query(CrmPipeline).filter(
-                CrmPipeline.tenant_id == tenant_id,
-                CrmPipeline.es_default == True
-            ).update({"es_default": False})
+            self.db.query(CrmPipeline).filter(CrmPipeline.tenant_id == tenant_id, CrmPipeline.es_default).update(
+                {"es_default": False}
+            )
 
-        pipeline = CrmPipeline(
-            tenant_id=tenant_id,
-            **data.model_dump()
-        )
+        pipeline = CrmPipeline(tenant_id=tenant_id, **data.model_dump())
         self.db.add(pipeline)
         self.db.commit()
         self.db.refresh(pipeline)
         return pipeline
 
-    def actualizar_pipeline(
-        self, pipeline_id: UUID, tenant_id: UUID, data: CrmPipelineUpdate
-    ) -> Optional[CrmPipeline]:
+    def actualizar_pipeline(self, pipeline_id: UUID, tenant_id: UUID, data: CrmPipelineUpdate) -> Optional[CrmPipeline]:
         """Actualiza un pipeline."""
         pipeline = self.obtener_pipeline(pipeline_id, tenant_id)
         if not pipeline:
@@ -99,8 +82,8 @@ class ServicioCRM:
             .filter(
                 CrmDeal.pipeline_id == pipeline_id,
                 CrmDeal.tenant_id == tenant_id,
-                CrmDeal.deleted_at == None,
-                CrmDeal.estado_cierre == EstadoDeal.ABIERTO
+                CrmDeal.deleted_at is None,
+                CrmDeal.estado_cierre == EstadoDeal.ABIERTO,
             )
             .scalar()
         )
@@ -120,12 +103,8 @@ class ServicioCRM:
         """Lista deals con filtros opcionales. Eager load: tercero, usuario, stage."""
         query = (
             self.db.query(CrmDeal)
-            .filter(CrmDeal.tenant_id == tenant_id, CrmDeal.deleted_at == None)
-            .options(
-                joinedload(CrmDeal.tercero),
-                joinedload(CrmDeal.usuario),
-                joinedload(CrmDeal.stage)
-            )
+            .filter(CrmDeal.tenant_id == tenant_id, CrmDeal.deleted_at is None)
+            .options(joinedload(CrmDeal.tercero), joinedload(CrmDeal.usuario), joinedload(CrmDeal.stage))
         )
 
         if filters:
@@ -144,47 +123,40 @@ class ServicioCRM:
         """Obtiene un deal por ID con relaciones cargadas."""
         return (
             self.db.query(CrmDeal)
-            .filter(
-                CrmDeal.id == deal_id,
-                CrmDeal.tenant_id == tenant_id,
-                CrmDeal.deleted_at == None
-            )
+            .filter(CrmDeal.id == deal_id, CrmDeal.tenant_id == tenant_id, CrmDeal.deleted_at is None)
             .options(
                 joinedload(CrmDeal.tercero),
                 joinedload(CrmDeal.usuario),
                 joinedload(CrmDeal.stage),
-                joinedload(CrmDeal.pipeline)
+                joinedload(CrmDeal.pipeline),
             )
             .first()
         )
 
-    def crear_deal(
-        self, tenant_id: UUID, data: CrmDealCreate, usuario_id: UUID
-    ) -> CrmDeal:
+    def crear_deal(self, tenant_id: UUID, data: CrmDealCreate, usuario_id: UUID) -> CrmDeal:
         """Crea un nuevo deal. Valida tercero y stage. Log activity automática."""
         # Validar tercero existe y pertenece al tenant
         from ..datos.modelos import Terceros
-        tercero = self.db.query(Terceros).filter(
-            Terceros.id == data.tercero_id,
-            Terceros.tenant_id == tenant_id
-        ).first()
+
+        tercero = (
+            self.db.query(Terceros).filter(Terceros.id == data.tercero_id, Terceros.tenant_id == tenant_id).first()
+        )
         if not tercero:
             raise ValueError("Tercero no encontrado")
 
         # Validar stage existe y pertenece al pipeline
-        stage = self.db.query(CrmStage).filter(
-            CrmStage.id == data.stage_id,
-            CrmStage.pipeline_id == data.pipeline_id,
-            CrmStage.tenant_id == tenant_id
-        ).first()
+        stage = (
+            self.db.query(CrmStage)
+            .filter(
+                CrmStage.id == data.stage_id, CrmStage.pipeline_id == data.pipeline_id, CrmStage.tenant_id == tenant_id
+            )
+            .first()
+        )
         if not stage:
             raise ValueError("Stage no encontrado o no pertenece al pipeline")
 
         # Crear deal
-        deal = CrmDeal(
-            tenant_id=tenant_id,
-            **data.model_dump()
-        )
+        deal = CrmDeal(tenant_id=tenant_id, **data.model_dump())
         self.db.add(deal)
         self.db.flush()
 
@@ -197,7 +169,7 @@ class ServicioCRM:
             asunto="Deal creado",
             contenido=f"Deal '{deal.nombre}' creado en stage '{stage.nombre}'",
             fecha_actividad=datetime.now(timezone.utc),
-            es_automatica=True
+            es_automatica=True,
         )
         self.db.add(activity)
 
@@ -205,9 +177,7 @@ class ServicioCRM:
         self.db.refresh(deal)
         return deal
 
-    def actualizar_deal(
-        self, deal_id: UUID, tenant_id: UUID, data: CrmDealUpdate
-    ) -> Optional[CrmDeal]:
+    def actualizar_deal(self, deal_id: UUID, tenant_id: UUID, data: CrmDealUpdate) -> Optional[CrmDeal]:
         """Actualiza datos de un deal."""
         deal = self.obtener_deal(deal_id, tenant_id)
         if not deal:
@@ -222,19 +192,16 @@ class ServicioCRM:
         self.db.refresh(deal)
         return deal
 
-    def mover_deal(
-        self, deal_id: UUID, nuevo_stage_id: UUID, tenant_id: UUID, usuario_id: UUID
-    ) -> CrmDeal:
+    def mover_deal(self, deal_id: UUID, nuevo_stage_id: UUID, tenant_id: UUID, usuario_id: UUID) -> CrmDeal:
         """Mueve deal a otro stage. Log activity automática."""
         deal = self.obtener_deal(deal_id, tenant_id)
         if not deal:
             raise ValueError("Deal no encontrado")
 
         # Validar nuevo stage
-        nuevo_stage = self.db.query(CrmStage).filter(
-            CrmStage.id == nuevo_stage_id,
-            CrmStage.tenant_id == tenant_id
-        ).first()
+        nuevo_stage = (
+            self.db.query(CrmStage).filter(CrmStage.id == nuevo_stage_id, CrmStage.tenant_id == tenant_id).first()
+        )
         if not nuevo_stage:
             raise ValueError("Stage no encontrado")
 
@@ -251,7 +218,7 @@ class ServicioCRM:
             asunto="Deal movido",
             contenido=f"Movido de '{stage_anterior}' a '{nuevo_stage.nombre}'",
             fecha_actividad=datetime.now(timezone.utc),
-            es_automatica=True
+            es_automatica=True,
         )
         self.db.add(activity)
 
@@ -260,12 +227,7 @@ class ServicioCRM:
         return deal
 
     def cerrar_deal(
-        self,
-        deal_id: UUID,
-        estado_cierre: EstadoDeal,
-        motivo: Optional[str],
-        tenant_id: UUID,
-        usuario_id: UUID
+        self, deal_id: UUID, estado_cierre: EstadoDeal, motivo: Optional[str], tenant_id: UUID, usuario_id: UUID
     ) -> CrmDeal:
         """Cierra un deal (GANADO/PERDIDO/ABANDONADO). Log activity."""
         deal = self.obtener_deal(deal_id, tenant_id)
@@ -286,7 +248,7 @@ class ServicioCRM:
             asunto=f"Deal {estado_cierre.value}",
             contenido=motivo or f"Deal marcado como {estado_cierre.value}",
             fecha_actividad=datetime.now(timezone.utc),
-            es_automatica=True
+            es_automatica=True,
         )
         self.db.add(activity)
 
@@ -308,20 +270,14 @@ class ServicioCRM:
     # ACTIVITIES
     # =========================================================================
 
-    def crear_actividad(
-        self, tenant_id: UUID, data: CrmActivityCreate, usuario_id: UUID
-    ) -> CrmActivity:
+    def crear_actividad(self, tenant_id: UUID, data: CrmActivityCreate, usuario_id: UUID) -> CrmActivity:
         """Crea una activity. Actualiza fecha_ultimo_contacto del deal."""
         # Validar deal existe
         deal = self.obtener_deal(data.deal_id, tenant_id)
         if not deal:
             raise ValueError("Deal no encontrado")
 
-        activity = CrmActivity(
-            tenant_id=tenant_id,
-            usuario_id=usuario_id,
-            **data.model_dump()
-        )
+        activity = CrmActivity(tenant_id=tenant_id, usuario_id=usuario_id, **data.model_dump())
         self.db.add(activity)
 
         # Actualizar fecha_ultimo_contacto del deal
@@ -336,11 +292,7 @@ class ServicioCRM:
         """Lista activities de un deal. Order by fecha DESC."""
         return (
             self.db.query(CrmActivity)
-            .filter(
-                CrmActivity.deal_id == deal_id,
-                CrmActivity.tenant_id == tenant_id,
-                CrmActivity.deleted_at == None
-            )
+            .filter(CrmActivity.deal_id == deal_id, CrmActivity.tenant_id == tenant_id, CrmActivity.deleted_at is None)
             .options(joinedload(CrmActivity.usuario))
             .order_by(CrmActivity.fecha_actividad.desc())
             .all()
@@ -349,12 +301,7 @@ class ServicioCRM:
     def eliminar_actividad(self, activity_id: UUID, tenant_id: UUID) -> bool:
         """Soft delete de activity."""
         activity = (
-            self.db.query(CrmActivity)
-            .filter(
-                CrmActivity.id == activity_id,
-                CrmActivity.tenant_id == tenant_id
-            )
-            .first()
+            self.db.query(CrmActivity).filter(CrmActivity.id == activity_id, CrmActivity.tenant_id == tenant_id).first()
         )
         if not activity:
             return False

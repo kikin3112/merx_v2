@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session, selectinload
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, selectinload
+
 from ..datos.db import get_db
-from ..datos.modelos import Compras, ComprasDetalle, Terceros, Productos, Usuarios
-from ..datos.esquemas import ComprasCreate, ComprasUpdate, ComprasResponse
-from ..utils.seguridad import get_current_user, get_tenant_id_from_token
+from ..datos.esquemas import ComprasCreate, ComprasResponse
+from ..datos.modelos import Compras, ComprasDetalle, Terceros, Usuarios
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
+from ..utils.seguridad import get_current_user, get_tenant_id_from_token
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -16,26 +17,23 @@ logger = setup_logger(__name__)
 
 @router.post("/", response_model=ComprasResponse, status_code=status.HTTP_201_CREATED)
 async def crear_compra(
-        compra_data: ComprasCreate,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    compra_data: ComprasCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Crea una nueva compra."""
-    tercero = db.query(Terceros).filter(
-        Terceros.id == compra_data.tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
-    if not tercero or tercero.tipo_tercero not in ('PROVEEDOR', 'AMBOS'):
+    tercero = db.query(Terceros).filter(Terceros.id == compra_data.tercero_id, Terceros.tenant_id == tenant_id).first()
+    if not tercero or tercero.tipo_tercero not in ("PROVEEDOR", "AMBOS"):
         raise HTTPException(status_code=400, detail="Tercero debe ser proveedor")
     try:
-        numero = generar_numero_secuencia(db, 'COMPRAS', tenant_id)
+        numero = generar_numero_secuencia(db, "COMPRAS", tenant_id)
         compra = Compras(
             tenant_id=tenant_id,
             numero_compra=numero,
             tercero_id=compra_data.tercero_id,
             fecha_compra=compra_data.fecha_compra,
-            estado="PENDIENTE"
+            estado="PENDIENTE",
         )
         db.add(compra)
         db.flush()
@@ -47,7 +45,7 @@ async def crear_compra(
                 cantidad=det.cantidad,
                 precio_unitario=det.precio_unitario,
                 descuento=det.descuento or 0,
-                porcentaje_iva=det.porcentaje_iva or 0
+                porcentaje_iva=det.porcentaje_iva or 0,
             )
             db.add(detalle)
         db.commit()
@@ -64,38 +62,41 @@ async def crear_compra(
 
 @router.get("/", response_model=List[ComprasResponse])
 async def listar_compras(
-        skip: int = 0,
-        limit: int = 100,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Lista compras del tenant."""
-    compras = db.query(Compras).options(
-        selectinload(Compras.created_by_user),
-        selectinload(Compras.updated_by_user)
-    ).filter(
-        Compras.tenant_id == tenant_id
-    ).order_by(Compras.fecha_compra.desc()).offset(skip).limit(limit).all()
+    compras = (
+        db.query(Compras)
+        .options(selectinload(Compras.created_by_user), selectinload(Compras.updated_by_user))
+        .filter(Compras.tenant_id == tenant_id)
+        .order_by(Compras.fecha_compra.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return [ComprasResponse.model_validate(c) for c in compras]
 
 
 @router.get("/{compra_id}", response_model=ComprasResponse)
 async def obtener_compra(
-        compra_id: UUID,
-        db: Session = Depends(get_db),
-        current_user: Usuarios = Depends(get_current_user),
-        tenant_id: UUID = Depends(get_tenant_id_from_token)
+    compra_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
 ):
     """Obtiene una compra por ID."""
-    compra = db.query(Compras).options(
-        selectinload(Compras.created_by_user),
-        selectinload(Compras.updated_by_user),
-        selectinload(Compras.detalles)
-    ).filter(
-        Compras.id == compra_id,
-        Compras.tenant_id == tenant_id
-    ).first()
+    compra = (
+        db.query(Compras)
+        .options(
+            selectinload(Compras.created_by_user), selectinload(Compras.updated_by_user), selectinload(Compras.detalles)
+        )
+        .filter(Compras.id == compra_id, Compras.tenant_id == tenant_id)
+        .first()
+    )
     if not compra:
         raise HTTPException(status_code=404, detail="Compra no encontrada")
     return ComprasResponse.model_validate(compra)

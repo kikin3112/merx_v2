@@ -14,26 +14,24 @@ import argparse
 import sys
 from datetime import date
 
-from backend.app.servicios.guia_usuario.generator import GeneratorGuiaUsuario
-from backend.app.servicios.guia_usuario.styles import get_styles
-
 # Import all chapter classes
 from backend.app.servicios.guia_usuario.chapters import (
-    QuickStartChapter,
-    AuthChapter,
-    ProductsChapter,
-    MarginCalculatorChapter,
-    CRMChapter,
-    QuotationsChapter,
-    BillingChapter,
-    POSChapter,
-    RecipesChapter,
     AccountingChapter,
+    AuthChapter,
+    BillingChapter,
+    CRMChapter,
     DashboardChapter,
-    StorageChapter,
+    MarginCalculatorChapter,
     PaymentsChapter,
+    POSChapter,
+    ProductsChapter,
+    QuickStartChapter,
+    QuotationsChapter,
+    RecipesChapter,
+    StorageChapter,
 )
-
+from backend.app.servicios.guia_usuario.generator import GeneratorGuiaUsuario
+from backend.app.servicios.guia_usuario.styles import get_styles
 
 VERSION = "1.0"
 CHANDELIER_NAME = "Chandelier ERP/POS"
@@ -100,7 +98,7 @@ def generate_complete_guide(output_path: str = "guia_usuario.pdf") -> None:
     print(f"\n✓ Guía de usuario creada exitosamente: {output_path}")
 
     # Print summary
-    print(f"\nResumen:")
+    print("\nResumen:")
     print(f"  - Capítulos: {len(chapters)}")
     print(f"  - Versión: {VERSION}")
     print(f"  - Fecha: {date.today().strftime('%d/%m/%Y')}")
