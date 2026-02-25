@@ -67,11 +67,11 @@ export function Features() {
             return (
               <div
                 key={feature.name}
-                className="group relative p-8 rounded-2xl border border-gray-100 bg-white hover:border-pink-200 hover:shadow-lg transition-all duration-300"
+                className="group relative p-8 rounded-2xl border border-gray-100 bg-white hover:border-amber-200 hover:shadow-lg transition-all duration-300"
               >
                 {/* Icon */}
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-pink-100 to-purple-100 group-hover:from-pink-200 group-hover:to-purple-200 transition-colors">
-                  <Icon className="h-6 w-6 text-pink-600" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 group-hover:bg-amber-200 transition-colors">
+                  <Icon className="h-6 w-6 text-amber-600" />
                 </div>
 
                 {/* Content */}

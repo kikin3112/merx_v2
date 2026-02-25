@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-pjs',
+});
 
 export const metadata: Metadata = {
   title: 'ChandeliERP — ERP para Candelería',
@@ -14,8 +21,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className="antialiased bg-white text-gray-900">
+    <html lang="es" className={`${plusJakartaSans.variable}`}>
+      <body className="antialiased bg-white text-gray-900 font-[var(--font-pjs)]">
         {children}
       </body>
     </html>

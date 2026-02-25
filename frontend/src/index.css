@@ -1,29 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #fdf2f8;
-  --color-primary-100: #fce7f3;
-  --color-primary-200: #fbcfe8;
-  --color-primary-300: #f9a8d4;
-  --color-primary-400: #f472b6;
-  --color-primary-500: #ec4899;
-  --color-primary-600: #db2777;
-  --color-primary-700: #be185d;
-  --color-primary-800: #9d174d;
-  --color-primary-900: #831843;
+  /* === BRAND: Ámbar Profundo === */
+  --color-primary-50:  #FDF5EA;
+  --color-primary-100: #FAE8CE;
+  --color-primary-200: #F5D1A0;
+  --color-primary-300: #EDBA70;
+  --color-primary-400: #E0A04E;
+  --color-primary-500: #C17B2B;  /* Brand primary */
+  --color-primary-600: #A56824;  /* hover */
+  --color-primary-700: #8A5520;  /* active */
+  --color-primary-800: #6E4219;
+  --color-primary-900: #52300F;
 
-  --color-secondary-50: #f5f3ff;
-  --color-secondary-100: #ede9fe;
-  --color-secondary-200: #ddd6fe;
-  --color-secondary-300: #c4b5fd;
-  --color-secondary-400: #a78bfa;
-  --color-secondary-500: #8b5cf6;
-  --color-secondary-600: #7c3aed;
-  --color-secondary-700: #6d28d9;
-  --color-secondary-800: #5b21b6;
-  --color-secondary-900: #4c1d95;
+  /* === BRAND: Verde Salvia === */
+  --color-secondary-50:  #F3F5F1;
+  --color-secondary-100: #E4E9E0;
+  --color-secondary-200: #C7D1C0;
+  --color-secondary-300: #A9B9A0;
+  --color-secondary-400: #8C9F82;
+  --color-secondary-500: #6B7F5E;  /* Brand sage */
+  --color-secondary-600: #5A6D4E;
+  --color-secondary-700: #4A5A40;
+  --color-secondary-800: #3A4732;
+  --color-secondary-900: #2A3424;
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* === BRAND: Flat tokens === */
+  --color-midnight: #1A1A2E;
+  --color-cream:    #FAF3E8;
+
+  /* === BRAND: Oro (premium accent) === */
+  --color-gold-400: #E8C05A;
+  --color-gold-500: #D4A843;
+  --color-gold-600: #B8903A;
+
+  /* === Typography === */
+  --font-sans: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
 }
 
 body {

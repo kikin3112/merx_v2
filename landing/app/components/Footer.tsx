@@ -11,15 +11,15 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-midnight text-cream/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
           {/* Logo + tagline */}
           <div className="text-center md:text-left">
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold text-amber-500">
               ChandeliERP
             </span>
-            <p className="mt-2 text-sm text-gray-400 max-w-xs">
+            <p className="mt-2 text-sm text-cream/60 max-w-xs">
               El ERP diseñado para PyMEs de candelería en Colombia.
             </p>
           </div>
@@ -35,7 +35,7 @@ export function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-cream/60 hover:text-cream transition-colors"
                   >
                     {link.label}
                   </a>
@@ -45,7 +45,7 @@ export function Footer() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  className="text-sm text-cream/60 hover:text-cream transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -70,8 +70,8 @@ export function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-10 pt-6 border-t border-gray-800 text-center">
-          <p className="text-xs text-gray-500">
+        <div className="mt-10 pt-6 border-t border-white/10 text-center">
+          <p className="text-xs text-cream/50">
             &copy; {currentYear} ChandeliERP. Todos los derechos reservados.
           </p>
         </div>
