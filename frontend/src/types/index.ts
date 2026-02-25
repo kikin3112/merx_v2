@@ -251,6 +251,8 @@ export interface CotizacionDetalle {
   id: string;
   cotizacion_id: string;
   producto_id: string;
+  nombre?: string;
+  categoria?: string;
   cantidad: number;
   precio_unitario: number;
   descuento: number;

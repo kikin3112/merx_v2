@@ -73,7 +73,8 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
     setLineas(
       detalles.map((d) => ({
         producto_id: d.producto_id,
-        nombre: productMap.get(d.producto_id)?.nombre || d.producto_id,
+        nombre: d.nombre || productMap.get(d.producto_id)?.nombre || d.producto_id,
+        categoria: d.categoria || productMap.get(d.producto_id)?.categoria,
         cantidad: d.cantidad,
         precio_unitario: d.precio_unitario,
         descuento: d.descuento,

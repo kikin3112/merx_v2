@@ -631,11 +631,22 @@ class CotizacionesDetalleCreate(CotizacionesDetalleBase):
 class CotizacionesDetalleResponse(CotizacionesDetalleBase):
     id: UUID
     cotizacion_id: UUID
+    nombre: Optional[str] = None
+    categoria: Optional[str] = None
     subtotal: Decimal
     base_gravable: Decimal
     valor_iva: Decimal
     total_linea: Decimal
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _add_producto_fields(cls, value, handler):
+        result = handler(value)
+        if hasattr(value, "producto") and value.producto:
+            result.nombre = value.producto.nombre
+            result.categoria = value.producto.categoria
+        return result
 
 
 class CotizacionesBase(BaseModel):
