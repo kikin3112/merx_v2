@@ -4,6 +4,7 @@ Gestión de fórmulas para productos terminados, simulación y ejecución de pro
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

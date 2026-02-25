@@ -4,6 +4,7 @@ PUC Colombia, asientos manuales, asientos automáticos y estados financieros.
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

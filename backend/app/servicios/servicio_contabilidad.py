@@ -2,22 +2,24 @@
 Servicio de Contabilidad - Lógica para asientos contables automáticos y manuales.
 """
 
-from decimal import Decimal
 from datetime import date
-from uuid import UUID
+from decimal import Decimal
 from typing import List, Optional
+from uuid import UUID
 
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from ..datos.modelos import (
-    AsientosContables, DetallesAsiento, CuentasContables,
-    ConfiguracionContable, PeriodosContables, Usuarios
+    AsientosContables,
+    ConfiguracionContable,
+    CuentasContables,
+    DetallesAsiento,
+    PeriodosContables,
 )
-from ..datos.esquemas import AsientoContableCreate
-from ..utils.constantes_contables import VENTA_CONTADO, IVA_VENTAS
-from ..utils.secuencia_helper import generar_numero_secuencia
+from ..utils.constantes_contables import IVA_VENTAS, VENTA_CONTADO
 from ..utils.logger import setup_logger
+from ..utils.secuencia_helper import generar_numero_secuencia
 
 logger = setup_logger(__name__)
 
@@ -31,10 +33,11 @@ class ServicioContabilidad:
 
     def _obtener_cuenta_por_codigo(self, codigo: str) -> Optional[CuentasContables]:
         """Obtiene una cuenta contable por código."""
-        return self.db.query(CuentasContables).filter(
-            CuentasContables.tenant_id == self.tenant_id,
-            CuentasContables.codigo == codigo
-        ).first()
+        return (
+            self.db.query(CuentasContables)
+            .filter(CuentasContables.tenant_id == self.tenant_id, CuentasContables.codigo == codigo)
+            .first()
+        )
 
     def _obtener_cuenta_configurada(self, concepto: str, lado: str = "debito") -> CuentasContables:
         """
@@ -42,10 +45,11 @@ class ServicioContabilidad:
         lado: "debito" o "credito" — determina qué cuenta retornar.
         Raises ValueError si no encuentra.
         """
-        config = self.db.query(ConfiguracionContable).filter(
-            ConfiguracionContable.tenant_id == self.tenant_id,
-            ConfiguracionContable.concepto == concepto
-        ).first()
+        config = (
+            self.db.query(ConfiguracionContable)
+            .filter(ConfiguracionContable.tenant_id == self.tenant_id, ConfiguracionContable.concepto == concepto)
+            .first()
+        )
 
         if not config:
             raise ValueError(
@@ -57,10 +61,11 @@ class ServicioContabilidad:
         if not cuenta_id:
             raise ValueError(f"La configuración '{concepto}' no tiene cuenta de {lado} asignada.")
 
-        cuenta = self.db.query(CuentasContables).filter(
-            CuentasContables.id == cuenta_id,
-            CuentasContables.tenant_id == self.tenant_id
-        ).first()
+        cuenta = (
+            self.db.query(CuentasContables)
+            .filter(CuentasContables.id == cuenta_id, CuentasContables.tenant_id == self.tenant_id)
+            .first()
+        )
 
         if not cuenta:
             raise ValueError(f"La cuenta configurada para '{concepto}' ({lado}) no existe.")
@@ -75,19 +80,18 @@ class ServicioContabilidad:
         """
         anio, mes = fecha.year, fecha.month
 
-        periodo = self.db.query(PeriodosContables).filter(
-            PeriodosContables.tenant_id == self.tenant_id,
-            PeriodosContables.anio == anio,
-            PeriodosContables.mes == mes
-        ).first()
+        periodo = (
+            self.db.query(PeriodosContables)
+            .filter(
+                PeriodosContables.tenant_id == self.tenant_id,
+                PeriodosContables.anio == anio,
+                PeriodosContables.mes == mes,
+            )
+            .first()
+        )
 
         if not periodo:
-            periodo = PeriodosContables(
-                tenant_id=self.tenant_id,
-                anio=anio,
-                mes=mes,
-                estado="ABIERTO"
-            )
+            periodo = PeriodosContables(tenant_id=self.tenant_id, anio=anio, mes=mes, estado="ABIERTO")
             self.db.add(periodo)
             self.db.flush()
 
@@ -103,7 +107,7 @@ class ServicioContabilidad:
         concepto: str,
         detalles: List[dict],
         documento_referencia: Optional[str] = None,
-        tercero_id: Optional[UUID] = None
+        tercero_id: Optional[UUID] = None,
     ) -> AsientosContables:
         """
         Crea un asiento contable validando que esté balanceado.
@@ -130,9 +134,7 @@ class ServicioContabilidad:
         total_credito = sum(Decimal(str(d.get("credito", 0))) for d in detalles)
 
         if total_debito != total_credito:
-            raise ValueError(
-                f"Asiento desbalanceado: Débitos={total_debito}, Créditos={total_credito}"
-            )
+            raise ValueError(f"Asiento desbalanceado: Débitos={total_debito}, Créditos={total_credito}")
 
         if total_debito == 0:
             raise ValueError("El asiento no puede tener todos los valores en cero")
@@ -141,7 +143,7 @@ class ServicioContabilidad:
         periodo_id = self._validar_periodo(fecha)
 
         # Generar número
-        numero = generar_numero_secuencia(self.db, 'ASIENTOS', self.tenant_id)
+        numero = generar_numero_secuencia(self.db, "ASIENTOS", self.tenant_id)
 
         asiento = AsientosContables(
             tenant_id=self.tenant_id,
@@ -152,17 +154,18 @@ class ServicioContabilidad:
             documento_referencia=documento_referencia,
             estado="ACTIVO",
             periodo_id=periodo_id,
-            tercero_id=tercero_id
+            tercero_id=tercero_id,
         )
         self.db.add(asiento)
         self.db.flush()
 
         for det in detalles:
             # Validar que la cuenta existe
-            cuenta = self.db.query(CuentasContables).filter(
-                CuentasContables.id == det["cuenta_id"],
-                CuentasContables.tenant_id == self.tenant_id
-            ).first()
+            cuenta = (
+                self.db.query(CuentasContables)
+                .filter(CuentasContables.id == det["cuenta_id"], CuentasContables.tenant_id == self.tenant_id)
+                .first()
+            )
             if not cuenta:
                 raise ValueError(f"Cuenta contable {det['cuenta_id']} no encontrada")
 
@@ -172,15 +175,13 @@ class ServicioContabilidad:
                 cuenta_id=det["cuenta_id"],
                 debito=Decimal(str(det.get("debito", 0))),
                 credito=Decimal(str(det.get("credito", 0))),
-                descripcion=det.get("descripcion", "")
+                descripcion=det.get("descripcion", ""),
             )
             self.db.add(detalle)
 
         self.db.flush()
 
-        logger.info(
-            f"Asiento {numero} creado - Tipo: {tipo_asiento}, Total: {total_debito}"
-        )
+        logger.info(f"Asiento {numero} creado - Tipo: {tipo_asiento}, Total: {total_debito}")
 
         return asiento
 
@@ -191,7 +192,7 @@ class ServicioContabilidad:
         total_iva: Decimal,
         total: Decimal,
         documento_referencia: str,
-        tercero_id: Optional[UUID] = None
+        tercero_id: Optional[UUID] = None,
     ) -> AsientosContables:
         """
         Crea asiento contable automático para una venta/factura.
@@ -212,24 +213,26 @@ class ServicioContabilidad:
                 "cuenta_id": cuenta_caja.id,
                 "debito": total,
                 "credito": Decimal("0"),
-                "descripcion": f"Cobro venta {documento_referencia}"
+                "descripcion": f"Cobro venta {documento_referencia}",
             },
             {
                 "cuenta_id": cuenta_ventas.id,
                 "debito": Decimal("0"),
                 "credito": ingresos_netos,
-                "descripcion": f"Venta {documento_referencia}"
-            }
+                "descripcion": f"Venta {documento_referencia}",
+            },
         ]
 
         if total_iva > 0:
             cuenta_iva = self._obtener_cuenta_configurada(IVA_VENTAS, "credito")
-            detalles.append({
-                "cuenta_id": cuenta_iva.id,
-                "debito": Decimal("0"),
-                "credito": total_iva,
-                "descripcion": f"IVA venta {documento_referencia}"
-            })
+            detalles.append(
+                {
+                    "cuenta_id": cuenta_iva.id,
+                    "debito": Decimal("0"),
+                    "credito": total_iva,
+                    "descripcion": f"IVA venta {documento_referencia}",
+                }
+            )
 
         return self.crear_asiento(
             fecha=fecha,
@@ -237,7 +240,7 @@ class ServicioContabilidad:
             concepto=f"Venta según {documento_referencia}",
             detalles=detalles,
             documento_referencia=documento_referencia,
-            tercero_id=tercero_id
+            tercero_id=tercero_id,
         )
 
     def crear_asiento_anulacion_venta(
@@ -247,7 +250,7 @@ class ServicioContabilidad:
         total_iva: Decimal,
         total: Decimal,
         documento_referencia: str,
-        tercero_id: Optional[UUID] = None
+        tercero_id: Optional[UUID] = None,
     ) -> AsientosContables:
         """
         Crea asiento contable de reversión para anulación de venta.
@@ -264,24 +267,26 @@ class ServicioContabilidad:
                 "cuenta_id": cuenta_caja.id,
                 "debito": Decimal("0"),
                 "credito": total,
-                "descripcion": f"Anulación venta {documento_referencia}"
+                "descripcion": f"Anulación venta {documento_referencia}",
             },
             {
                 "cuenta_id": cuenta_ventas.id,
                 "debito": ingresos_netos,
                 "credito": Decimal("0"),
-                "descripcion": f"Anulación venta {documento_referencia}"
-            }
+                "descripcion": f"Anulación venta {documento_referencia}",
+            },
         ]
 
         if total_iva > 0:
             cuenta_iva = self._obtener_cuenta_configurada(IVA_VENTAS, "credito")
-            detalles.append({
-                "cuenta_id": cuenta_iva.id,
-                "debito": total_iva,
-                "credito": Decimal("0"),
-                "descripcion": f"Anulación IVA venta {documento_referencia}"
-            })
+            detalles.append(
+                {
+                    "cuenta_id": cuenta_iva.id,
+                    "debito": total_iva,
+                    "credito": Decimal("0"),
+                    "descripcion": f"Anulación IVA venta {documento_referencia}",
+                }
+            )
 
         return self.crear_asiento(
             fecha=fecha,
@@ -289,36 +294,34 @@ class ServicioContabilidad:
             concepto=f"Anulación venta {documento_referencia}",
             detalles=detalles,
             documento_referencia=f"ANUL-{documento_referencia}",
-            tercero_id=tercero_id
+            tercero_id=tercero_id,
         )
 
     def obtener_balance_prueba(
-        self,
-        fecha_inicio: Optional[date] = None,
-        fecha_fin: Optional[date] = None
+        self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None
     ) -> List[dict]:
         """
         Genera balance de prueba: para cada cuenta, suma débitos y créditos.
         """
-        query = self.db.query(
-            CuentasContables.id,
-            CuentasContables.codigo,
-            CuentasContables.nombre,
-            CuentasContables.tipo_cuenta,
-            CuentasContables.naturaleza,
-            func.coalesce(func.sum(DetallesAsiento.debito), 0).label("total_debito"),
-            func.coalesce(func.sum(DetallesAsiento.credito), 0).label("total_credito")
-        ).outerjoin(
-            DetallesAsiento,
-            (DetallesAsiento.cuenta_id == CuentasContables.id) &
-            (DetallesAsiento.tenant_id == self.tenant_id)
-        ).outerjoin(
-            AsientosContables,
-            (AsientosContables.id == DetallesAsiento.asiento_id) &
-            (AsientosContables.estado == "ACTIVO")
-        ).filter(
-            CuentasContables.tenant_id == self.tenant_id,
-            CuentasContables.acepta_movimiento == True
+        query = (
+            self.db.query(
+                CuentasContables.id,
+                CuentasContables.codigo,
+                CuentasContables.nombre,
+                CuentasContables.tipo_cuenta,
+                CuentasContables.naturaleza,
+                func.coalesce(func.sum(DetallesAsiento.debito), 0).label("total_debito"),
+                func.coalesce(func.sum(DetallesAsiento.credito), 0).label("total_credito"),
+            )
+            .outerjoin(
+                DetallesAsiento,
+                (DetallesAsiento.cuenta_id == CuentasContables.id) & (DetallesAsiento.tenant_id == self.tenant_id),
+            )
+            .outerjoin(
+                AsientosContables,
+                (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
+            )
+            .filter(CuentasContables.tenant_id == self.tenant_id, CuentasContables.acepta_movimiento)
         )
 
         if fecha_inicio:
@@ -331,7 +334,7 @@ class ServicioContabilidad:
             CuentasContables.codigo,
             CuentasContables.nombre,
             CuentasContables.tipo_cuenta,
-            CuentasContables.naturaleza
+            CuentasContables.naturaleza,
         ).order_by(CuentasContables.codigo)
 
         resultados = []
@@ -342,15 +345,17 @@ class ServicioContabilidad:
 
             # Solo incluir cuentas con movimiento
             if total_debito > 0 or total_credito > 0:
-                resultados.append({
-                    "cuenta_id": str(row.id),
-                    "codigo": row.codigo,
-                    "nombre": row.nombre,
-                    "tipo_cuenta": row.tipo_cuenta,
-                    "naturaleza": row.naturaleza,
-                    "total_debito": float(total_debito),
-                    "total_credito": float(total_credito),
-                    "saldo": float(saldo)
-                })
+                resultados.append(
+                    {
+                        "cuenta_id": str(row.id),
+                        "codigo": row.codigo,
+                        "nombre": row.nombre,
+                        "tipo_cuenta": row.tipo_cuenta,
+                        "naturaleza": row.naturaleza,
+                        "total_debito": float(total_debito),
+                        "total_credito": float(total_credito),
+                        "saldo": float(saldo),
+                    }
+                )
 
         return resultados

@@ -4,22 +4,20 @@ Parsea el CSV de productos y los importa al sistema.
 """
 
 import csv
-import re
 import sys
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from sqlalchemy.orm import Session
 from app.datos.db import SessionLocal
-from app.datos.modelos import Productos, Inventarios, Terceros, Secuencias
-from app.datos.modelos_tenant import Planes, Tenants, UsuariosTenants, Suscripciones
-from app.datos.modelos import Usuarios
-from app.utils.seguridad import hash_password
+from app.datos.modelos import Inventarios, Productos, Secuencias, Terceros, Usuarios
+from app.datos.modelos_tenant import Planes, Suscripciones, Tenants, UsuariosTenants
 from app.utils.logger import setup_logger
+from app.utils.seguridad import hash_password
+from sqlalchemy.orm import Session
 
 logger = setup_logger(__name__)
 
@@ -264,7 +262,7 @@ def get_or_create_tenant(db: Session) -> tuple:
         return tenant.id, admin.id if admin else None
 
     # Obtener plan default
-    plan = db.query(Planes).filter(Planes.es_default == True).first()
+    plan = db.query(Planes).filter(Planes.es_default).first()
     if not plan:
         plan = db.query(Planes).first()
 

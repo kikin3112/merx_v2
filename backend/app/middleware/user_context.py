@@ -3,13 +3,10 @@ Middleware para contexto de usuario.
 Extrae el user_id del token JWT y lo establece en ContextVar para auditoría automática.
 """
 
-from typing import Optional
-from uuid import UUID
-
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ..datos.audit_listeners import set_current_user_id, clear_current_user_id
+from ..datos.audit_listeners import clear_current_user_id, set_current_user_id
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)

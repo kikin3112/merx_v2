@@ -1,14 +1,13 @@
-from typing import Optional, Generator
+from typing import Generator, Optional
 from uuid import UUID
 
-from sqlalchemy import create_engine, text, event
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
-from sqlalchemy.pool import Pool
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 # IMPORTANTE: Import relativo para hacer el módulo portable
 from ..config import settings
-from ..utils.logger import setup_logger
 from ..middleware.tenant_context import get_current_tenant_id
+from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -33,7 +32,7 @@ Base = declarative_base()
 # ============================================================================
 
 # Importar y registrar los event listeners de auditoría
-from .audit_listeners import register_audit_listeners
+from .audit_listeners import register_audit_listeners  # noqa: E402
 
 register_audit_listeners(SessionLocal)
 

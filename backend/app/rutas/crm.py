@@ -2,23 +2,28 @@
 Rutas CRM: Gestión de pipelines, deals y activities.
 """
 
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import List, Optional, Dict, Any
 
 from ..datos.db import get_db
 from ..datos.esquemas import (
-    CrmPipelineCreate, CrmPipelineUpdate, CrmPipelineResponse,
+    CrmActivityCreate,
+    CrmActivityResponse,
+    CrmDealCreate,
+    CrmDealResponse,
+    CrmDealUpdate,
+    CrmPipelineCreate,
+    CrmPipelineResponse,
+    CrmPipelineUpdate,
     CrmStageResponse,
-    CrmDealCreate, CrmDealUpdate, CrmDealResponse,
-    CrmActivityCreate, CrmActivityResponse
 )
+from ..datos.modelos import Usuarios
 from ..datos.modelos_crm import EstadoDeal
 from ..servicios.servicio_crm import ServicioCRM
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
-from ..datos.modelos import Usuarios
-
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
 
@@ -27,11 +32,12 @@ router = APIRouter(prefix="/crm", tags=["CRM"])
 # PIPELINES
 # ============================================================================
 
+
 @router.get("/pipelines/", response_model=List[CrmPipelineResponse])
 def listar_pipelines(
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lista todos los pipelines del tenant con sus etapas (stages).
@@ -52,14 +58,10 @@ def listar_pipelines(
             created_at=p.created_at,
             etapas=[
                 CrmStageResponse(
-                    id=s.id,
-                    pipeline_id=s.pipeline_id,
-                    nombre=s.nombre,
-                    orden=s.orden,
-                    probabilidad=s.probabilidad
+                    id=s.id, pipeline_id=s.pipeline_id, nombre=s.nombre, orden=s.orden, probabilidad=s.probabilidad
                 )
                 for s in p.etapas
-            ]
+            ],
         )
         for p in pipelines
     ]
@@ -70,7 +72,7 @@ def crear_pipeline(
     data: CrmPipelineCreate,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Crea un nuevo pipeline. Si es_default=True, quita el default de otros.
@@ -86,7 +88,7 @@ def crear_pipeline(
         color=pipeline.color,
         tenant_id=pipeline.tenant_id,
         created_at=pipeline.created_at,
-        etapas=[]
+        etapas=[],
     )
 
 
@@ -96,7 +98,7 @@ def actualizar_pipeline(
     data: CrmPipelineUpdate,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Actualiza datos de un pipeline (nombre, color, descripción).
@@ -105,10 +107,7 @@ def actualizar_pipeline(
     pipeline = servicio.actualizar_pipeline(pipeline_id, tenant_id, data)
 
     if not pipeline:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pipeline no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline no encontrado")
 
     return CrmPipelineResponse(
         id=pipeline.id,
@@ -120,14 +119,10 @@ def actualizar_pipeline(
         created_at=pipeline.created_at,
         etapas=[
             CrmStageResponse(
-                id=s.id,
-                pipeline_id=s.pipeline_id,
-                nombre=s.nombre,
-                orden=s.orden,
-                probabilidad=s.probabilidad
+                id=s.id, pipeline_id=s.pipeline_id, nombre=s.nombre, orden=s.orden, probabilidad=s.probabilidad
             )
             for s in pipeline.etapas
-        ]
+        ],
     )
 
 
@@ -136,7 +131,7 @@ def eliminar_pipeline(
     pipeline_id: UUID,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Soft delete de pipeline. Valida que no tenga deals activos.
@@ -147,15 +142,9 @@ def eliminar_pipeline(
     try:
         success = servicio.eliminar_pipeline(pipeline_id, tenant_id)
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pipeline no encontrado"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline no encontrado")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return None
 
@@ -163,6 +152,7 @@ def eliminar_pipeline(
 # ============================================================================
 # DEALS
 # ============================================================================
+
 
 @router.get("/deals/", response_model=List[CrmDealResponse])
 def listar_deals(
@@ -172,7 +162,7 @@ def listar_deals(
     estado_cierre: Optional[str] = Query(None, description="ABIERTO|GANADO|PERDIDO|ABANDONADO"),
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lista deals con filtros opcionales. Eager load: tercero, usuario, stage.
@@ -193,8 +183,7 @@ def listar_deals(
             filters["estado_cierre"] = EstadoDeal(estado_cierre)
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"estado_cierre inválido: {estado_cierre}"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"estado_cierre inválido: {estado_cierre}"
             )
 
     deals = servicio.listar_deals(tenant_id, filters)
@@ -218,7 +207,7 @@ def listar_deals(
             motivo_perdida=d.motivo_perdida,
             fecha_ultimo_contacto=d.fecha_ultimo_contacto,
             created_at=d.created_at,
-            updated_at=d.updated_at
+            updated_at=d.updated_at,
         )
         for d in deals
     ]
@@ -229,7 +218,7 @@ def crear_deal(
     data: CrmDealCreate,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Crea un nuevo deal. Valida tercero y stage. Log activity automática.
@@ -239,10 +228,7 @@ def crear_deal(
     try:
         deal = servicio.crear_deal(tenant_id, data, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return CrmDealResponse(
         id=deal.id,
@@ -262,7 +248,7 @@ def crear_deal(
         motivo_perdida=deal.motivo_perdida,
         fecha_ultimo_contacto=deal.fecha_ultimo_contacto,
         created_at=deal.created_at,
-        updated_at=deal.updated_at
+        updated_at=deal.updated_at,
     )
 
 
@@ -271,7 +257,7 @@ def obtener_deal(
     deal_id: UUID,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Obtiene detalle de un deal. Incluye tercero, usuario, stage, pipeline.
@@ -280,10 +266,7 @@ def obtener_deal(
     deal = servicio.obtener_deal(deal_id, tenant_id)
 
     if not deal:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Deal no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal no encontrado")
 
     return CrmDealResponse(
         id=deal.id,
@@ -303,7 +286,7 @@ def obtener_deal(
         motivo_perdida=deal.motivo_perdida,
         fecha_ultimo_contacto=deal.fecha_ultimo_contacto,
         created_at=deal.created_at,
-        updated_at=deal.updated_at
+        updated_at=deal.updated_at,
     )
 
 
@@ -313,7 +296,7 @@ def actualizar_deal(
     data: CrmDealUpdate,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Actualiza datos de un deal (nombre, valor, fecha, usuario asignado).
@@ -322,10 +305,7 @@ def actualizar_deal(
     deal = servicio.actualizar_deal(deal_id, tenant_id, data)
 
     if not deal:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Deal no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal no encontrado")
 
     return CrmDealResponse(
         id=deal.id,
@@ -345,7 +325,7 @@ def actualizar_deal(
         motivo_perdida=deal.motivo_perdida,
         fecha_ultimo_contacto=deal.fecha_ultimo_contacto,
         created_at=deal.created_at,
-        updated_at=deal.updated_at
+        updated_at=deal.updated_at,
     )
 
 
@@ -355,7 +335,7 @@ def mover_deal(
     stage_id: UUID = Query(..., description="Nuevo stage_id"),
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Mueve deal a otro stage (drag & drop handler). Log activity automática.
@@ -365,10 +345,7 @@ def mover_deal(
     try:
         deal = servicio.mover_deal(deal_id, stage_id, tenant_id, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return CrmDealResponse(
         id=deal.id,
@@ -388,7 +365,7 @@ def mover_deal(
         motivo_perdida=deal.motivo_perdida,
         fecha_ultimo_contacto=deal.fecha_ultimo_contacto,
         created_at=deal.created_at,
-        updated_at=deal.updated_at
+        updated_at=deal.updated_at,
     )
 
 
@@ -399,7 +376,7 @@ def cerrar_deal(
     motivo: Optional[str] = Query(None, description="Motivo del cierre"),
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Cierra un deal (GANADO/PERDIDO/ABANDONADO). Log activity.
@@ -411,19 +388,13 @@ def cerrar_deal(
         estado_enum = EstadoDeal(estado)
         if estado_enum == EstadoDeal.ABIERTO:
             raise ValueError("No se puede cerrar un deal con estado ABIERTO")
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Estado inválido: {estado}"
-        )
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Estado inválido: {estado}")
 
     try:
         deal = servicio.cerrar_deal(deal_id, estado_enum, motivo, tenant_id, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return CrmDealResponse(
         id=deal.id,
@@ -443,7 +414,7 @@ def cerrar_deal(
         motivo_perdida=deal.motivo_perdida,
         fecha_ultimo_contacto=deal.fecha_ultimo_contacto,
         created_at=deal.created_at,
-        updated_at=deal.updated_at
+        updated_at=deal.updated_at,
     )
 
 
@@ -452,7 +423,7 @@ def eliminar_deal(
     deal_id: UUID,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Soft delete de deal.
@@ -461,10 +432,7 @@ def eliminar_deal(
     success = servicio.eliminar_deal(deal_id, tenant_id)
 
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Deal no encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal no encontrado")
 
     return None
 
@@ -473,12 +441,13 @@ def eliminar_deal(
 # ACTIVITIES
 # ============================================================================
 
+
 @router.get("/deals/{deal_id}/activities/", response_model=List[CrmActivityResponse])
 def listar_actividades(
     deal_id: UUID,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lista activities de un deal. Order by fecha_actividad DESC.
@@ -498,7 +467,7 @@ def listar_actividades(
             fecha_actividad=a.fecha_actividad,
             duracion_minutos=a.duracion_minutos,
             es_automatica=a.es_automatica,
-            created_at=a.created_at
+            created_at=a.created_at,
         )
         for a in activities
     ]
@@ -510,7 +479,7 @@ def crear_actividad(
     data: CrmActivityCreate,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Crea una activity. Actualiza fecha_ultimo_contacto del deal.
@@ -519,18 +488,12 @@ def crear_actividad(
 
     # Validar que deal_id en path coincide con data
     if data.deal_id != deal_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="deal_id en path no coincide con body"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="deal_id en path no coincide con body")
 
     try:
         activity = servicio.crear_actividad(tenant_id, data, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return CrmActivityResponse(
         id=activity.id,
@@ -543,7 +506,7 @@ def crear_actividad(
         fecha_actividad=activity.fecha_actividad,
         duracion_minutos=activity.duracion_minutos,
         es_automatica=activity.es_automatica,
-        created_at=activity.created_at
+        created_at=activity.created_at,
     )
 
 
@@ -552,7 +515,7 @@ def eliminar_actividad(
     activity_id: UUID,
     tenant_id: UUID = Depends(get_tenant_id_from_token),
     current_user: Usuarios = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Soft delete de activity.
@@ -561,9 +524,6 @@ def eliminar_actividad(
     success = servicio.eliminar_actividad(activity_id, tenant_id)
 
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Activity no encontrada")
 
     return None

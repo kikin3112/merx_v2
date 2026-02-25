@@ -2,19 +2,19 @@
 Pytest fixtures for all tests.
 Provides test database, sessions, and authenticated clients.
 """
-import pytest
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
-from uuid import uuid4
-from decimal import Decimal
 
-from app.main import app
+from uuid import uuid4
+
+import pytest
 from app.datos.db import Base, get_db
 from app.datos.modelos import Usuarios
 from app.datos.modelos_tenant import Tenants
-from app.utils.seguridad import hash_password, create_access_token
+from app.main import app
+from app.utils.seguridad import create_access_token, hash_password
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Use in-memory SQLite for faster tests
 TEST_DB_URL = "sqlite:///:memory:"
@@ -57,6 +57,7 @@ def db_session(engine):
 @pytest.fixture(scope="function")
 def client(db_session):
     """FastAPI test client with test database dependency override."""
+
     def override_get_db():
         try:
             yield db_session
@@ -84,12 +85,7 @@ def tenant_admin_token(db_session: Session):
         }
     """
     # Create tenant
-    tenant = Tenants(
-        nombre="Test Tenant",
-        nit="900123456-7",
-        estado="ACTIVO",
-        email_contacto="test@test.com"
-    )
+    tenant = Tenants(nombre="Test Tenant", nit="900123456-7", estado="ACTIVO", email_contacto="test@test.com")
     db_session.add(tenant)
     db_session.flush()
 
@@ -100,24 +96,16 @@ def tenant_admin_token(db_session: Session):
         hash_password=hash_password("test123"),
         rol="admin",
         estado=True,
-        es_superadmin=False
+        es_superadmin=False,
     )
     db_session.add(user)
     db_session.commit()
 
     token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "rol": "admin"},
-        tenant_id=tenant.id,
-        rol_en_tenant="admin"
+        data={"sub": str(user.id), "email": user.email, "rol": "admin"}, tenant_id=tenant.id, rol_en_tenant="admin"
     )
 
-    return {
-        "token": token,
-        "tenant_id": str(tenant.id),
-        "user_id": str(user.id),
-        "tenant": tenant,
-        "user": user
-    }
+    return {"token": token, "tenant_id": str(tenant.id), "user_id": str(user.id), "tenant": tenant, "user": user}
 
 
 @pytest.fixture
@@ -130,7 +118,7 @@ def vendedor_token(db_session: Session, tenant_admin_token):
         nombre="Test Vendedor",
         hash_password=hash_password("test123"),
         rol="vendedor",
-        estado=True
+        estado=True,
     )
     db_session.add(user)
     db_session.commit()
@@ -138,7 +126,7 @@ def vendedor_token(db_session: Session, tenant_admin_token):
     token = create_access_token(
         data={"sub": str(user.id), "email": user.email, "rol": "vendedor"},
         tenant_id=tenant_id,
-        rol_en_tenant="vendedor"
+        rol_en_tenant="vendedor",
     )
 
     return {"token": token, "user_id": str(user.id), "tenant_id": str(tenant_id)}
@@ -154,7 +142,7 @@ def contador_token(db_session: Session, tenant_admin_token):
         nombre="Test Contador",
         hash_password=hash_password("test123"),
         rol="contador",
-        estado=True
+        estado=True,
     )
     db_session.add(user)
     db_session.commit()
@@ -162,7 +150,7 @@ def contador_token(db_session: Session, tenant_admin_token):
     token = create_access_token(
         data={"sub": str(user.id), "email": user.email, "rol": "contador"},
         tenant_id=tenant_id,
-        rol_en_tenant="contador"
+        rol_en_tenant="contador",
     )
 
     return {"token": token, "user_id": str(user.id), "tenant_id": str(tenant_id)}

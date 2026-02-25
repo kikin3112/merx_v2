@@ -4,6 +4,7 @@ Sistema de suscripciones SaaS y pagos mediante Wompi para el servicio Chandelier
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

@@ -3,18 +3,19 @@ Servicio de Ventas - Lógica de negocio para gestión de ventas.
 Usa @hybrid_property de modelos para cálculos automáticos.
 """
 
-from decimal import Decimal
 from datetime import datetime
-from uuid import UUID
-from sqlalchemy.orm import Session, selectinload
+from decimal import Decimal
 from typing import List
-from fastapi import HTTPException
+from uuid import UUID
 
-from ..datos.modelos import Ventas, VentasDetalle, Terceros, Productos, TipoMovimiento
+from fastapi import HTTPException
+from sqlalchemy.orm import Session, selectinload
+
 from ..datos.esquemas import VentasCreate, VentasUpdate
-from ..utils.secuencia_helper import generar_numero_secuencia
-from ..utils.logger import setup_logger
+from ..datos.modelos import Productos, Terceros, TipoMovimiento, Ventas, VentasDetalle
 from ..servicios.servicio_inventario import ServicioInventario
+from ..utils.logger import setup_logger
+from ..utils.secuencia_helper import generar_numero_secuencia
 
 logger = setup_logger(__name__)
 
@@ -32,18 +33,15 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         Venta creada con todos los campos calculados
     """
     # Validar tercero
-    tercero = db.query(Terceros).filter(
-        Terceros.id == venta_data.tercero_id,
-        Terceros.tenant_id == tenant_id
-    ).first()
+    tercero = db.query(Terceros).filter(Terceros.id == venta_data.tercero_id, Terceros.tenant_id == tenant_id).first()
     if not tercero:
         raise ValueError("El tercero especificado no existe")
 
-    if tercero.tipo_tercero not in ('CLIENTE', 'AMBOS'):
+    if tercero.tipo_tercero not in ("CLIENTE", "AMBOS"):
         raise ValueError("El tercero no está marcado como cliente")
 
     # Generar número de venta
-    numero_venta = generar_numero_secuencia(db, 'FACTURAS', tenant_id)
+    numero_venta = generar_numero_secuencia(db, "FACTURAS", tenant_id)
 
     # Crear venta
     nueva_venta = Ventas(
@@ -52,18 +50,19 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         tercero_id=venta_data.tercero_id,
         fecha_venta=venta_data.fecha_venta,
         estado="PENDIENTE",
-        descuento_global=getattr(venta_data, 'descuento_global', Decimal("0.00")) or Decimal("0.00"),
-        observaciones=venta_data.observaciones
+        descuento_global=getattr(venta_data, "descuento_global", Decimal("0.00")) or Decimal("0.00"),
+        observaciones=venta_data.observaciones,
     )
     db.add(nueva_venta)
     db.flush()
 
     # Crear detalles
     for detalle_data in venta_data.detalles:
-        producto = db.query(Productos).filter(
-            Productos.id == detalle_data.producto_id,
-            Productos.tenant_id == tenant_id
-        ).first()
+        producto = (
+            db.query(Productos)
+            .filter(Productos.id == detalle_data.producto_id, Productos.tenant_id == tenant_id)
+            .first()
+        )
         if not producto:
             raise ValueError(f"Producto {detalle_data.producto_id} no existe")
 
@@ -85,7 +84,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
             cantidad=detalle_data.cantidad,
             precio_unitario=precio_unitario,
             descuento=detalle_data.descuento,
-            porcentaje_iva=porcentaje_iva
+            porcentaje_iva=porcentaje_iva,
         )
         db.add(detalle)
 
@@ -102,18 +101,14 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
 
 
 def listar_ventas(
-        db: Session,
-        tenant_id: UUID,
-        skip: int = 0,
-        limit: int = 100,
-        tercero_id: UUID = None,
-        estado: str = None
+    db: Session, tenant_id: UUID, skip: int = 0, limit: int = 100, tercero_id: UUID = None, estado: str = None
 ) -> List[Ventas]:
     """Lista ventas con filtros opcionales."""
-    query = db.query(Ventas).options(
-        selectinload(Ventas.created_by_user),
-        selectinload(Ventas.updated_by_user)
-    ).filter(Ventas.tenant_id == tenant_id)
+    query = (
+        db.query(Ventas)
+        .options(selectinload(Ventas.created_by_user), selectinload(Ventas.updated_by_user))
+        .filter(Ventas.tenant_id == tenant_id)
+    )
 
     if tercero_id:
         query = query.filter(Ventas.tercero_id == tercero_id)
@@ -121,41 +116,27 @@ def listar_ventas(
     if estado:
         query = query.filter(Ventas.estado == estado)
 
-    return (
-        query
-        .order_by(Ventas.fecha_venta.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    return query.order_by(Ventas.fecha_venta.desc()).offset(skip).limit(limit).all()
 
 
 def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
     """Obtiene una venta por ID."""
-    venta = db.query(Ventas).options(
-        selectinload(Ventas.created_by_user),
-        selectinload(Ventas.updated_by_user),
-        selectinload(Ventas.detalles)
-    ).filter(
-        Ventas.id == venta_id,
-        Ventas.tenant_id == tenant_id
-    ).first()
+    venta = (
+        db.query(Ventas)
+        .options(
+            selectinload(Ventas.created_by_user), selectinload(Ventas.updated_by_user), selectinload(Ventas.detalles)
+        )
+        .filter(Ventas.id == venta_id, Ventas.tenant_id == tenant_id)
+        .first()
+    )
 
     if not venta:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Venta con ID {venta_id} no encontrada"
-        )
+        raise HTTPException(status_code=404, detail=f"Venta con ID {venta_id} no encontrada")
 
     return venta
 
 
-def actualizar_venta(
-        db: Session,
-        venta_id: UUID,
-        venta_data: VentasUpdate,
-        tenant_id: UUID
-) -> Ventas:
+def actualizar_venta(db: Session, venta_id: UUID, venta_data: VentasUpdate, tenant_id: UUID) -> Ventas:
     """Actualiza una venta existente."""
     venta = obtener_venta(db, venta_id, tenant_id)
 
@@ -197,7 +178,7 @@ def anular_venta(db: Session, venta_id: UUID, tenant_id: UUID, motivo: str = Non
                     cantidad=detalle.cantidad,
                     costo_unitario=servicio_inv.obtener_costo_promedio(detalle.producto_id),
                     documento_referencia=f"ANULACION-{venta.numero_venta}",
-                    observaciones=f"Reversión por anulación de venta {venta.numero_venta}"
+                    observaciones=f"Reversión por anulación de venta {venta.numero_venta}",
                 )
 
     venta.estado = "ANULADA"
@@ -234,7 +215,7 @@ def confirmar_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
                 tipo=TipoMovimiento.SALIDA,
                 cantidad=detalle.cantidad,
                 documento_referencia=f"VENTA-{venta.numero_venta}",
-                observaciones=f"Venta {venta.numero_venta}"
+                observaciones=f"Venta {venta.numero_venta}",
             )
 
     venta.estado = "CONFIRMADA"
@@ -245,16 +226,10 @@ def confirmar_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
 
 
 def obtener_estadisticas_ventas(
-        db: Session,
-        tenant_id: UUID,
-        fecha_inicio: datetime = None,
-        fecha_fin: datetime = None
+    db: Session, tenant_id: UUID, fecha_inicio: datetime = None, fecha_fin: datetime = None
 ) -> dict:
     """Obtiene estadísticas de ventas en un rango de fechas."""
-    query = db.query(Ventas).filter(
-        Ventas.tenant_id == tenant_id,
-        Ventas.estado != "ANULADA"
-    )
+    query = db.query(Ventas).filter(Ventas.tenant_id == tenant_id, Ventas.estado != "ANULADA")
 
     if fecha_inicio:
         query = query.filter(Ventas.fecha_venta >= fecha_inicio)
@@ -271,13 +246,13 @@ def obtener_estadisticas_ventas(
     for venta in ventas:
         estado = venta.estado
         if estado not in ventas_por_estado:
-            ventas_por_estado[estado] = {'cantidad': 0, 'monto': Decimal("0.00")}
-        ventas_por_estado[estado]['cantidad'] += 1
-        ventas_por_estado[estado]['monto'] += venta.total_venta
+            ventas_por_estado[estado] = {"cantidad": 0, "monto": Decimal("0.00")}
+        ventas_por_estado[estado]["cantidad"] += 1
+        ventas_por_estado[estado]["monto"] += venta.total_venta
 
     return {
-        'total_ventas': total_ventas,
-        'total_monto': float(total_monto),
-        'promedio_venta': float(total_monto / total_ventas) if total_ventas > 0 else 0,
-        'por_estado': ventas_por_estado
+        "total_ventas": total_ventas,
+        "total_monto": float(total_monto),
+        "promedio_venta": float(total_monto / total_ventas) if total_ventas > 0 else 0,
+        "por_estado": ventas_por_estado,
     }

@@ -48,6 +48,7 @@ export function useOnboarding() {
 
   useEffect(() => {
     if (tenantId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(loadState(tenantId));
     }
   }, [tenantId]);

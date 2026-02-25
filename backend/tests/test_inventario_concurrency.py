@@ -2,13 +2,14 @@
 Test inventory concurrency with pessimistic locking.
 Verifies that race conditions are prevented during concurrent stock operations.
 """
-import pytest
-from decimal import Decimal
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from decimal import Decimal
 from uuid import uuid4
 
+import pytest
+from app.datos.modelos import Inventarios, Productos
 from app.servicios.servicio_inventario import ServicioInventario, TipoMovimiento
-from app.datos.modelos import Productos, Inventarios
 
 
 def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_token):
@@ -32,7 +33,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
         porcentaje_iva=Decimal("19"),
         categoria="Producto_Propio",
         maneja_inventario=True,
-        estado=True
+        estado=True,
     )
     db_session.add(producto)
     db_session.flush()
@@ -42,7 +43,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
         producto_id=producto.id,
         cantidad_disponible=Decimal("10"),
         costo_promedio_ponderado=Decimal("5000"),
-        valor_total=Decimal("50000")
+        valor_total=Decimal("50000"),
     )
     db_session.add(inventario)
     db_session.commit()
@@ -52,11 +53,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
         """Attempt to deduct 8 units from stock."""
         servicio = ServicioInventario(db_session, tenant_id)
         try:
-            servicio.crear_movimiento(
-                producto_id=producto.id,
-                tipo=TipoMovimiento.SALIDA,
-                cantidad=Decimal("8")
-            )
+            servicio.crear_movimiento(producto_id=producto.id, tipo=TipoMovimiento.SALIDA, cantidad=Decimal("8"))
             db_session.commit()
             return "success"
         except ValueError as e:
@@ -81,8 +78,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
 
     # Verify final stock
     db_session.refresh(inventario)
-    assert inventario.cantidad_disponible == Decimal("2"), \
-        f"Expected stock=2, got {inventario.cantidad_disponible}"
+    assert inventario.cantidad_disponible == Decimal("2"), f"Expected stock=2, got {inventario.cantidad_disponible}"
 
 
 def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_token):
@@ -104,7 +100,7 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
         porcentaje_iva=Decimal("19"),
         categoria="Insumo",
         maneja_inventario=True,
-        estado=True
+        estado=True,
     )
     db_session.add(producto)
     db_session.flush()
@@ -114,7 +110,7 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
         producto_id=producto.id,
         cantidad_disponible=Decimal("10"),
         costo_promedio_ponderado=Decimal("5000"),
-        valor_total=Decimal("50000")
+        valor_total=Decimal("50000"),
     )
     db_session.add(inventario)
     db_session.commit()
@@ -124,10 +120,7 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
         servicio = ServicioInventario(db_session, tenant_id)
         try:
             servicio.crear_movimiento(
-                producto_id=producto.id,
-                tipo=TipoMovimiento.ENTRADA,
-                cantidad=cantidad,
-                costo_unitario=costo
+                producto_id=producto.id, tipo=TipoMovimiento.ENTRADA, cantidad=cantidad, costo_unitario=costo
             )
             db_session.commit()
             return "success"
@@ -145,13 +138,13 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
 
     # Verify final state
     db_session.refresh(inventario)
-    assert inventario.cantidad_disponible == Decimal("20"), \
-        f"Expected stock=20, got {inventario.cantidad_disponible}"
+    assert inventario.cantidad_disponible == Decimal("20"), f"Expected stock=20, got {inventario.cantidad_disponible}"
 
     # Expected average cost: (10*5000 + 5*6000 + 5*7000) / 20 = 115000/20 = 5750
     expected_avg = Decimal("5750")
-    assert inventario.costo_promedio_ponderado == expected_avg, \
-        f"Expected avg_cost={expected_avg}, got {inventario.costo_promedio_ponderado}"
+    assert (
+        inventario.costo_promedio_ponderado == expected_avg
+    ), f"Expected avg_cost={expected_avg}, got {inventario.costo_promedio_ponderado}"
 
 
 def test_production_with_concurrent_ingredient_usage(db_session, tenant_admin_token):

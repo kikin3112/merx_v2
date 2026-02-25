@@ -3,17 +3,14 @@ Servicio de Productos.
 Incluye CalculadoraMargenes para analisis de costos y rentabilidad.
 """
 
-from typing import Optional, List
+from decimal import ROUND_HALF_UP, Decimal
+from typing import List, Optional
 from uuid import UUID
-from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime
 
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
-from ..datos.modelos import (
-    Productos, Inventarios, Recetas, RecetasIngredientes
-)
+from ..datos.modelos import Inventarios, Productos, Recetas
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -36,11 +33,11 @@ class CalculadoraMargenes:
         Returns:
             dict con desglose de costos
         """
-        receta = self.db.query(Recetas).filter(
-            Recetas.id == receta_id,
-            Recetas.tenant_id == self.tenant_id,
-            Recetas.deleted_at.is_(None)
-        ).first()
+        receta = (
+            self.db.query(Recetas)
+            .filter(Recetas.id == receta_id, Recetas.tenant_id == self.tenant_id, Recetas.deleted_at.is_(None))
+            .first()
+        )
 
         if not receta:
             raise ValueError("Receta no encontrada")
@@ -51,10 +48,11 @@ class CalculadoraMargenes:
 
         for ing in receta.ingredientes:
             # Obtener costo promedio del inventario
-            inventario = self.db.query(Inventarios).filter(
-                Inventarios.tenant_id == self.tenant_id,
-                Inventarios.producto_id == ing.producto_id
-            ).first()
+            inventario = (
+                self.db.query(Inventarios)
+                .filter(Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id == ing.producto_id)
+                .first()
+            )
 
             costo_unitario = Decimal("0.00")
             if inventario:
@@ -63,14 +61,16 @@ class CalculadoraMargenes:
             costo_linea = ing.cantidad * costo_unitario
             costo_ingredientes += costo_linea
 
-            detalle_ingredientes.append({
-                "producto_id": str(ing.producto_id),
-                "producto_nombre": ing.producto.nombre if ing.producto else "N/A",
-                "cantidad": float(ing.cantidad),
-                "unidad": ing.unidad,
-                "costo_unitario": float(costo_unitario),
-                "costo_linea": float(costo_linea)
-            })
+            detalle_ingredientes.append(
+                {
+                    "producto_id": str(ing.producto_id),
+                    "producto_nombre": ing.producto.nombre if ing.producto else "N/A",
+                    "cantidad": float(ing.cantidad),
+                    "unidad": ing.unidad,
+                    "costo_unitario": float(costo_unitario),
+                    "costo_linea": float(costo_linea),
+                }
+            )
 
         # Costo total (ingredientes + mano obra)
         costo_total = costo_ingredientes + receta.costo_mano_obra
@@ -99,14 +99,10 @@ class CalculadoraMargenes:
             "costo_unitario": float(costo_unitario),
             "precio_venta_actual": float(precio_venta),
             "margen_actual_porcentaje": float(margen_actual.quantize(Decimal("0.01"))),
-            "detalle_ingredientes": detalle_ingredientes
+            "detalle_ingredientes": detalle_ingredientes,
         }
 
-    def calcular_precio_sugerido(
-        self,
-        costo: Decimal,
-        margen_deseado: Decimal
-    ) -> dict:
+    def calcular_precio_sugerido(self, costo: Decimal, margen_deseado: Decimal) -> dict:
         """
         Calcula el precio de venta sugerido para un margen deseado.
 
@@ -133,14 +129,10 @@ class CalculadoraMargenes:
             "costo": float(costo),
             "margen_deseado_porcentaje": float(margen_deseado),
             "precio_sugerido": float(precio_sugerido.quantize(Decimal("0.01"), ROUND_HALF_UP)),
-            "utilidad_por_unidad": float(utilidad.quantize(Decimal("0.01"), ROUND_HALF_UP))
+            "utilidad_por_unidad": float(utilidad.quantize(Decimal("0.01"), ROUND_HALF_UP)),
         }
 
-    def calcular_margen_real(
-        self,
-        costo: Decimal,
-        precio_venta: Decimal
-    ) -> dict:
+    def calcular_margen_real(self, costo: Decimal, precio_venta: Decimal) -> dict:
         """
         Calcula el margen real dado un costo y precio de venta.
 
@@ -166,14 +158,11 @@ class CalculadoraMargenes:
             "precio_venta": float(precio_venta),
             "utilidad_por_unidad": float(utilidad.quantize(Decimal("0.01"))),
             "margen_porcentaje": float(margen.quantize(Decimal("0.01"))),
-            "es_rentable": rentable
+            "es_rentable": rentable,
         }
 
     def calcular_punto_equilibrio(
-        self,
-        costo_fijo: Decimal,
-        costo_variable_unitario: Decimal,
-        precio_venta: Decimal
+        self, costo_fijo: Decimal, costo_variable_unitario: Decimal, precio_venta: Decimal
     ) -> dict:
         """
         Calcula el punto de equilibrio en unidades.
@@ -192,8 +181,7 @@ class CalculadoraMargenes:
 
         if margen_contribucion <= 0:
             raise ValueError(
-                "El margen de contribucion debe ser positivo. "
-                "El precio debe ser mayor al costo variable."
+                "El margen de contribucion debe ser positivo. " "El precio debe ser mayor al costo variable."
             )
 
         punto_equilibrio_unidades = costo_fijo / margen_contribucion
@@ -204,12 +192,8 @@ class CalculadoraMargenes:
             "costo_variable_unitario": float(costo_variable_unitario),
             "precio_venta": float(precio_venta),
             "margen_contribucion": float(margen_contribucion),
-            "punto_equilibrio_unidades": float(
-                punto_equilibrio_unidades.quantize(Decimal("0.01"), ROUND_HALF_UP)
-            ),
-            "punto_equilibrio_ventas": float(
-                punto_equilibrio_ventas.quantize(Decimal("0.01"), ROUND_HALF_UP)
-            )
+            "punto_equilibrio_unidades": float(punto_equilibrio_unidades.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "punto_equilibrio_ventas": float(punto_equilibrio_ventas.quantize(Decimal("0.01"), ROUND_HALF_UP)),
         }
 
     def analizar_rentabilidad_producto(self, producto_id: UUID) -> dict:
@@ -217,32 +201,37 @@ class CalculadoraMargenes:
         Analiza la rentabilidad completa de un producto.
         Incluye costo de produccion si tiene receta.
         """
-        producto = self.db.query(Productos).filter(
-            Productos.id == producto_id,
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None)
-        ).first()
+        producto = (
+            self.db.query(Productos)
+            .filter(Productos.id == producto_id, Productos.tenant_id == self.tenant_id, Productos.deleted_at.is_(None))
+            .first()
+        )
 
         if not producto:
             raise ValueError("Producto no encontrado")
 
         # Obtener costo del inventario
-        inventario = self.db.query(Inventarios).filter(
-            Inventarios.tenant_id == self.tenant_id,
-            Inventarios.producto_id == producto_id
-        ).first()
+        inventario = (
+            self.db.query(Inventarios)
+            .filter(Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id == producto_id)
+            .first()
+        )
 
         costo_inventario = Decimal("0.00")
         if inventario:
             costo_inventario = inventario.costo_promedio_ponderado
 
         # Verificar si tiene receta
-        receta = self.db.query(Recetas).filter(
-            Recetas.tenant_id == self.tenant_id,
-            Recetas.producto_resultado_id == producto_id,
-            Recetas.deleted_at.is_(None),
-            Recetas.estado == True
-        ).first()
+        receta = (
+            self.db.query(Recetas)
+            .filter(
+                Recetas.tenant_id == self.tenant_id,
+                Recetas.producto_resultado_id == producto_id,
+                Recetas.deleted_at.is_(None),
+                Recetas.estado,
+            )
+            .first()
+        )
 
         costo_receta = None
         if receta:
@@ -269,7 +258,7 @@ class CalculadoraMargenes:
             "costo_usado": float(costo_usado),
             "tiene_receta": receta is not None,
             "receta_id": str(receta.id) if receta else None,
-            "analisis_margen": margen_info
+            "analisis_margen": margen_info,
         }
 
 
@@ -285,11 +274,11 @@ class ServicioProductos:
 
     def obtener_producto(self, producto_id: UUID) -> Optional[Productos]:
         """Obtiene un producto por ID."""
-        return self.db.query(Productos).filter(
-            Productos.id == producto_id,
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None)
-        ).first()
+        return (
+            self.db.query(Productos)
+            .filter(Productos.id == producto_id, Productos.tenant_id == self.tenant_id, Productos.deleted_at.is_(None))
+            .first()
+        )
 
     def listar_productos(
         self,
@@ -297,16 +286,13 @@ class ServicioProductos:
         categoria: Optional[str] = None,
         solo_activos: bool = True,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[Productos]:
         """Lista productos con filtros opcionales."""
-        query = self.db.query(Productos).filter(
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None)
-        )
+        query = self.db.query(Productos).filter(Productos.tenant_id == self.tenant_id, Productos.deleted_at.is_(None))
 
         if solo_activos:
-            query = query.filter(Productos.estado == True)
+            query = query.filter(Productos.estado)
 
         if categoria:
             query = query.filter(Productos.categoria == categoria)
@@ -317,7 +303,7 @@ class ServicioProductos:
                 or_(
                     Productos.nombre.ilike(buscar_like),
                     Productos.codigo_interno.ilike(buscar_like),
-                    Productos.codigo_barras.ilike(buscar_like)
+                    Productos.codigo_barras.ilike(buscar_like),
                 )
             )
 
@@ -325,43 +311,34 @@ class ServicioProductos:
 
     def obtener_productos_con_stock(self) -> List[dict]:
         """Obtiene productos con su informacion de stock."""
-        query = self.db.query(
-            Productos,
-            Inventarios.cantidad_disponible,
-            Inventarios.costo_promedio_ponderado
-        ).outerjoin(
-            Inventarios, Productos.id == Inventarios.producto_id
-        ).filter(
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None),
-            Productos.maneja_inventario == True
-        ).order_by(Productos.nombre)
+        query = (
+            self.db.query(Productos, Inventarios.cantidad_disponible, Inventarios.costo_promedio_ponderado)
+            .outerjoin(Inventarios, Productos.id == Inventarios.producto_id)
+            .filter(Productos.tenant_id == self.tenant_id, Productos.deleted_at.is_(None), Productos.maneja_inventario)
+            .order_by(Productos.nombre)
+        )
 
         resultados = []
         for producto, cantidad, costo in query.all():
-            resultados.append({
-                "id": str(producto.id),
-                "codigo_interno": producto.codigo_interno,
-                "nombre": producto.nombre,
-                "categoria": producto.categoria,
-                "precio_venta": float(producto.precio_venta),
-                "stock_disponible": float(cantidad) if cantidad else 0.0,
-                "costo_promedio": float(costo) if costo else 0.0,
-                "stock_minimo": float(producto.stock_minimo) if producto.stock_minimo else None,
-                "alerta_stock": (
-                    cantidad is not None and
-                    producto.stock_minimo is not None and
-                    cantidad <= producto.stock_minimo
-                )
-            })
+            resultados.append(
+                {
+                    "id": str(producto.id),
+                    "codigo_interno": producto.codigo_interno,
+                    "nombre": producto.nombre,
+                    "categoria": producto.categoria,
+                    "precio_venta": float(producto.precio_venta),
+                    "stock_disponible": float(cantidad) if cantidad else 0.0,
+                    "costo_promedio": float(costo) if costo else 0.0,
+                    "stock_minimo": float(producto.stock_minimo) if producto.stock_minimo else None,
+                    "alerta_stock": (
+                        cantidad is not None and producto.stock_minimo is not None and cantidad <= producto.stock_minimo
+                    ),
+                }
+            )
 
         return resultados
 
-    def calcular_margen_producto(
-        self,
-        producto_id: UUID,
-        precio_venta: Optional[Decimal] = None
-    ) -> dict:
+    def calcular_margen_producto(self, producto_id: UUID, precio_venta: Optional[Decimal] = None) -> dict:
         """
         Calcula el margen de un producto.
         Si se proporciona precio_venta, calcula con ese precio.

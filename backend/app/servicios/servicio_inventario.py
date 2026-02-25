@@ -3,18 +3,14 @@ Servicio de Inventario.
 Maneja movimientos de stock, produccion desde recetas y costo promedio ponderado.
 """
 
-from typing import Optional, List
-from uuid import UUID
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from typing import List, Optional
+from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import text
 
-from ..datos.modelos import (
-    Productos, Inventarios, MovimientosInventario,
-    Recetas, RecetasIngredientes, TipoMovimiento
-)
+from ..datos.modelos import Inventarios, MovimientosInventario, Productos, Recetas, TipoMovimiento
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -33,11 +29,7 @@ class ServicioInventario:
     # CONSULTAS
     # ========================================================================
 
-    def obtener_inventario_producto(
-        self,
-        producto_id: UUID,
-        lock: bool = False
-    ) -> Optional[Inventarios]:
+    def obtener_inventario_producto(self, producto_id: UUID, lock: bool = False) -> Optional[Inventarios]:
         """
         Obtiene el inventario de un producto.
 
@@ -49,8 +41,7 @@ class ServicioInventario:
             Inventarios o None si no existe
         """
         query = self.db.query(Inventarios).filter(
-            Inventarios.tenant_id == self.tenant_id,
-            Inventarios.producto_id == producto_id
+            Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id == producto_id
         )
 
         if lock:
@@ -69,17 +60,15 @@ class ServicioInventario:
         return inventario.costo_promedio_ponderado if inventario else Decimal("0.00")
 
     def listar_movimientos(
-        self,
-        producto_id: Optional[UUID] = None,
-        tipo: Optional[TipoMovimiento] = None,
-        limite: int = 100
+        self, producto_id: Optional[UUID] = None, tipo: Optional[TipoMovimiento] = None, limite: int = 100
     ) -> List[MovimientosInventario]:
         """Lista movimientos de inventario con filtros opcionales."""
-        query = self.db.query(MovimientosInventario).options(
-            selectinload(MovimientosInventario.created_by_user),
-            selectinload(MovimientosInventario.updated_by_user)
-        ).filter(
-            MovimientosInventario.tenant_id == self.tenant_id
+        query = (
+            self.db.query(MovimientosInventario)
+            .options(
+                selectinload(MovimientosInventario.created_by_user), selectinload(MovimientosInventario.updated_by_user)
+            )
+            .filter(MovimientosInventario.tenant_id == self.tenant_id)
         )
 
         if producto_id:
@@ -88,37 +77,40 @@ class ServicioInventario:
         if tipo:
             query = query.filter(MovimientosInventario.tipo_movimiento == tipo)
 
-        return query.order_by(
-            MovimientosInventario.fecha_movimiento.desc()
-        ).limit(limite).all()
+        return query.order_by(MovimientosInventario.fecha_movimiento.desc()).limit(limite).all()
 
     def obtener_inventario_valorizado(self) -> List[dict]:
         """Obtiene el inventario valorizado (stock * costo) por producto."""
-        query = self.db.query(
-            Productos.id,
-            Productos.codigo_interno,
-            Productos.nombre,
-            Inventarios.cantidad_disponible,
-            Inventarios.costo_promedio_ponderado,
-            Inventarios.valor_total
-        ).join(
-            Inventarios, Productos.id == Inventarios.producto_id
-        ).filter(
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None),
-            Inventarios.cantidad_disponible > 0
-        ).order_by(Productos.nombre)
+        query = (
+            self.db.query(
+                Productos.id,
+                Productos.codigo_interno,
+                Productos.nombre,
+                Inventarios.cantidad_disponible,
+                Inventarios.costo_promedio_ponderado,
+                Inventarios.valor_total,
+            )
+            .join(Inventarios, Productos.id == Inventarios.producto_id)
+            .filter(
+                Productos.tenant_id == self.tenant_id,
+                Productos.deleted_at.is_(None),
+                Inventarios.cantidad_disponible > 0,
+            )
+            .order_by(Productos.nombre)
+        )
 
         resultados = []
         for row in query.all():
-            resultados.append({
-                "producto_id": str(row.id),
-                "codigo": row.codigo_interno,
-                "nombre": row.nombre,
-                "cantidad": float(row.cantidad_disponible),
-                "costo_promedio": float(row.costo_promedio_ponderado),
-                "valor_total": float(row.valor_total)
-            })
+            resultados.append(
+                {
+                    "producto_id": str(row.id),
+                    "codigo": row.codigo_interno,
+                    "nombre": row.nombre,
+                    "cantidad": float(row.cantidad_disponible),
+                    "costo_promedio": float(row.costo_promedio_ponderado),
+                    "valor_total": float(row.valor_total),
+                }
+            )
 
         return resultados
 
@@ -133,7 +125,7 @@ class ServicioInventario:
         cantidad: Decimal,
         costo_unitario: Optional[Decimal] = None,
         documento_referencia: Optional[str] = None,
-        observaciones: Optional[str] = None
+        observaciones: Optional[str] = None,
     ) -> MovimientosInventario:
         """
         Crea un movimiento de inventario y actualiza el stock.
@@ -160,7 +152,7 @@ class ServicioInventario:
                 producto_id=producto_id,
                 cantidad_disponible=Decimal("0.00"),
                 costo_promedio_ponderado=Decimal("0.00"),
-                valor_total=Decimal("0.00")
+                valor_total=Decimal("0.00"),
             )
             self.db.add(inventario)
             self.db.flush()
@@ -169,8 +161,7 @@ class ServicioInventario:
         if tipo == TipoMovimiento.SALIDA:
             if inventario.cantidad_disponible < cantidad:
                 raise ValueError(
-                    f"Stock insuficiente. Disponible: {inventario.cantidad_disponible}, "
-                    f"Requerido: {cantidad}"
+                    f"Stock insuficiente. Disponible: {inventario.cantidad_disponible}, " f"Requerido: {cantidad}"
                 )
 
         # Calcular valor del movimiento
@@ -192,15 +183,13 @@ class ServicioInventario:
             valor_total=valor_movimiento,
             documento_referencia=documento_referencia,
             observaciones=observaciones,
-            fecha_movimiento=datetime.utcnow()
+            fecha_movimiento=datetime.utcnow(),
         )
         self.db.add(movimiento)
 
         # Actualizar inventario
         if tipo == TipoMovimiento.ENTRADA:
-            self._actualizar_costo_promedio_entrada(
-                inventario, cantidad, costo_unitario
-            )
+            self._actualizar_costo_promedio_entrada(inventario, cantidad, costo_unitario)
             inventario.cantidad_disponible += cantidad
         elif tipo == TipoMovimiento.SALIDA:
             inventario.cantidad_disponible -= cantidad
@@ -209,14 +198,10 @@ class ServicioInventario:
         elif tipo == TipoMovimiento.PRODUCCION:
             inventario.cantidad_disponible += cantidad
             if costo_unitario:
-                self._actualizar_costo_promedio_entrada(
-                    inventario, cantidad, costo_unitario
-                )
+                self._actualizar_costo_promedio_entrada(inventario, cantidad, costo_unitario)
 
         # Actualizar valor total
-        inventario.valor_total = (
-            inventario.cantidad_disponible * inventario.costo_promedio_ponderado
-        )
+        inventario.valor_total = inventario.cantidad_disponible * inventario.costo_promedio_ponderado
 
         self.db.flush()
 
@@ -226,17 +211,14 @@ class ServicioInventario:
                 "tenant_id": str(self.tenant_id),
                 "producto_id": str(producto_id),
                 "tipo": tipo.value,
-                "cantidad": str(cantidad)
-            }
+                "cantidad": str(cantidad),
+            },
         )
 
         return movimiento
 
     def _actualizar_costo_promedio_entrada(
-        self,
-        inventario: Inventarios,
-        cantidad_entrada: Decimal,
-        costo_unitario_entrada: Decimal
+        self, inventario: Inventarios, cantidad_entrada: Decimal, costo_unitario_entrada: Decimal
     ) -> None:
         """
         Actualiza el costo promedio ponderado al recibir una entrada.
@@ -251,9 +233,7 @@ class ServicioInventario:
         nuevo_stock = stock_anterior + cantidad_entrada
 
         if nuevo_stock > 0:
-            inventario.costo_promedio_ponderado = (
-                (valor_anterior + valor_entrada) / nuevo_stock
-            )
+            inventario.costo_promedio_ponderado = (valor_anterior + valor_entrada) / nuevo_stock
         else:
             inventario.costo_promedio_ponderado = costo_unitario_entrada
 
@@ -275,13 +255,15 @@ class ServicioInventario:
             stock_disponible = self.obtener_stock_disponible(ingrediente.producto_id)
 
             if stock_disponible < cantidad_requerida:
-                faltantes.append({
-                    "producto_id": str(ingrediente.producto_id),
-                    "producto_nombre": ingrediente.producto.nombre if ingrediente.producto else "N/A",
-                    "cantidad_requerida": float(cantidad_requerida),
-                    "stock_disponible": float(stock_disponible),
-                    "faltante": float(cantidad_requerida - stock_disponible)
-                })
+                faltantes.append(
+                    {
+                        "producto_id": str(ingrediente.producto_id),
+                        "producto_nombre": ingrediente.producto.nombre if ingrediente.producto else "N/A",
+                        "cantidad_requerida": float(cantidad_requerida),
+                        "stock_disponible": float(stock_disponible),
+                        "faltante": float(cantidad_requerida - stock_disponible),
+                    }
+                )
 
         return faltantes
 
@@ -290,7 +272,7 @@ class ServicioInventario:
         receta_id: UUID,
         cantidad_producir: Decimal,
         usuario_id: Optional[UUID] = None,
-        observaciones: Optional[str] = None
+        observaciones: Optional[str] = None,
     ) -> dict:
         """
         Produce productos terminados desde una receta.
@@ -313,11 +295,11 @@ class ServicioInventario:
             ValueError: Si no hay stock suficiente o la receta no existe
         """
         # Obtener receta
-        receta = self.db.query(Recetas).filter(
-            Recetas.id == receta_id,
-            Recetas.tenant_id == self.tenant_id,
-            Recetas.deleted_at.is_(None)
-        ).first()
+        receta = (
+            self.db.query(Recetas)
+            .filter(Recetas.id == receta_id, Recetas.tenant_id == self.tenant_id, Recetas.deleted_at.is_(None))
+            .first()
+        )
 
         if not receta:
             raise ValueError("Receta no encontrada")
@@ -333,22 +315,18 @@ class ServicioInventario:
         ingredient_ids = sorted([ing.producto_id for ing in receta.ingredientes])
         if ingredient_ids:
             self.db.query(Inventarios).filter(
-                Inventarios.tenant_id == self.tenant_id,
-                Inventarios.producto_id.in_(ingredient_ids)
+                Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id.in_(ingredient_ids)
             ).with_for_update().all()
 
         # También bloquear el inventario del producto resultado
         self.db.query(Inventarios).filter(
-            Inventarios.tenant_id == self.tenant_id,
-            Inventarios.producto_id == receta.producto_resultado_id
+            Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id == receta.producto_resultado_id
         ).with_for_update().first()
 
         # Validar stock
         faltantes = self.validar_stock_receta(receta, cantidad_producir)
         if faltantes:
-            raise ValueError(
-                f"Stock insuficiente para producir. Faltantes: {faltantes}"
-            )
+            raise ValueError(f"Stock insuficiente para producir. Faltantes: {faltantes}")
 
         # Calcular costo total de produccion
         costo_total_ingredientes = Decimal("0.00")
@@ -365,7 +343,7 @@ class ServicioInventario:
                 tipo=TipoMovimiento.SALIDA,
                 cantidad=cantidad_requerida,
                 documento_referencia=documento_ref,
-                observaciones=f"Consumo para produccion de {receta.nombre}"
+                observaciones=f"Consumo para produccion de {receta.nombre}",
             )
 
         # Agregar costo mano de obra proporcional
@@ -383,7 +361,7 @@ class ServicioInventario:
             cantidad=cantidad_terminada,
             costo_unitario=costo_unitario_producido,
             documento_referencia=documento_ref,
-            observaciones=observaciones or f"Produccion desde receta: {receta.nombre}"
+            observaciones=observaciones or f"Produccion desde receta: {receta.nombre}",
         )
 
         self.db.commit()
@@ -394,8 +372,8 @@ class ServicioInventario:
                 "tenant_id": str(self.tenant_id),
                 "receta_id": str(receta_id),
                 "cantidad_producida": str(cantidad_terminada),
-                "costo_total": str(costo_total_produccion)
-            }
+                "costo_total": str(costo_total_produccion),
+            },
         )
 
         return {
@@ -408,7 +386,7 @@ class ServicioInventario:
             "costo_total": float(costo_total_produccion),
             "costo_unitario": float(costo_unitario_producido),
             "documento_referencia": documento_ref,
-            "movimiento_id": str(movimiento_produccion.id)
+            "movimiento_id": str(movimiento_produccion.id),
         }
 
     # ========================================================================
@@ -416,11 +394,7 @@ class ServicioInventario:
     # ========================================================================
 
     def ajustar_inventario(
-        self,
-        producto_id: UUID,
-        cantidad_nueva: Decimal,
-        motivo: str,
-        usuario_id: Optional[UUID] = None
+        self, producto_id: UUID, cantidad_nueva: Decimal, motivo: str, usuario_id: Optional[UUID] = None
     ) -> MovimientosInventario:
         """
         Ajusta el inventario a una cantidad especifica.
@@ -445,7 +419,7 @@ class ServicioInventario:
             tipo=TipoMovimiento.AJUSTE,
             cantidad=diferencia,
             documento_referencia=f"AJUSTE-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-            observaciones=motivo
+            observaciones=motivo,
         )
 
         self.db.commit()
@@ -456,8 +430,8 @@ class ServicioInventario:
                 "tenant_id": str(self.tenant_id),
                 "producto_id": str(producto_id),
                 "diferencia": str(diferencia),
-                "motivo": motivo
-            }
+                "motivo": motivo,
+            },
         )
 
         return movimiento
@@ -468,33 +442,36 @@ class ServicioInventario:
 
     def obtener_alertas_stock_bajo(self) -> List[dict]:
         """Obtiene productos con stock por debajo del minimo."""
-        query = self.db.query(
-            Productos.id,
-            Productos.codigo_interno,
-            Productos.nombre,
-            Productos.stock_minimo,
-            Inventarios.cantidad_disponible
-        ).join(
-            Inventarios, Productos.id == Inventarios.producto_id
-        ).filter(
-            Productos.tenant_id == self.tenant_id,
-            Productos.deleted_at.is_(None),
-            Productos.maneja_inventario == True,
-            Productos.stock_minimo.isnot(None),
-            Inventarios.cantidad_disponible <= Productos.stock_minimo
-        ).order_by(
-            (Inventarios.cantidad_disponible - Productos.stock_minimo)
+        query = (
+            self.db.query(
+                Productos.id,
+                Productos.codigo_interno,
+                Productos.nombre,
+                Productos.stock_minimo,
+                Inventarios.cantidad_disponible,
+            )
+            .join(Inventarios, Productos.id == Inventarios.producto_id)
+            .filter(
+                Productos.tenant_id == self.tenant_id,
+                Productos.deleted_at.is_(None),
+                Productos.maneja_inventario,
+                Productos.stock_minimo.isnot(None),
+                Inventarios.cantidad_disponible <= Productos.stock_minimo,
+            )
+            .order_by((Inventarios.cantidad_disponible - Productos.stock_minimo))
         )
 
         alertas = []
         for row in query.all():
-            alertas.append({
-                "producto_id": str(row.id),
-                "codigo": row.codigo_interno,
-                "nombre": row.nombre,
-                "stock_minimo": float(row.stock_minimo),
-                "stock_actual": float(row.cantidad_disponible),
-                "diferencia": float(row.cantidad_disponible - row.stock_minimo)
-            })
+            alertas.append(
+                {
+                    "producto_id": str(row.id),
+                    "codigo": row.codigo_interno,
+                    "nombre": row.nombre,
+                    "stock_minimo": float(row.stock_minimo),
+                    "stock_actual": float(row.cantidad_disponible),
+                    "diferencia": float(row.cantidad_disponible - row.stock_minimo),
+                }
+            )
 
         return alertas

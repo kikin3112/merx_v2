@@ -4,6 +4,7 @@ Gestión de productos, tipos, valorización y alertas de stock.
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

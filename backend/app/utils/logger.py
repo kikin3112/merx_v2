@@ -5,12 +5,12 @@ Soporta formato JSON para producción y texto legible para desarrollo.
 
 import logging
 import sys
-import os
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
 from contextvars import ContextVar
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 from pythonjsonlogger import jsonlogger
 
 # ============================================================================
@@ -18,14 +18,15 @@ from pythonjsonlogger import jsonlogger
 # ============================================================================
 
 # Variables de contexto para rastrear requests a través del stack
-request_id_var: ContextVar[Optional[str]] = ContextVar('request_id', default=None)
-user_id_var: ContextVar[Optional[str]] = ContextVar('user_id', default=None)
-correlation_id_var: ContextVar[Optional[str]] = ContextVar('correlation_id', default=None)
+request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+user_id_var: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
+correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
 
 
 # ============================================================================
 # FORMATEADORES
 # ============================================================================
+
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """
@@ -40,37 +41,37 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         super().add_fields(log_record, record, message_dict)
 
         # Timestamp en formato ISO 8601 con timezone UTC
-        if not log_record.get('timestamp'):
+        if not log_record.get("timestamp"):
             now = datetime.now(timezone.utc).isoformat()
-            log_record['timestamp'] = now
+            log_record["timestamp"] = now
 
         # Nivel de log en mayúsculas
-        log_record['level'] = record.levelname.upper()
+        log_record["level"] = record.levelname.upper()
 
         # Nombre del logger (módulo)
-        log_record['logger'] = record.name
+        log_record["logger"] = record.name
 
         # Información de contexto de request (si existe)
         request_id = request_id_var.get()
         if request_id:
-            log_record['request_id'] = request_id
+            log_record["request_id"] = request_id
 
         user_id = user_id_var.get()
         if user_id:
-            log_record['user_id'] = user_id
+            log_record["user_id"] = user_id
 
         correlation_id = correlation_id_var.get()
         if correlation_id:
-            log_record['correlation_id'] = correlation_id
+            log_record["correlation_id"] = correlation_id
 
         # Información de ubicación del código
-        log_record['module'] = record.module
-        log_record['function'] = record.funcName
-        log_record['line'] = record.lineno
+        log_record["module"] = record.module
+        log_record["function"] = record.funcName
+        log_record["line"] = record.lineno
 
         # Excepción (si existe)
         if record.exc_info:
-            log_record['exception'] = self.formatException(record.exc_info)
+            log_record["exception"] = self.formatException(record.exc_info)
 
 
 class CustomTextFormatter(logging.Formatter):
@@ -81,12 +82,12 @@ class CustomTextFormatter(logging.Formatter):
 
     # Códigos de color ANSI
     COLORS = {
-        'DEBUG': '\033[36m',  # Cyan
-        'INFO': '\033[32m',  # Green
-        'WARNING': '\033[33m',  # Yellow
-        'ERROR': '\033[31m',  # Red
-        'CRITICAL': '\033[35m',  # Magenta
-        'RESET': '\033[0m'  # Reset
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
+        "RESET": "\033[0m",  # Reset
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -94,11 +95,11 @@ class CustomTextFormatter(logging.Formatter):
         Formatea el log con colores y estructura legible.
         """
         # Color según nivel
-        color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
-        reset = self.COLORS['RESET']
+        color = self.COLORS.get(record.levelname, self.COLORS["RESET"])
+        reset = self.COLORS["RESET"]
 
         # Timestamp
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
         # Contexto de request (si existe)
         context_parts = []
@@ -127,11 +128,8 @@ class CustomTextFormatter(logging.Formatter):
 # CONFIGURACIÓN DE LOGGER
 # ============================================================================
 
-def setup_logger(
-        name: str,
-        level: Optional[str] = None,
-        format_type: Optional[str] = None
-) -> logging.Logger:
+
+def setup_logger(name: str, level: Optional[str] = None, format_type: Optional[str] = None) -> logging.Logger:
     """
     Configura y retorna un logger con el formato adecuado.
 
@@ -162,6 +160,7 @@ def setup_logger(
     if level is None:
         try:
             from ..config import settings
+
             level = settings.LOG_LEVEL
         except ImportError:
             level = "INFO"
@@ -173,6 +172,7 @@ def setup_logger(
     if format_type is None:
         try:
             from ..config import settings
+
             format_type = settings.LOG_FORMAT
         except ImportError:
             format_type = "text"
@@ -183,9 +183,7 @@ def setup_logger(
 
     # Aplicar formateador
     if format_type == "json":
-        formatter = CustomJsonFormatter(
-            '%(timestamp)s %(level)s %(name)s %(message)s'
-        )
+        formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(name)s %(message)s")
     else:
         formatter = CustomTextFormatter()
 
@@ -208,14 +206,12 @@ def setup_logger(
             filename=log_dir / "app.log",
             maxBytes=10 * 1024 * 1024,  # 10MB
             backupCount=5,
-            encoding='utf-8'
+            encoding="utf-8",
         )
         file_handler.setLevel(log_level)
 
         # Logs de archivo SIEMPRE en formato JSON (más fácil de parsear)
-        json_formatter = CustomJsonFormatter(
-            '%(timestamp)s %(level)s %(name)s %(message)s'
-        )
+        json_formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(name)s %(message)s")
         file_handler.setFormatter(json_formatter)
         logger.addHandler(file_handler)
 
@@ -231,10 +227,9 @@ def setup_logger(
 # HELPERS PARA CONTEXTO DE REQUEST
 # ============================================================================
 
+
 def set_request_context(
-        request_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        correlation_id: Optional[str] = None
+    request_id: Optional[str] = None, user_id: Optional[str] = None, correlation_id: Optional[str] = None
 ) -> None:
     """
     Establece el contexto de request para logging.
@@ -280,9 +275,9 @@ def get_request_context() -> Dict[str, Optional[str]]:
         Diccionario con request_id, user_id, correlation_id
     """
     return {
-        'request_id': request_id_var.get(),
-        'user_id': user_id_var.get(),
-        'correlation_id': correlation_id_var.get()
+        "request_id": request_id_var.get(),
+        "user_id": user_id_var.get(),
+        "correlation_id": correlation_id_var.get(),
     }
 
 
@@ -298,11 +293,9 @@ app_logger = setup_logger("app")
 # FUNCIONES DE UTILIDAD
 # ============================================================================
 
+
 def log_exception(
-        logger: logging.Logger,
-        exc: Exception,
-        message: str = "Excepción capturada",
-        **extra_context
+    logger: logging.Logger, exc: Exception, message: str = "Excepción capturada", **extra_context
 ) -> None:
     """
     Loguea una excepción con contexto adicional.
@@ -319,19 +312,10 @@ def log_exception(
         except ValueError as e:
             log_exception(logger, e, "Error en operación riesgosa", user_id=123)
     """
-    logger.error(
-        message,
-        exc_info=exc,
-        extra=extra_context
-    )
+    logger.error(message, exc_info=exc, extra=extra_context)
 
 
-def log_performance(
-        logger: logging.Logger,
-        operation: str,
-        duration_ms: float,
-        **extra_context
-) -> None:
+def log_performance(logger: logging.Logger, operation: str, duration_ms: float, **extra_context) -> None:
     """
     Loguea métricas de performance.
 
@@ -349,12 +333,7 @@ def log_performance(
     """
     logger.info(
         f"Performance: {operation}",
-        extra={
-            'operation': operation,
-            'duration_ms': duration_ms,
-            'metric_type': 'performance',
-            **extra_context
-        }
+        extra={"operation": operation, "duration_ms": duration_ms, "metric_type": "performance", **extra_context},
     )
 
 
@@ -367,10 +346,7 @@ if __name__ == "__main__":
     logger = setup_logger(__name__, level="DEBUG", format_type="text")
 
     # Establecer contexto
-    set_request_context(
-        request_id="req-12345",
-        user_id="user-67890"
-    )
+    set_request_context(request_id="req-12345", user_id="user-67890")
 
     # Ejemplos de logging
     logger.debug("Mensaje de debug")

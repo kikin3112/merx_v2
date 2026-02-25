@@ -3,10 +3,11 @@ Chapter builder template for user guide.
 Provides a reusable class for creating chapters with sections, steps, and content.
 """
 
-from typing import List, Dict, Any, Optional
-from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
+from typing import Any, Dict, List, Optional
+
 from reportlab.lib import colors
 from reportlab.lib.units import cm
+from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
 
 class ChapterBuilder:

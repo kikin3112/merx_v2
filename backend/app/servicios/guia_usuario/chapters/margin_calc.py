@@ -4,6 +4,7 @@ Herramienta para calcular precios de venta basados en costo y margen deseado.
 """
 
 from typing import List
+
 from backend.app.servicios.guia_usuario.templates.chapter import ChapterBuilder
 
 

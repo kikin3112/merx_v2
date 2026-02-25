@@ -6,11 +6,9 @@ Usa los colores de marca de CLAUDE.md:
 - Success: #10B981, Warning: #F59E0B, Error: #EF4444
 """
 
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.colors import HexColor
-from reportlab.lib.units import cm
-
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 
 # Brand colors from CLAUDE.md
 BRAND_PRIMARY = HexColor("#EC4899")  # Rosa
