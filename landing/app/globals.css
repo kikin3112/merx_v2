@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+body {
+  font-family: var(--font-pjs), sans-serif;
+}
+
 @theme {
   /* === BRAND: Ámbar Profundo === */
   --color-amber-50:  #FDF5EA;
