@@ -21,6 +21,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
+            <img src="/logo-circular.svg" alt="ChandeliERP logo" className="h-8 w-8" />
             <span className="text-2xl font-bold text-amber-500">
               ChandeliERP
             </span>
