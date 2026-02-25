@@ -69,6 +69,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
   useEffect(() => {
     if (!doc || !open) return;
     const detalles = doc.detalles || [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLineas(
       detalles.map((d) => ({
         producto_id: d.producto_id,

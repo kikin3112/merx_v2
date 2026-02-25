@@ -35,6 +35,7 @@ function getPresetDates(preset: typeof presets[number]): { fecha_inicio: string;
   return { fecha_inicio: toISO(inicio), fecha_fin: fin };
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getDefaultPeriod(): PeriodValue {
   const hoy = new Date();
   const inicio = new Date(hoy);

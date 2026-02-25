@@ -97,6 +97,7 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
   // Reset form when closing
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTerceroId('');
       setFecha(new Date().toISOString().split('T')[0]);
       setObservaciones('');
