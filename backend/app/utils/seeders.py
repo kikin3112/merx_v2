@@ -3,20 +3,27 @@ Seeders: Datos iniciales para desarrollo y testing.
 Ejecutar con: POST /api/v1/admin/seed
 """
 
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Dict
 from uuid import UUID
+
+from sqlalchemy.orm import Session
 
 from ..datos.db import SessionLocal
 from ..datos.modelos import (
-    Usuarios, Terceros, Productos, CuentasContables,
-    MediosPago, ConfiguracionContable, Inventarios, Secuencias
+    ConfiguracionContable,
+    CuentasContables,
+    Inventarios,
+    MediosPago,
+    Productos,
+    Secuencias,
+    Terceros,
+    Usuarios,
 )
-from ..datos.modelos_tenant import Planes, Tenants, UsuariosTenants, Suscripciones
-from ..utils.seguridad import hash_password
+from ..datos.modelos_tenant import Planes, Suscripciones, Tenants, UsuariosTenants
 from ..utils.logger import setup_logger
-from datetime import datetime, timezone, timedelta
+from ..utils.seguridad import hash_password
 
 logger = setup_logger(__name__)
 
@@ -24,6 +31,7 @@ logger = setup_logger(__name__)
 # ============================================================================
 # SEED: PLANES
 # ============================================================================
+
 
 def seed_planes(db: Session) -> UUID:
     """Crea planes de suscripción. Retorna el ID del plan default."""
@@ -35,12 +43,12 @@ def seed_planes(db: Session) -> UUID:
             "descripcion": "Plan gratuito de prueba por 14 días",
             "precio_mensual": Decimal("0.00"),
             "max_usuarios": 2,
-            "max_productos": 50,
+            "max_productos": 500,
             "max_facturas_mes": 30,
             "max_storage_mb": 100,
             "esta_activo": True,
             "es_default": True,
-            "caracteristicas": {"trial_days": 14}
+            "caracteristicas": {"trial_days": 14},
         },
         {
             "nombre": "Pro",
@@ -53,7 +61,7 @@ def seed_planes(db: Session) -> UUID:
             "max_storage_mb": 2048,
             "esta_activo": True,
             "es_default": False,
-            "caracteristicas": {"reportes_avanzados": True, "soporte_prioritario": True}
+            "caracteristicas": {"reportes_avanzados": True, "soporte_prioritario": True},
         },
     ]
 
@@ -79,6 +87,7 @@ def seed_planes(db: Session) -> UUID:
 # SEED: SUPERADMIN + TENANT DEMO
 # ============================================================================
 
+
 def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
     """
     Crea superadmin y un tenant demo.
@@ -95,7 +104,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             password_hash=hash_password("superadmin123"),
             rol="superadmin",
             estado=True,
-            es_superadmin=True
+            es_superadmin=True,
         )
         db.add(superadmin)
         db.flush()
@@ -116,7 +125,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             plan_id=plan_id,
             estado="activo",
             fecha_inicio_suscripcion=datetime.now(timezone.utc),
-            fecha_fin_suscripcion=datetime.now(timezone.utc) + timedelta(days=365)
+            fecha_fin_suscripcion=datetime.now(timezone.utc) + timedelta(days=365),
         )
         db.add(tenant)
         db.flush()
@@ -131,25 +140,20 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             password_hash=hash_password("admin123"),
             rol="admin",
             estado=True,
-            es_superadmin=False
+            es_superadmin=False,
         )
         db.add(admin)
         db.flush()
         logger.info("  Admin tenant: admin@example.com / admin123")
 
     # Relación admin-tenant
-    rel = db.query(UsuariosTenants).filter(
-        UsuariosTenants.usuario_id == admin.id,
-        UsuariosTenants.tenant_id == tenant.id
-    ).first()
+    rel = (
+        db.query(UsuariosTenants)
+        .filter(UsuariosTenants.usuario_id == admin.id, UsuariosTenants.tenant_id == tenant.id)
+        .first()
+    )
     if not rel:
-        rel = UsuariosTenants(
-            usuario_id=admin.id,
-            tenant_id=tenant.id,
-            rol="admin",
-            esta_activo=True,
-            es_default=True
-        )
+        rel = UsuariosTenants(usuario_id=admin.id, tenant_id=tenant.id, rol="admin", esta_activo=True, es_default=True)
         db.add(rel)
 
     # NOTA: El superadmin NO se asigna a ningún tenant.
@@ -165,17 +169,13 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             password_hash=hash_password("operador123"),
             rol="operador",
             estado=True,
-            es_superadmin=False
+            es_superadmin=False,
         )
         db.add(operador)
         db.flush()
 
         rel_op = UsuariosTenants(
-            usuario_id=operador.id,
-            tenant_id=tenant.id,
-            rol="vendedor",
-            esta_activo=True,
-            es_default=True
+            usuario_id=operador.id, tenant_id=tenant.id, rol="vendedor", esta_activo=True, es_default=True
         )
         db.add(rel_op)
         logger.info("  Operador: operador@velasaromaticas.com / operador123")
@@ -188,7 +188,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             plan_id=plan_id,
             periodo_inicio=datetime.now(timezone.utc),
             periodo_fin=datetime.now(timezone.utc) + timedelta(days=365),
-            estado="activo"
+            estado="activo",
         )
         db.add(sub)
 
@@ -199,6 +199,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
 # ============================================================================
 # SEED: SECUENCIAS (tenant-scoped)
 # ============================================================================
+
 
 def seed_secuencias(db: Session, tenant_id: UUID):
     """Crea secuencias para numeración automática."""
@@ -213,10 +214,11 @@ def seed_secuencias(db: Session, tenant_id: UUID):
     ]
 
     for seq_data in secuencias:
-        existing = db.query(Secuencias).filter(
-            Secuencias.nombre == seq_data["nombre"],
-            Secuencias.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(Secuencias)
+            .filter(Secuencias.nombre == seq_data["nombre"], Secuencias.tenant_id == tenant_id)
+            .first()
+        )
 
         if not existing:
             secuencia = Secuencias(tenant_id=tenant_id, **seq_data)
@@ -230,95 +232,290 @@ def seed_secuencias(db: Session, tenant_id: UUID):
 # SEED: CUENTAS CONTABLES (tenant-scoped)
 # ============================================================================
 
+
 def seed_cuentas_contables(db: Session, tenant_id: UUID) -> Dict[str, UUID]:
     """Crea plan de cuentas PUC básico."""
     logger.info("Creando plan de cuentas PUC...")
 
     cuentas = [
         # ACTIVOS
-        {"codigo": "1", "nombre": "ACTIVO", "nivel": 1, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": False},
-        {"codigo": "11", "nombre": "DISPONIBLE", "nivel": 2, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": False, "padre": "1"},
-        {"codigo": "1105", "nombre": "CAJA", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": True, "padre": "11"},
-        {"codigo": "1110", "nombre": "BANCOS", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": True, "padre": "11"},
+        {
+            "codigo": "1",
+            "nombre": "ACTIVO",
+            "nivel": 1,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "11",
+            "nombre": "DISPONIBLE",
+            "nivel": 2,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": False,
+            "padre": "1",
+        },
+        {
+            "codigo": "1105",
+            "nombre": "CAJA",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": True,
+            "padre": "11",
+        },
+        {
+            "codigo": "1110",
+            "nombre": "BANCOS",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": True,
+            "padre": "11",
+        },
         # DEUDORES
-        {"codigo": "13", "nombre": "DEUDORES", "nivel": 2, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": False, "padre": "1"},
-        {"codigo": "1305", "nombre": "CLIENTES", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": True, "padre": "13"},
+        {
+            "codigo": "13",
+            "nombre": "DEUDORES",
+            "nivel": 2,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": False,
+            "padre": "1",
+        },
+        {
+            "codigo": "1305",
+            "nombre": "CLIENTES",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": True,
+            "padre": "13",
+        },
         # INVENTARIOS
-        {"codigo": "14", "nombre": "INVENTARIOS", "nivel": 2, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": False, "padre": "1"},
-        {"codigo": "1430", "nombre": "PRODUCTOS EN PROCESO", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": True, "padre": "14"},
-        {"codigo": "1435", "nombre": "MERCANCÍAS", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "ACTIVO", "acepta_movimiento": True, "padre": "14"},
+        {
+            "codigo": "14",
+            "nombre": "INVENTARIOS",
+            "nivel": 2,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": False,
+            "padre": "1",
+        },
+        {
+            "codigo": "1430",
+            "nombre": "PRODUCTOS EN PROCESO",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": True,
+            "padre": "14",
+        },
+        {
+            "codigo": "1435",
+            "nombre": "MERCANCÍAS",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "ACTIVO",
+            "acepta_movimiento": True,
+            "padre": "14",
+        },
         # PASIVOS
-        {"codigo": "2", "nombre": "PASIVO", "nivel": 1, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PASIVO", "acepta_movimiento": False},
-        {"codigo": "22", "nombre": "PROVEEDORES", "nivel": 2, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PASIVO", "acepta_movimiento": False, "padre": "2"},
-        {"codigo": "2205", "nombre": "PROVEEDORES NACIONALES", "nivel": 3,
-         "naturaleza": "CREDITO", "tipo_cuenta": "PASIVO", "acepta_movimiento": True, "padre": "22"},
-        {"codigo": "24", "nombre": "IMPUESTOS", "nivel": 2, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PASIVO", "acepta_movimiento": False, "padre": "2"},
-        {"codigo": "2408", "nombre": "IVA POR PAGAR", "nivel": 3, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PASIVO", "acepta_movimiento": True, "padre": "24"},
+        {
+            "codigo": "2",
+            "nombre": "PASIVO",
+            "nivel": 1,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PASIVO",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "22",
+            "nombre": "PROVEEDORES",
+            "nivel": 2,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PASIVO",
+            "acepta_movimiento": False,
+            "padre": "2",
+        },
+        {
+            "codigo": "2205",
+            "nombre": "PROVEEDORES NACIONALES",
+            "nivel": 3,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PASIVO",
+            "acepta_movimiento": True,
+            "padre": "22",
+        },
+        {
+            "codigo": "24",
+            "nombre": "IMPUESTOS",
+            "nivel": 2,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PASIVO",
+            "acepta_movimiento": False,
+            "padre": "2",
+        },
+        {
+            "codigo": "2408",
+            "nombre": "IVA POR PAGAR",
+            "nivel": 3,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PASIVO",
+            "acepta_movimiento": True,
+            "padre": "24",
+        },
         # PATRIMONIO
-        {"codigo": "3", "nombre": "PATRIMONIO", "nivel": 1, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PATRIMONIO", "acepta_movimiento": False},
-        {"codigo": "31", "nombre": "CAPITAL SOCIAL", "nivel": 2, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PATRIMONIO", "acepta_movimiento": False, "padre": "3"},
-        {"codigo": "3105", "nombre": "CAPITAL SUSCRITO Y PAGADO", "nivel": 3, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PATRIMONIO", "acepta_movimiento": True, "padre": "31"},
-        {"codigo": "36", "nombre": "RESULTADOS DEL EJERCICIO", "nivel": 2, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PATRIMONIO", "acepta_movimiento": False, "padre": "3"},
-        {"codigo": "3605", "nombre": "UTILIDAD DEL EJERCICIO", "nivel": 3, "naturaleza": "CREDITO",
-         "tipo_cuenta": "PATRIMONIO", "acepta_movimiento": True, "padre": "36"},
+        {
+            "codigo": "3",
+            "nombre": "PATRIMONIO",
+            "nivel": 1,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PATRIMONIO",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "31",
+            "nombre": "CAPITAL SOCIAL",
+            "nivel": 2,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PATRIMONIO",
+            "acepta_movimiento": False,
+            "padre": "3",
+        },
+        {
+            "codigo": "3105",
+            "nombre": "CAPITAL SUSCRITO Y PAGADO",
+            "nivel": 3,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PATRIMONIO",
+            "acepta_movimiento": True,
+            "padre": "31",
+        },
+        {
+            "codigo": "36",
+            "nombre": "RESULTADOS DEL EJERCICIO",
+            "nivel": 2,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PATRIMONIO",
+            "acepta_movimiento": False,
+            "padre": "3",
+        },
+        {
+            "codigo": "3605",
+            "nombre": "UTILIDAD DEL EJERCICIO",
+            "nivel": 3,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "PATRIMONIO",
+            "acepta_movimiento": True,
+            "padre": "36",
+        },
         # INGRESOS
-        {"codigo": "4", "nombre": "INGRESOS", "nivel": 1, "naturaleza": "CREDITO",
-         "tipo_cuenta": "INGRESO", "acepta_movimiento": False},
-        {"codigo": "41", "nombre": "OPERACIONALES", "nivel": 2, "naturaleza": "CREDITO",
-         "tipo_cuenta": "INGRESO", "acepta_movimiento": False, "padre": "4"},
-        {"codigo": "4135", "nombre": "COMERCIO AL POR MAYOR Y MENOR", "nivel": 3, "naturaleza": "CREDITO",
-         "tipo_cuenta": "INGRESO", "acepta_movimiento": True, "padre": "41"},
+        {
+            "codigo": "4",
+            "nombre": "INGRESOS",
+            "nivel": 1,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "INGRESO",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "41",
+            "nombre": "OPERACIONALES",
+            "nivel": 2,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "INGRESO",
+            "acepta_movimiento": False,
+            "padre": "4",
+        },
+        {
+            "codigo": "4135",
+            "nombre": "COMERCIO AL POR MAYOR Y MENOR",
+            "nivel": 3,
+            "naturaleza": "CREDITO",
+            "tipo_cuenta": "INGRESO",
+            "acepta_movimiento": True,
+            "padre": "41",
+        },
         # GASTOS
-        {"codigo": "5", "nombre": "GASTOS", "nivel": 1, "naturaleza": "DEBITO",
-         "tipo_cuenta": "EGRESO", "acepta_movimiento": False},
-        {"codigo": "51", "nombre": "OPERACIONALES DE ADMINISTRACIÓN", "nivel": 2, "naturaleza": "DEBITO",
-         "tipo_cuenta": "EGRESO", "acepta_movimiento": False, "padre": "5"},
-        {"codigo": "5105", "nombre": "GASTOS DE PERSONAL", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "EGRESO", "acepta_movimiento": True, "padre": "51"},
-        {"codigo": "5195", "nombre": "DIVERSOS", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "EGRESO", "acepta_movimiento": True, "padre": "51"},
+        {
+            "codigo": "5",
+            "nombre": "GASTOS",
+            "nivel": 1,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "EGRESO",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "51",
+            "nombre": "OPERACIONALES DE ADMINISTRACIÓN",
+            "nivel": 2,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "EGRESO",
+            "acepta_movimiento": False,
+            "padre": "5",
+        },
+        {
+            "codigo": "5105",
+            "nombre": "GASTOS DE PERSONAL",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "EGRESO",
+            "acepta_movimiento": True,
+            "padre": "51",
+        },
+        {
+            "codigo": "5195",
+            "nombre": "DIVERSOS",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "EGRESO",
+            "acepta_movimiento": True,
+            "padre": "51",
+        },
         # COSTOS
-        {"codigo": "6", "nombre": "COSTOS DE VENTAS", "nivel": 1, "naturaleza": "DEBITO",
-         "tipo_cuenta": "COSTOS", "acepta_movimiento": False},
-        {"codigo": "61", "nombre": "COSTO DE VENTAS Y PRESTACIÓN DE SERVICIOS", "nivel": 2, "naturaleza": "DEBITO",
-         "tipo_cuenta": "COSTOS", "acepta_movimiento": False, "padre": "6"},
-        {"codigo": "6135", "nombre": "COMERCIO AL POR MAYOR Y MENOR", "nivel": 3, "naturaleza": "DEBITO",
-         "tipo_cuenta": "COSTOS", "acepta_movimiento": True, "padre": "61"},
+        {
+            "codigo": "6",
+            "nombre": "COSTOS DE VENTAS",
+            "nivel": 1,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "COSTOS",
+            "acepta_movimiento": False,
+        },
+        {
+            "codigo": "61",
+            "nombre": "COSTO DE VENTAS Y PRESTACIÓN DE SERVICIOS",
+            "nivel": 2,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "COSTOS",
+            "acepta_movimiento": False,
+            "padre": "6",
+        },
+        {
+            "codigo": "6135",
+            "nombre": "COMERCIO AL POR MAYOR Y MENOR",
+            "nivel": 3,
+            "naturaleza": "DEBITO",
+            "tipo_cuenta": "COSTOS",
+            "acepta_movimiento": True,
+            "padre": "61",
+        },
     ]
 
     cuentas_map: Dict[str, UUID] = {}
 
     for cuenta_data in cuentas:
         padre_codigo = cuenta_data.pop("padre", None)
-        existing = db.query(CuentasContables).filter(
-            CuentasContables.codigo == cuenta_data["codigo"],
-            CuentasContables.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(CuentasContables)
+            .filter(CuentasContables.codigo == cuenta_data["codigo"], CuentasContables.tenant_id == tenant_id)
+            .first()
+        )
 
         if not existing:
             cuenta_padre_id = cuentas_map.get(padre_codigo) if padre_codigo else None
-            cuenta = CuentasContables(
-                tenant_id=tenant_id,
-                cuenta_padre_id=cuenta_padre_id,
-                **cuenta_data
-            )
+            cuenta = CuentasContables(tenant_id=tenant_id, cuenta_padre_id=cuenta_padre_id, **cuenta_data)
             db.add(cuenta)
             db.flush()
             cuentas_map[cuenta_data["codigo"]] = cuenta.id
@@ -334,6 +531,7 @@ def seed_cuentas_contables(db: Session, tenant_id: UUID) -> Dict[str, UUID]:
 # SEED: CONFIGURACIÓN CONTABLE (tenant-scoped)
 # ============================================================================
 
+
 def seed_configuracion_contable(db: Session, tenant_id: UUID, cuentas_map: Dict[str, UUID]):
     """Crea configuración contable básica."""
     logger.info("Creando configuración contable...")
@@ -343,45 +541,46 @@ def seed_configuracion_contable(db: Session, tenant_id: UUID, cuentas_map: Dict[
             "concepto": "VENTA_CONTADO",
             "cuenta_debito_id": cuentas_map.get("1105"),
             "cuenta_credito_id": cuentas_map.get("4135"),
-            "descripcion": "Venta de contado: Débito Caja, Crédito Ventas"
+            "descripcion": "Venta de contado: Débito Caja, Crédito Ventas",
         },
         {
             "concepto": "VENTA_CREDITO",
             "cuenta_debito_id": cuentas_map.get("1305"),
             "cuenta_credito_id": cuentas_map.get("4135"),
-            "descripcion": "Venta a crédito: Débito Clientes, Crédito Ventas"
+            "descripcion": "Venta a crédito: Débito Clientes, Crédito Ventas",
         },
         {
             "concepto": "IVA_VENTAS",
             "cuenta_debito_id": None,
             "cuenta_credito_id": cuentas_map.get("2408"),
-            "descripcion": "IVA generado en ventas"
+            "descripcion": "IVA generado en ventas",
         },
         {
             "concepto": "COSTO_VENTAS",
             "cuenta_debito_id": cuentas_map.get("6135"),
             "cuenta_credito_id": cuentas_map.get("1435"),
-            "descripcion": "Costo de mercancía vendida"
+            "descripcion": "Costo de mercancía vendida",
         },
         {
             "concepto": "COMPRA_CONTADO",
             "cuenta_debito_id": cuentas_map.get("1435"),
             "cuenta_credito_id": cuentas_map.get("1105"),
-            "descripcion": "Compra de mercancía de contado"
+            "descripcion": "Compra de mercancía de contado",
         },
         {
             "concepto": "PRODUCCION",
             "cuenta_debito_id": cuentas_map.get("1435"),
             "cuenta_credito_id": cuentas_map.get("1430"),
-            "descripcion": "Producción: Débito Mercancías, Crédito Productos en Proceso"
+            "descripcion": "Producción: Débito Mercancías, Crédito Productos en Proceso",
         },
     ]
 
     for cfg in configs:
-        existing = db.query(ConfiguracionContable).filter(
-            ConfiguracionContable.tenant_id == tenant_id,
-            ConfiguracionContable.concepto == cfg["concepto"]
-        ).first()
+        existing = (
+            db.query(ConfiguracionContable)
+            .filter(ConfiguracionContable.tenant_id == tenant_id, ConfiguracionContable.concepto == cfg["concepto"])
+            .first()
+        )
         if not existing:
             config = ConfiguracionContable(tenant_id=tenant_id, **cfg)
             db.add(config)
@@ -393,6 +592,7 @@ def seed_configuracion_contable(db: Session, tenant_id: UUID, cuentas_map: Dict[
 # ============================================================================
 # SEED: MEDIOS DE PAGO (tenant-scoped)
 # ============================================================================
+
 
 def seed_medios_pago(db: Session, tenant_id: UUID):
     """Crea medios de pago."""
@@ -406,10 +606,11 @@ def seed_medios_pago(db: Session, tenant_id: UUID):
     ]
 
     for medio_data in medios:
-        existing = db.query(MediosPago).filter(
-            MediosPago.nombre == medio_data["nombre"],
-            MediosPago.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(MediosPago)
+            .filter(MediosPago.nombre == medio_data["nombre"], MediosPago.tenant_id == tenant_id)
+            .first()
+        )
         if not existing:
             medio = MediosPago(tenant_id=tenant_id, estado=True, **medio_data)
             db.add(medio)
@@ -421,38 +622,70 @@ def seed_medios_pago(db: Session, tenant_id: UUID):
 # SEED: TERCEROS (tenant-scoped)
 # ============================================================================
 
+
 def seed_terceros(db: Session, tenant_id: UUID):
     """Crea terceros de prueba."""
     logger.info("Creando terceros...")
 
     terceros = [
-        {"tipo_documento": "NIT", "numero_documento": "222222222222",
-         "nombre": "CLIENTE MOSTRADOR", "tipo_tercero": "CLIENTE",
-         "email": "mostrador@demo.com", "telefono": "0000000",
-         "direccion": "N/A", "estado": True},
-        {"tipo_documento": "NIT", "numero_documento": "900123456",
-         "nombre": "TIENDA VELAS & AROMAS S.A.S", "tipo_tercero": "CLIENTE",
-         "email": "tienda@velasyaromas.com", "telefono": "3001234567",
-         "direccion": "Calle 100 #20-30, Bogotá", "estado": True},
-        {"tipo_documento": "CC", "numero_documento": "1234567890",
-         "nombre": "MARÍA GÓMEZ", "tipo_tercero": "CLIENTE",
-         "email": "maria@example.com", "telefono": "3009876543",
-         "direccion": "Carrera 50 #10-20, Medellín", "estado": True},
-        {"tipo_documento": "NIT", "numero_documento": "800987654",
-         "nombre": "PROVEEDOR CERAS Y FRAGANCIAS LTDA", "tipo_tercero": "PROVEEDOR",
-         "email": "ventas@cerasyf.com", "telefono": "6017654321",
-         "direccion": "Zona Industrial, Bogotá", "estado": True},
-        {"tipo_documento": "NIT", "numero_documento": "800111222",
-         "nombre": "EMPAQUES DEL VALLE S.A", "tipo_tercero": "PROVEEDOR",
-         "email": "contacto@empaquesdelvalle.com", "telefono": "6023334455",
-         "direccion": "Calle 5 #30-40, Cali", "estado": True},
+        {
+            "tipo_documento": "NIT",
+            "numero_documento": "222222222222",
+            "nombre": "CLIENTE MOSTRADOR",
+            "tipo_tercero": "CLIENTE",
+            "email": "mostrador@demo.com",
+            "telefono": "0000000",
+            "direccion": "N/A",
+            "estado": True,
+        },
+        {
+            "tipo_documento": "NIT",
+            "numero_documento": "900123456",
+            "nombre": "TIENDA VELAS & AROMAS S.A.S",
+            "tipo_tercero": "CLIENTE",
+            "email": "tienda@velasyaromas.com",
+            "telefono": "3001234567",
+            "direccion": "Calle 100 #20-30, Bogotá",
+            "estado": True,
+        },
+        {
+            "tipo_documento": "CC",
+            "numero_documento": "1234567890",
+            "nombre": "MARÍA GÓMEZ",
+            "tipo_tercero": "CLIENTE",
+            "email": "maria@example.com",
+            "telefono": "3009876543",
+            "direccion": "Carrera 50 #10-20, Medellín",
+            "estado": True,
+        },
+        {
+            "tipo_documento": "NIT",
+            "numero_documento": "800987654",
+            "nombre": "PROVEEDOR CERAS Y FRAGANCIAS LTDA",
+            "tipo_tercero": "PROVEEDOR",
+            "email": "ventas@cerasyf.com",
+            "telefono": "6017654321",
+            "direccion": "Zona Industrial, Bogotá",
+            "estado": True,
+        },
+        {
+            "tipo_documento": "NIT",
+            "numero_documento": "800111222",
+            "nombre": "EMPAQUES DEL VALLE S.A",
+            "tipo_tercero": "PROVEEDOR",
+            "email": "contacto@empaquesdelvalle.com",
+            "telefono": "6023334455",
+            "direccion": "Calle 5 #30-40, Cali",
+            "estado": True,
+        },
     ]
 
     for tercero_data in terceros:
-        existing = db.query(Terceros).filter(
-            Terceros.numero_documento == tercero_data["numero_documento"],
-            Terceros.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(Terceros)
+            .filter(Terceros.numero_documento == tercero_data["numero_documento"], Terceros.tenant_id == tenant_id)
+            .first()
+        )
         if not existing:
             tercero = Terceros(tenant_id=tenant_id, **tercero_data)
             db.add(tercero)
@@ -465,69 +698,114 @@ def seed_terceros(db: Session, tenant_id: UUID):
 # SEED: PRODUCTOS (tenant-scoped)
 # ============================================================================
 
+
 def seed_productos(db: Session, tenant_id: UUID):
     """Crea productos de prueba para candelería."""
     logger.info("Creando productos...")
 
     productos = [
         # Materias primas / Insumos
-        {"codigo_interno": "INS-001", "nombre": "Cera de Soya Vegetal",
-         "descripcion": "Cera de soya 100% natural para velas", "categoria": "Insumo",
-         "unidad_medida": "KILOGRAMO", "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("18000.00"),
-         "stock_minimo": Decimal("50.00"), "stock_maximo": Decimal("500.00")},
-        {"codigo_interno": "INS-002", "nombre": "Fragancia Lavanda",
-         "descripcion": "Aceite esencial de lavanda para velas",
-         "categoria": "Insumo", "unidad_medida": "LITRO",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("45000.00"),
-         "stock_minimo": Decimal("5.00"), "stock_maximo": Decimal("50.00")},
-        {"codigo_interno": "INS-003", "nombre": "Mecha Algodón #4",
-         "descripcion": "Mecha de algodón trenzada para velas",
-         "categoria": "Insumo", "unidad_medida": "METRO",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("2000.00"),
-         "stock_minimo": Decimal("100.00"), "stock_maximo": Decimal("1000.00")},
-        {"codigo_interno": "INS-004", "nombre": "Vaso Vidrio 200ml",
-         "descripcion": "Vaso de vidrio para velas aromáticas",
-         "categoria": "Insumo", "unidad_medida": "UNIDAD",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("3500.00"),
-         "stock_minimo": Decimal("50.00"), "stock_maximo": Decimal("500.00")},
+        {
+            "codigo_interno": "INS-001",
+            "nombre": "Cera de Soya Vegetal",
+            "descripcion": "Cera de soya 100% natural para velas",
+            "categoria": "Insumo",
+            "unidad_medida": "KILOGRAMO",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("18000.00"),
+            "stock_minimo": Decimal("50.00"),
+            "stock_maximo": Decimal("500.00"),
+        },
+        {
+            "codigo_interno": "INS-002",
+            "nombre": "Fragancia Lavanda",
+            "descripcion": "Aceite esencial de lavanda para velas",
+            "categoria": "Insumo",
+            "unidad_medida": "LITRO",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("45000.00"),
+            "stock_minimo": Decimal("5.00"),
+            "stock_maximo": Decimal("50.00"),
+        },
+        {
+            "codigo_interno": "INS-003",
+            "nombre": "Mecha Algodón #4",
+            "descripcion": "Mecha de algodón trenzada para velas",
+            "categoria": "Insumo",
+            "unidad_medida": "METRO",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("2000.00"),
+            "stock_minimo": Decimal("100.00"),
+            "stock_maximo": Decimal("1000.00"),
+        },
+        {
+            "codigo_interno": "INS-004",
+            "nombre": "Vaso Vidrio 200ml",
+            "descripcion": "Vaso de vidrio para velas aromáticas",
+            "categoria": "Insumo",
+            "unidad_medida": "UNIDAD",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("3500.00"),
+            "stock_minimo": Decimal("50.00"),
+            "stock_maximo": Decimal("500.00"),
+        },
         # Productos terminados
-        {"codigo_interno": "PROD-001", "nombre": "Vela Aromática Lavanda 200g",
-         "descripcion": "Vela aromática de lavanda en vaso de vidrio",
-         "categoria": "Producto_Propio", "unidad_medida": "UNIDAD",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("35000.00"),
-         "stock_minimo": Decimal("10.00"), "stock_maximo": Decimal("100.00")},
-        {"codigo_interno": "PROD-002", "nombre": "Vela Aromática Vainilla 200g",
-         "descripcion": "Vela aromática de vainilla en vaso de vidrio",
-         "categoria": "Producto_Propio", "unidad_medida": "UNIDAD",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("35000.00"),
-         "stock_minimo": Decimal("10.00"), "stock_maximo": Decimal("100.00")},
+        {
+            "codigo_interno": "PROD-001",
+            "nombre": "Vela Aromática Lavanda 200g",
+            "descripcion": "Vela aromática de lavanda en vaso de vidrio",
+            "categoria": "Producto_Propio",
+            "unidad_medida": "UNIDAD",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("35000.00"),
+            "stock_minimo": Decimal("10.00"),
+            "stock_maximo": Decimal("100.00"),
+        },
+        {
+            "codigo_interno": "PROD-002",
+            "nombre": "Vela Aromática Vainilla 200g",
+            "descripcion": "Vela aromática de vainilla en vaso de vidrio",
+            "categoria": "Producto_Propio",
+            "unidad_medida": "UNIDAD",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("35000.00"),
+            "stock_minimo": Decimal("10.00"),
+            "stock_maximo": Decimal("100.00"),
+        },
         # Producto tercero
-        {"codigo_interno": "TERC-001", "nombre": "Candelabro Decorativo Dorado",
-         "descripcion": "Candelabro decorativo importado para reventa",
-         "categoria": "Producto_Tercero", "unidad_medida": "UNIDAD",
-         "maneja_inventario": True,
-         "porcentaje_iva": Decimal("19.00"), "tipo_iva": "Gravado",
-         "precio_venta": Decimal("85000.00"),
-         "stock_minimo": Decimal("5.00"), "stock_maximo": Decimal("30.00")},
+        {
+            "codigo_interno": "TERC-001",
+            "nombre": "Candelabro Decorativo Dorado",
+            "descripcion": "Candelabro decorativo importado para reventa",
+            "categoria": "Producto_Tercero",
+            "unidad_medida": "UNIDAD",
+            "maneja_inventario": True,
+            "porcentaje_iva": Decimal("19.00"),
+            "tipo_iva": "Gravado",
+            "precio_venta": Decimal("85000.00"),
+            "stock_minimo": Decimal("5.00"),
+            "stock_maximo": Decimal("30.00"),
+        },
     ]
 
     for producto_data in productos:
-        existing = db.query(Productos).filter(
-            Productos.codigo_interno == producto_data["codigo_interno"],
-            Productos.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(Productos)
+            .filter(Productos.codigo_interno == producto_data["codigo_interno"], Productos.tenant_id == tenant_id)
+            .first()
+        )
         if not existing:
             producto = Productos(tenant_id=tenant_id, estado=True, **producto_data)
             db.add(producto)
@@ -539,6 +817,7 @@ def seed_productos(db: Session, tenant_id: UUID):
 # ============================================================================
 # SEED: INVENTARIOS INICIALES (tenant-scoped)
 # ============================================================================
+
 
 def seed_inventarios_iniciales(db: Session, tenant_id: UUID):
     """Crea inventarios iniciales."""
@@ -555,18 +834,20 @@ def seed_inventarios_iniciales(db: Session, tenant_id: UUID):
     ]
 
     for inv_data in inventarios_data:
-        producto = db.query(Productos).filter(
-            Productos.codigo_interno == inv_data["codigo_producto"],
-            Productos.tenant_id == tenant_id
-        ).first()
+        producto = (
+            db.query(Productos)
+            .filter(Productos.codigo_interno == inv_data["codigo_producto"], Productos.tenant_id == tenant_id)
+            .first()
+        )
 
         if not producto:
             continue
 
-        existing = db.query(Inventarios).filter(
-            Inventarios.producto_id == producto.id,
-            Inventarios.tenant_id == tenant_id
-        ).first()
+        existing = (
+            db.query(Inventarios)
+            .filter(Inventarios.producto_id == producto.id, Inventarios.tenant_id == tenant_id)
+            .first()
+        )
 
         if not existing:
             valor_total = inv_data["cantidad"] * inv_data["costo"]
@@ -575,7 +856,7 @@ def seed_inventarios_iniciales(db: Session, tenant_id: UUID):
                 producto_id=producto.id,
                 cantidad_disponible=inv_data["cantidad"],
                 costo_promedio_ponderado=inv_data["costo"],
-                valor_total=valor_total
+                valor_total=valor_total,
             )
             db.add(inventario)
             logger.info(f"  Inventario: {producto.nombre} - {inv_data['cantidad']} uds @ ${inv_data['costo']}")
@@ -586,6 +867,7 @@ def seed_inventarios_iniciales(db: Session, tenant_id: UUID):
 # ============================================================================
 # SEED: CRM DEFAULTS
 # ============================================================================
+
 
 def seed_crm_defaults():
     """Crea pipeline default 'Ventas General' con 5 etapas estándar para todos los tenants activos."""
@@ -598,14 +880,15 @@ def seed_crm_defaults():
 
     try:
         # Obtener todos los tenants activos
-        tenants = db.query(Tenants).filter(Tenants.estado.in_(['activo', 'trial'])).all()
+        tenants = db.query(Tenants).filter(Tenants.estado.in_(["activo", "trial"])).all()
 
         for tenant in tenants:
             # Verificar si ya tiene pipeline default
-            existing = db.query(CrmPipeline).filter(
-                CrmPipeline.tenant_id == tenant.id,
-                CrmPipeline.es_default == True
-            ).first()
+            existing = (
+                db.query(CrmPipeline)
+                .filter(CrmPipeline.tenant_id == tenant.id, CrmPipeline.es_default.is_(True))
+                .first()
+            )
 
             if existing:
                 logger.info(f"  Tenant '{tenant.nombre}' ya tiene pipeline default. Skipping.")
@@ -617,7 +900,7 @@ def seed_crm_defaults():
                 nombre="Ventas General",
                 descripcion="Pipeline por defecto para gestión de oportunidades de venta",
                 es_default=True,
-                color="#3B82F6"
+                color="#3B82F6",
             )
             db.add(pipeline)
             db.flush()  # Para obtener el ID del pipeline
@@ -637,7 +920,7 @@ def seed_crm_defaults():
                     pipeline_id=pipeline.id,
                     nombre=stage_data["nombre"],
                     orden=stage_data["orden"],
-                    probabilidad=stage_data["probabilidad"]
+                    probabilidad=stage_data["probabilidad"],
                 )
                 db.add(stage)
 
@@ -659,6 +942,7 @@ def seed_crm_defaults():
 # ============================================================================
 # FUNCIÓN PRINCIPAL
 # ============================================================================
+
 
 def run_all_seeders():
     """Ejecuta todos los seeders en orden."""
