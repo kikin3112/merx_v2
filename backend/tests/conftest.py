@@ -3,6 +3,7 @@ Pytest fixtures for all tests.
 Provides test database, sessions, and authenticated clients.
 """
 
+import os
 from uuid import UUID
 
 import pytest
@@ -12,34 +13,21 @@ from app.datos.modelos_tenant import Tenants
 from app.main import app
 from app.utils.seguridad import create_access_token, hash_password
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
-# Use in-memory SQLite for faster tests
-TEST_DB_URL = "sqlite:///:memory:"
+# Use Postgres from env (CI sets DB_URL). Falls back to local dev Postgres.
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/chandelier_test")
 
 
 @pytest.fixture(scope="function")
 def engine():
-    """Create test database engine with in-memory SQLite."""
-    engine = create_engine(
-        TEST_DB_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    # Enable foreign keys for SQLite
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_conn, connection_record):
-        cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
-
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+    """Create test database engine using Postgres (matches production dialect)."""
+    eng = create_engine(TEST_DB_URL)
+    Base.metadata.create_all(bind=eng)
+    yield eng
+    Base.metadata.drop_all(bind=eng)
+    eng.dispose()
 
 
 @pytest.fixture(scope="function")

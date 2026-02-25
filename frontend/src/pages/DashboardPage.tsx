@@ -347,7 +347,7 @@ export default function DashboardPage() {
       )}
 
       {/* Gastos vs Ingresos */}
-      {gastosVsIngresos && (gastosVsIngresos.ingresos > 0 || gastosVsIngresos.gastos > 0) && (
+      {gastosVsIngresos && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-1">Ingresos vs Gastos ({period.label})</h2>
           <p className="text-xs text-gray-400 mb-4">
