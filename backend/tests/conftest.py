@@ -3,7 +3,7 @@ Pytest fixtures for all tests.
 Provides test database, sessions, and authenticated clients.
 """
 
-from uuid import uuid4
+from uuid import UUID
 
 import pytest
 from app.datos.db import Base, get_db
@@ -93,7 +93,7 @@ def tenant_admin_token(db_session: Session):
     user = Usuarios(
         email="admin@test.com",
         nombre="Test Admin",
-        hash_password=hash_password("test123"),
+        password_hash=hash_password("test123"),
         rol="admin",
         estado=True,
         es_superadmin=False,
@@ -111,12 +111,12 @@ def tenant_admin_token(db_session: Session):
 @pytest.fixture
 def vendedor_token(db_session: Session, tenant_admin_token):
     """Create vendedor user and return JWT token."""
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     user = Usuarios(
         email="vendedor@test.com",
         nombre="Test Vendedor",
-        hash_password=hash_password("test123"),
+        password_hash=hash_password("test123"),
         rol="vendedor",
         estado=True,
     )
@@ -135,12 +135,12 @@ def vendedor_token(db_session: Session, tenant_admin_token):
 @pytest.fixture
 def contador_token(db_session: Session, tenant_admin_token):
     """Create contador user and return JWT token."""
-    tenant_id = uuid4(tenant_admin_token["tenant_id"])
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     user = Usuarios(
         email="contador@test.com",
         nombre="Test Contador",
-        hash_password=hash_password("test123"),
+        password_hash=hash_password("test123"),
         rol="contador",
         estado=True,
     )
