@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'ChandeliERP — ERP para Candelería',
   description: 'Sistema ERP completo para PyMEs de candelería. Inventario, POS, Facturación, Contabilidad y CRM. Prueba gratis 14 días.',
   keywords: ['ERP', 'candelería', 'inventario', 'POS', 'facturación', 'PyME', 'Colombia'],
-  icons: { icon: '/logo-circular.svg' },
+  icons: { icon: '/logo.png' },
   openGraph: {
     title: 'ChandeliERP — ERP para Candelería',
     description: 'Sistema ERP completo para PyMEs de candelería. Prueba gratis 14 días.',
