@@ -21,7 +21,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold text-amber-500">
               ChandeliERP
             </span>
           </Link>
@@ -32,14 +32,14 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                className="text-gray-600 hover:text-amber-600 font-medium transition-colors"
               >
                 {link.label}
               </Link>
             ))}
             <a
               href={`${APP_URL}/registro`}
-              className="inline-flex items-center px-5 py-2.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-sm hover:from-pink-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+              className="inline-flex items-center px-5 py-2.5 rounded-lg bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-all shadow-md hover:shadow-lg"
             >
               Probar Gratis
             </a>
@@ -48,7 +48,7 @@ export function Navbar() {
           {/* Mobile hamburger */}
           <button
             type="button"
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-amber-50"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
@@ -68,7 +68,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium"
+                  className="px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-amber-50 font-medium"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -76,7 +76,7 @@ export function Navbar() {
               ))}
               <a
                 href={`${APP_URL}/registro`}
-                className="mx-3 mt-2 inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-sm hover:from-pink-600 hover:to-purple-700 transition-all shadow-md"
+                className="mx-3 mt-2 inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-all shadow-md"
               >
                 Probar Gratis
               </a>

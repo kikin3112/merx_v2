@@ -25,10 +25,10 @@ export function Pricing() {
 
         {/* Pricing card */}
         <div className="max-w-lg mx-auto">
-          <div className="relative rounded-3xl border-2 border-pink-200 bg-white p-8 sm:p-10 shadow-xl">
+          <div className="relative rounded-3xl border-2 border-amber-300 bg-white p-8 sm:p-10 shadow-xl">
             {/* Badge */}
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <span className="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold shadow-md">
+              <span className="inline-flex items-center px-4 py-1 rounded-full bg-amber-500 text-white text-sm font-bold shadow-md">
                 Recomendado
               </span>
             </div>
@@ -51,7 +51,7 @@ export function Pricing() {
             <ul className="mt-8 space-y-4">
               {includedFeatures.map((feature) => (
                 <li key={feature} className="flex items-center gap-3">
-                  <CheckIcon className="h-5 w-5 text-pink-500 shrink-0" />
+                  <CheckIcon className="h-5 w-5 text-amber-500 shrink-0" />
                   <span className="text-gray-700">{feature}</span>
                 </li>
               ))}
@@ -60,7 +60,7 @@ export function Pricing() {
             {/* CTA */}
             <a
               href={`${APP_URL}/registro`}
-              className="mt-8 block w-full text-center px-8 py-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="mt-8 block w-full text-center px-8 py-4 rounded-xl bg-amber-500 text-white font-bold text-lg hover:bg-amber-600 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               Comenzar prueba gratuita
             </a>

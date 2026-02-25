@@ -15,7 +15,7 @@ export default function BlogPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-cream">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           {/* Header */}
           <div className="text-center mb-16">
@@ -37,7 +37,7 @@ export default function BlogPage() {
               {posts.map((post) => (
                 <article
                   key={post.slug}
-                  className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 hover:border-pink-200 hover:shadow-md transition-all"
+                  className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 hover:border-amber-200 hover:shadow-md transition-all"
                 >
                   <Link href={`/blog/${post.slug}`} className="block group">
                     <div className="flex items-center gap-3 text-sm text-gray-400 mb-3">
@@ -45,13 +45,13 @@ export default function BlogPage() {
                       <span>&middot;</span>
                       <span>{post.author}</span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-pink-600 transition-colors">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-amber-600 transition-colors">
                       {post.title}
                     </h2>
                     <p className="mt-3 text-gray-500 leading-relaxed">
                       {post.excerpt}
                     </p>
-                    <span className="mt-4 inline-block text-pink-600 font-medium text-sm group-hover:underline">
+                    <span className="mt-4 inline-block text-amber-600 font-medium text-sm group-hover:underline">
                       Leer más &rarr;
                     </span>
                   </Link>

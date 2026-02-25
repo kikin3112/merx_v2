@@ -1,2 +1,29 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme {
+  /* === BRAND: Ámbar Profundo === */
+  --color-amber-50:  #FDF5EA;
+  --color-amber-100: #FAE8CE;
+  --color-amber-200: #F5D1A0;
+  --color-amber-300: #EDBA70;
+  --color-amber-400: #E0A04E;
+  --color-amber-500: #C17B2B;
+  --color-amber-600: #A56824;
+  --color-amber-700: #8A5520;
+  --color-amber-800: #6E4219;
+  --color-amber-900: #52300F;
+
+  /* === BRAND: Flat tokens === */
+  --color-midnight: #1A1A2E;
+  --color-cream:    #FAF3E8;
+
+  /* === BRAND: Oro === */
+  --color-gold-500: #D4A843;
+  --color-gold-600: #B8903A;
+
+  /* === BRAND: Verde Salvia === */
+  --color-sage-500: #6B7F5E;
+  --color-sage-600: #5A6D4E;
+  --color-sage-700: #4A5A40;
+}
