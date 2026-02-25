@@ -78,3 +78,8 @@ uv.lock
 
 # Marketing binary assets (images, fonts, videos — too large for git)
 .claude/ecosystem/nodes/marketing/assets/
+
+# AI tooling — contains governance rules, hooks, keys and internal strategy.
+# NEVER commit this directory to a public or shared repository.
+.claude/
+.carl/
