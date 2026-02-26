@@ -9,9 +9,8 @@ Verifies that:
 import pytest
 import time
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
 
 import sys
 import os
@@ -21,23 +20,14 @@ from app.main import app
 from app.datos.db import Base, get_db
 
 
-TEST_DB_URL = "sqlite:///:memory:"
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/chandelier_test")
 LOGIN_URL = "/api/v1/auth/login"
 RATE_LIMIT = 5  # requests per minute as configured in the app
 
 
 @pytest.fixture(scope="module")
 def engine():
-    eng = create_engine(
-        TEST_DB_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(eng, "connect")
-    def set_pragma(dbapi_conn, _):
-        dbapi_conn.cursor().execute("PRAGMA foreign_keys=ON")
-
+    eng = create_engine(TEST_DB_URL)
     Base.metadata.create_all(bind=eng)
     yield eng
     Base.metadata.drop_all(bind=eng)
