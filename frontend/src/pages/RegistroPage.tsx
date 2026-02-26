@@ -158,8 +158,9 @@ export default function RegistroPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">C</span>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <img src="/logo.png" alt="ChandeliERP logo" className="h-10 w-10 rounded-full object-cover" />
+            <span className="text-3xl font-bold text-amber-500">ChandeliERP</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">¡Crea tu cuenta!</h1>
           <p className="text-sm text-gray-500 mt-1">14 días de prueba, ¡gratis!</p>
