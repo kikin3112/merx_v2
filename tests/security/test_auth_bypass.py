@@ -75,6 +75,7 @@ def client(db: Session):
 def tenant_and_token(db: Session):
     tenant = Tenants(
         nombre="Auth Test Tenant",
+        slug="auth-test-tenant",
         nit="333333333-3",
         estado="ACTIVO",
         email_contacto="authtest@test.com"

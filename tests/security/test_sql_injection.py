@@ -70,6 +70,7 @@ def auth_headers(db: Session):
     """Provide valid auth headers for injection testing."""
     tenant = Tenants(
         nombre="SQLi Test Tenant",
+        slug="sqli-test-tenant",
         nit="444444444-4",
         estado="ACTIVO",
         email_contacto="sqli@test.com"
