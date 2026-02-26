@@ -7,7 +7,7 @@ const _API_ORIGIN = (import.meta.env.VITE_API_URL as string || '/api/v1').replac
 
 function buildLogoUrl(urlLogo: string | null | undefined): string {
   if (!urlLogo) return '/logo.png';
-  if (urlLogo.startsWith('http')) return urlLogo;
+  if (urlLogo.startsWith('http') || urlLogo.startsWith('data:')) return urlLogo;
   return `${_API_ORIGIN}${urlLogo}`;
 }
 
@@ -85,11 +85,20 @@ export default function Sidebar() {
       {/* User */}
       <div className="border-t border-gray-100 p-3">
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="h-8 w-8 rounded-full bg-secondary-100 flex items-center justify-center">
-            <span className="text-secondary-700 text-xs font-semibold">
-              {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
-            </span>
-          </div>
+          {tenantLogo ? (
+            <img
+              src={logoSrc}
+              alt={logoAlt}
+              className="h-8 w-8 rounded-full object-cover shrink-0"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-secondary-100 flex items-center justify-center">
+              <span className="text-secondary-700 text-xs font-semibold">
+                {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre || 'Usuario'}</p>
             <p className="text-xs text-gray-500 truncate">{user?.rol}</p>
