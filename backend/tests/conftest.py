@@ -82,7 +82,7 @@ def tenant_admin_token(db_session: Session):
         nombre="Test Tenant",
         slug="test-tenant",
         nit="900123456-7",
-        estado="ACTIVO",
+        estado="activo",
         email_contacto="test@test.com",
         plan_id=plan.id,
     )

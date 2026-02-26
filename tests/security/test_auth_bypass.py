@@ -81,7 +81,7 @@ def tenant_and_token(db: Session):
         nombre="Auth Test Tenant",
         slug="auth-test-tenant",
         nit="333333333-3",
-        estado="ACTIVO",
+        estado="activo",
         email_contacto="authtest@test.com",
         plan_id=plan.id,
     )
