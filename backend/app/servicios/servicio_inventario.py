@@ -161,7 +161,7 @@ class ServicioInventario:
         if tipo == TipoMovimiento.SALIDA:
             if inventario.cantidad_disponible < cantidad:
                 raise ValueError(
-                    f"Stock insuficiente. Disponible: {inventario.cantidad_disponible}, " f"Requerido: {cantidad}"
+                    f"Stock insuficiente. Disponible: {inventario.cantidad_disponible}, Requerido: {cantidad}"
                 )
 
         # Calcular valor del movimiento

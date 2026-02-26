@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ArrowRightStartOnRectangleIcon, StarIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigation } from '../../hooks/useNavigation';
+import CalificacionModal from '../CalificacionModal';
 
 const _API_ORIGIN = (import.meta.env.VITE_API_URL as string || '/api/v1').replace(/\/api\/v\d+\/?$/, '');
 
@@ -14,11 +16,13 @@ function buildLogoUrl(urlLogo: string | null | undefined): string {
 export default function Sidebar() {
   const { tenantName, tenantLogo, logout } = useAuthStore();
   const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
+  const [showCalificacion, setShowCalificacion] = useState(false);
 
   const logoSrc = buildLogoUrl(tenantLogo);
   const logoAlt = tenantName || 'ChandeliERP';
 
   return (
+    <>
     <aside className="hidden lg:flex h-screen w-60 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
       <div className="flex items-center gap-2 px-4 py-5 border-b border-gray-100">
@@ -82,6 +86,19 @@ export default function Sidebar() {
         )}
       </nav>
 
+      {/* Calificar el sistema */}
+      {!isSuperadminOnly && (
+        <div className="px-2 pb-1">
+          <button
+            onClick={() => setShowCalificacion(true)}
+            className="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+          >
+            <StarIcon className="h-5 w-5 shrink-0" />
+            Calificar el sistema
+          </button>
+        </div>
+      )}
+
       {/* User */}
       <div className="border-t border-gray-100 p-3">
         <div className="flex items-center gap-2 px-2 py-1.5">
@@ -113,5 +130,10 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+
+    {showCalificacion && (
+      <CalificacionModal onClose={() => setShowCalificacion(false)} />
+    )}
+  </>
   );
 }

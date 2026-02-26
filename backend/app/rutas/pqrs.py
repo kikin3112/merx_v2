@@ -5,12 +5,13 @@ Rutas PQRS: Gestion de tickets de soporte (Peticiones, Quejas, Reclamos, Sugeren
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
 from ..datos.esquemas import (
     RespuestaTicket,
+    TicketPQRSAdminResponse,
     TicketPQRSCreate,
     TicketPQRSResponse,
     TicketPQRSUpdate,
@@ -104,6 +105,63 @@ async def actualizar_ticket(
         datos=datos,
         tenant_id=tenant_id,
     )
+    return ticket
+
+
+@router.get("/admin/todos", response_model=list[TicketPQRSAdminResponse])
+async def listar_todos_tickets_admin(
+    tenant_id: Optional[UUID] = Query(None, description="Filtrar por tenant"),
+    tipo: Optional[str] = None,
+    estado: Optional[str] = None,
+    prioridad: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+):
+    """Solo superadmin. Devuelve tickets de TODOS los tenants."""
+    if not current_user.es_superadmin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo superadmin")
+    servicio = ServicioPQRS(db)
+    return servicio.listar_todos_tickets(
+        tenant_id_filtro=tenant_id,
+        tipo=tipo,
+        estado=estado,
+        prioridad=prioridad,
+    )
+
+
+@router.post("/admin/{ticket_id}/responder", response_model=TicketPQRSAdminResponse)
+async def responder_ticket_admin(
+    ticket_id: UUID,
+    datos: RespuestaTicket,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+):
+    """Solo superadmin. Responde a cualquier ticket sin requerir tenant_id."""
+    if not current_user.es_superadmin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo superadmin")
+
+    from datetime import datetime, timezone
+
+    from sqlalchemy.orm.attributes import flag_modified
+
+    from ..datos.modelos_pqrs import TicketsPQRS
+
+    ticket = db.query(TicketsPQRS).filter(TicketsPQRS.id == ticket_id, TicketsPQRS.deleted_at.is_(None)).first()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
+
+    nueva_respuesta = {
+        "autor_id": str(current_user.id),
+        "autor_nombre": f"{current_user.nombre} (Soporte)",
+        "contenido": datos.contenido,
+        "fecha": datetime.now(timezone.utc).isoformat(),
+    }
+    respuestas_actuales = list(ticket.respuestas or [])
+    respuestas_actuales.append(nueva_respuesta)
+    ticket.respuestas = respuestas_actuales
+    flag_modified(ticket, "respuestas")
+    db.commit()
+    db.refresh(ticket)
     return ticket
 
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tenants, usuariosAdmin } from '../api/endpoints';
+import { tenants, usuariosAdmin, pqrs as pqrsApi } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import { useAuthStore } from '../stores/authStore';
@@ -19,6 +19,7 @@ import type {
   GlobalUserListResponse,
   UserTenantMembership,
   ImpersonationResponse,
+  TicketPQRSAdmin,
 } from '../types';
 
 // ============================================================================
@@ -67,7 +68,7 @@ export default function TenantsPage() {
   const qc = useQueryClient();
 
   // --- State ---
-  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios' | 'tickets'>('tenants');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
@@ -162,6 +163,33 @@ export default function TenantsPage() {
     queryKey: ['user-tenants', selectedUser?.id],
     queryFn: () => usuariosAdmin.tenants(selectedUser!.id).then((r) => r.data),
     enabled: !!selectedUser && userModalTab === 'tenants',
+  });
+
+  // Admin PQRS tickets query
+  const [filtroTicketEstado, setFiltroTicketEstado] = useState('');
+  const [filtroTicketTipo, setFiltroTicketTipo] = useState('');
+  const [selectedTicket, setSelectedTicket] = useState<TicketPQRSAdmin | null>(null);
+  const [respuestaContenido, setRespuestaContenido] = useState('');
+
+  const { data: ticketsAdmin, isLoading: loadingTickets, refetch: refetchTickets } = useQuery<TicketPQRSAdmin[]>({
+    queryKey: ['pqrs-admin', filtroTicketEstado, filtroTicketTipo],
+    queryFn: () =>
+      pqrsApi.adminTodos({
+        ...(filtroTicketEstado ? { estado: filtroTicketEstado } : {}),
+        ...(filtroTicketTipo ? { tipo: filtroTicketTipo } : {}),
+      }).then((r) => r.data),
+    enabled: activeTab === 'tickets',
+  });
+
+  const responderTicketMut = useMutation({
+    mutationFn: ({ id, contenido }: { id: string; contenido: string }) =>
+      pqrsApi.adminResponder(id, contenido),
+    onSuccess: (res) => {
+      setRespuestaContenido('');
+      setSelectedTicket(res.data);
+      refetchTickets();
+    },
+    onError: (e: any) => showError(e?.response?.data?.detail || 'Error al responder ticket'),
   });
 
   // --- Mutations ---
@@ -353,7 +381,7 @@ export default function TenantsPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
-        {(['tenants', 'planes', 'usuarios'] as const).map((tab) => (
+        {(['tenants', 'planes', 'usuarios', 'tickets'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -363,7 +391,7 @@ export default function TenantsPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'tenants' ? 'Tenants' : tab === 'planes' ? 'Planes' : 'Usuarios'}
+            {tab === 'tenants' ? 'Tenants' : tab === 'planes' ? 'Planes' : tab === 'usuarios' ? 'Usuarios' : 'Tickets PQRS'}
           </button>
         ))}
       </div>
@@ -1038,6 +1066,129 @@ export default function TenantsPage() {
           </div>
         )}
       </Modal>
+
+      {/* TAB: Tickets PQRS */}
+      {activeTab === 'tickets' && (
+        <div className="flex gap-4">
+          {/* Lista de tickets */}
+          <div className={`${selectedTicket ? 'hidden md:block md:w-1/2' : 'w-full'}`}>
+            {/* Filtros */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <select
+                value={filtroTicketEstado}
+                onChange={(e) => setFiltroTicketEstado(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Todos los estados</option>
+                {['ABIERTO', 'EN_PROCESO', 'RESUELTO', 'CERRADO'].map((e) => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
+              </select>
+              <select
+                value={filtroTicketTipo}
+                onChange={(e) => setFiltroTicketTipo(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Todos los tipos</option>
+                {['PETICION', 'QUEJA', 'RECLAMO', 'SUGERENCIA', 'SOPORTE'].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {loadingTickets ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}
+              </div>
+            ) : (ticketsAdmin && ticketsAdmin.length > 0) ? (
+              <div className="space-y-2">
+                {ticketsAdmin.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTicket(t)}
+                    className={`w-full text-left rounded-xl border px-4 py-3 transition-colors hover:bg-gray-50 ${selectedTicket?.id === t.id ? 'border-primary-300 bg-primary-50' : 'border-gray-200 bg-white'}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{t.asunto}</p>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {t.tenant_id ? `Tenant: ${t.tenant_id.slice(0, 8)}...` : 'Sin tenant'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className={`text-xs rounded px-1.5 py-0.5 font-medium ${
+                          t.estado === 'ABIERTO' ? 'bg-red-100 text-red-700' :
+                          t.estado === 'EN_PROCESO' ? 'bg-yellow-100 text-yellow-700' :
+                          t.estado === 'RESUELTO' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{t.estado}</span>
+                        <span className="text-xs text-gray-400">{t.tipo}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-400 text-sm">No hay tickets</div>
+            )}
+          </div>
+
+          {/* Detalle del ticket */}
+          {selectedTicket && (
+            <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">{selectedTicket.asunto}</h3>
+                <button onClick={() => setSelectedTicket(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="bg-gray-100 px-2 py-0.5 rounded">{selectedTicket.tipo}</span>
+                <span className="bg-gray-100 px-2 py-0.5 rounded">{selectedTicket.prioridad}</span>
+                <span className={`px-2 py-0.5 rounded font-medium ${
+                  selectedTicket.estado === 'ABIERTO' ? 'bg-red-100 text-red-700' :
+                  selectedTicket.estado === 'EN_PROCESO' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedTicket.estado === 'RESUELTO' ? 'bg-green-100 text-green-700' :
+                  'bg-gray-100 text-gray-600'
+                }`}>{selectedTicket.estado}</span>
+              </div>
+              <p className="text-sm text-gray-700">{selectedTicket.descripcion}</p>
+
+              {/* Respuestas */}
+              {selectedTicket.respuestas && selectedTicket.respuestas.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Respuestas</p>
+                  {(selectedTicket.respuestas as Array<{ autor_nombre: string; contenido: string; fecha: string }>).map((r, i) => (
+                    <div key={i} className="rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                      <p className="font-medium text-gray-700 text-xs mb-1">{r.autor_nombre}</p>
+                      <p className="text-gray-600">{r.contenido}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Responder */}
+              <div className="space-y-2">
+                <textarea
+                  value={respuestaContenido}
+                  onChange={(e) => setRespuestaContenido(e.target.value)}
+                  placeholder="Escribe una respuesta..."
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 resize-none"
+                />
+                <button
+                  onClick={() => {
+                    if (!respuestaContenido.trim()) return;
+                    responderTicketMut.mutate({ id: selectedTicket.id, contenido: respuestaContenido });
+                  }}
+                  disabled={responderTicketMut.isPending || !respuestaContenido.trim()}
+                  className="rounded-lg bg-primary-500 text-white px-4 py-2 text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
+                >
+                  {responderTicketMut.isPending ? 'Enviando...' : 'Enviar respuesta'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

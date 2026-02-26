@@ -15,7 +15,7 @@ from ..utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 # ContextVar para almacenar el user_id del request actual
-_current_user_id: ContextVar[Optional[UUID]] = ContextVar('current_user_id', default=None)
+_current_user_id: ContextVar[Optional[UUID]] = ContextVar("current_user_id", default=None)
 
 
 def get_current_user_id() -> Optional[UUID]:
@@ -62,11 +62,11 @@ def _auto_set_audit_fields(session: Session, flush_context, instances) -> None:
 
     # Iterar sobre objetos nuevos (INSERT)
     for obj in session.new:
-        if hasattr(obj, 'created_by') and obj.created_by is None:
+        if hasattr(obj, "created_by") and obj.created_by is None:
             obj.created_by = current_user_id
             logger.debug(f"Auto-set created_by={current_user_id} on new {obj.__class__.__name__}")
 
-        if hasattr(obj, 'updated_by') and obj.updated_by is None:
+        if hasattr(obj, "updated_by") and obj.updated_by is None:
             obj.updated_by = current_user_id
             logger.debug(f"Auto-set updated_by={current_user_id} on new {obj.__class__.__name__}")
 
@@ -74,7 +74,7 @@ def _auto_set_audit_fields(session: Session, flush_context, instances) -> None:
     for obj in session.dirty:
         # Solo actualizar si el objeto tiene cambios reales
         if session.is_modified(obj, include_collections=False):
-            if hasattr(obj, 'updated_by'):
+            if hasattr(obj, "updated_by"):
                 obj.updated_by = current_user_id
                 logger.debug(f"Auto-set updated_by={current_user_id} on modified {obj.__class__.__name__}")
 
@@ -82,7 +82,7 @@ def _auto_set_audit_fields(session: Session, flush_context, instances) -> None:
     for obj in session.deleted:
         # Si el objeto tiene soft delete, ya se manejó en el método soft_delete()
         # Pero por si acaso, verificamos:
-        if hasattr(obj, 'deleted_by') and obj.deleted_by is None:
+        if hasattr(obj, "deleted_by") and obj.deleted_by is None:
             obj.deleted_by = current_user_id
             logger.debug(f"Auto-set deleted_by={current_user_id} on deleted {obj.__class__.__name__}")
 
@@ -105,5 +105,5 @@ def register_audit_listeners(session_factory) -> None:
         register_audit_listeners(SessionLocal)
         ```
     """
-    event.listen(session_factory, 'before_flush', _auto_set_audit_fields)
+    event.listen(session_factory, "before_flush", _auto_set_audit_fields)
     logger.info("Audit event listeners registered successfully")

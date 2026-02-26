@@ -3,6 +3,7 @@ Servicio de generación de PDFs para facturas y cotizaciones.
 Utiliza ReportLab para generar PDFs profesionales.
 """
 
+import base64
 import io
 import os
 from typing import Optional
@@ -118,18 +119,24 @@ class ServicioPDF:
         # Logo del tenant (si existe)
         url_logo = self.tenant.get("url_logo")
         if url_logo:
-            # Convertir URL relativa a path absoluto en el filesystem
-            static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
-            logo_rel = url_logo.replace("/static/", "", 1)
-            logo_path = os.path.normpath(os.path.join(static_base, logo_rel))
-            if os.path.exists(logo_path):
-                try:
+            try:
+                if url_logo.startswith("data:"):
+                    # base64 data URL: "data:image/png;base64,iVBOR..."
+                    _hdr, b64data = url_logo.split(",", 1)
+                    img_bytes = base64.b64decode(b64data)
+                    logo_img = RLImage(io.BytesIO(img_bytes), width=2 * cm, height=2 * cm)
+                else:
+                    # legacy: filesystem path
+                    static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
+                    logo_path = os.path.normpath(os.path.join(static_base, url_logo.replace("/static/", "", 1)))
+                    if not os.path.exists(logo_path):
+                        raise FileNotFoundError(f"Logo not found: {logo_path}")
                     logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
-                    logo_img.hAlign = "CENTER"
-                    elements.append(logo_img)
-                    elements.append(Spacer(1, 0.3 * cm))
-                except Exception:
-                    pass
+                logo_img.hAlign = "CENTER"
+                elements.append(logo_img)
+                elements.append(Spacer(1, 0.3 * cm))
+            except Exception:
+                pass
 
         # Nombre empresa
         elements.append(Paragraph(self.tenant.get("nombre", "Empresa"), self.styles["DocTitle"]))
