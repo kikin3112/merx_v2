@@ -73,7 +73,9 @@ def tenant_admin_token(db_session: Session):
         }
     """
     # Create tenant
-    tenant = Tenants(nombre="Test Tenant", nit="900123456-7", estado="ACTIVO", email_contacto="test@test.com")
+    tenant = Tenants(
+        nombre="Test Tenant", slug="test-tenant", nit="900123456-7", estado="ACTIVO", email_contacto="test@test.com"
+    )
     db_session.add(tenant)
     db_session.flush()
 

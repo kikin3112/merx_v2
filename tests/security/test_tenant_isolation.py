@@ -46,12 +46,14 @@ def two_tenants(db: Session):
     """Create two isolated tenants with their own admin users."""
     tenant_a = Tenants(
         nombre="Tenant Alpha",
+        slug="tenant-alpha",
         nit="111111111-1",
         estado="ACTIVO",
         email_contacto="alpha@test.com"
     )
     tenant_b = Tenants(
         nombre="Tenant Beta",
+        slug="tenant-beta",
         nit="222222222-2",
         estado="ACTIVO",
         email_contacto="beta@test.com"
