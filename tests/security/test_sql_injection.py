@@ -6,9 +6,8 @@ Verifies that SQLAlchemy ORM parameterization prevents injection.
 """
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
 from uuid import uuid4
 
 import sys
@@ -22,7 +21,7 @@ from app.datos.modelos_tenant import Tenants
 from app.utils.seguridad import hash_password, create_access_token
 
 
-TEST_DB_URL = "sqlite:///:memory:"
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/chandelier_test")
 
 # Classic SQL injection payloads
 SQLI_PAYLOADS = [
@@ -51,16 +50,7 @@ INJECTABLE_ENDPOINTS = [
 
 @pytest.fixture(scope="module")
 def engine():
-    eng = create_engine(
-        TEST_DB_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(eng, "connect")
-    def set_pragma(dbapi_conn, _):
-        dbapi_conn.cursor().execute("PRAGMA foreign_keys=ON")
-
+    eng = create_engine(TEST_DB_URL)
     Base.metadata.create_all(bind=eng)
     yield eng
     Base.metadata.drop_all(bind=eng)
@@ -90,7 +80,7 @@ def auth_headers(db: Session):
     user = Usuarios(
         email="sqli_admin@test.com",
         nombre="SQLi Admin",
-        hash_password=hash_password("sqli_test_pass"),
+        password_hash=hash_password("sqli_test_pass"),
         rol="admin",
         estado=True,
         es_superadmin=False,

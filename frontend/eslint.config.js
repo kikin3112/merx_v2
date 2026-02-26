@@ -24,6 +24,8 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       // Downgrade to warn: reading ref.current in hook return is intentional in useSSE
       'react-hooks/refs': 'warn',
+      // Downgrade to warn: syncing server state to local form state is a valid pattern
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
 ])

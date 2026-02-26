@@ -7,9 +7,8 @@ validating PostgreSQL RLS + TenantContextMiddleware are working correctly.
 import pytest
 from uuid import uuid4
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
 
 import sys
 import os
@@ -22,21 +21,12 @@ from app.datos.modelos_tenant import Tenants
 from app.utils.seguridad import hash_password, create_access_token
 
 
-TEST_DB_URL = "sqlite:///:memory:"
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/chandelier_test")
 
 
 @pytest.fixture(scope="module")
 def engine():
-    eng = create_engine(
-        TEST_DB_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(eng, "connect")
-    def set_pragma(dbapi_conn, _):
-        dbapi_conn.cursor().execute("PRAGMA foreign_keys=ON")
-
+    eng = create_engine(TEST_DB_URL)
     Base.metadata.create_all(bind=eng)
     yield eng
     Base.metadata.drop_all(bind=eng)
@@ -72,7 +62,7 @@ def two_tenants(db: Session):
     user_a = Usuarios(
         email="admin_a@test.com",
         nombre="Admin Alpha",
-        hash_password=hash_password("pass_alpha"),
+        password_hash=hash_password("pass_alpha"),
         rol="admin",
         estado=True,
         es_superadmin=False,
@@ -80,7 +70,7 @@ def two_tenants(db: Session):
     user_b = Usuarios(
         email="admin_b@test.com",
         nombre="Admin Beta",
-        hash_password=hash_password("pass_beta"),
+        password_hash=hash_password("pass_beta"),
         rol="admin",
         estado=True,
         es_superadmin=False,
