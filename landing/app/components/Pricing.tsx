@@ -3,7 +3,7 @@ import { CheckIcon } from '@heroicons/react/24/outline';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.chandelierp.com';
 
 const includedFeatures = [
-  'Hasta 3 usuarios',
+  '2 usuarios',
   'Todos los módulos',
   'Soporte WhatsApp',
   '14 días gratis',
