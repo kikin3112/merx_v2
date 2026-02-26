@@ -153,7 +153,7 @@ export default function DashboardPage() {
     enabled: canViewReports,
   });
 
-  const { data: gastosVsIngresos } = useQuery<GastosVsIngresos>({
+  const { data: gastosVsIngresos, isLoading: gastosLoading, isError: gastosError } = useQuery<GastosVsIngresos>({
     queryKey: ['gastos-vs-ingresos', dateParams],
     queryFn: () => reportes.gastosVsIngresos(dateParams).then((r) => r.data),
     enabled: canViewReports,
@@ -347,69 +347,79 @@ export default function DashboardPage() {
       )}
 
       {/* Gastos vs Ingresos */}
-      {gastosVsIngresos && (
+      {canViewReports && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-1">Ingresos vs Gastos ({period.label})</h2>
-          <p className="text-xs text-gray-400 mb-4">
-            Margen: <span className={gastosVsIngresos.margen >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-              {formatTooltipValue(gastosVsIngresos.margen)} ({gastosVsIngresos.margen_porcentaje}%)
-            </span>
-          </p>
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="h-48 w-full sm:w-64 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Ingresos', value: gastosVsIngresos.ingresos },
-                      { name: 'Gastos', value: gastosVsIngresos.gastos },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={52}
-                    outerRadius={80}
-                    dataKey="value"
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    <Cell fill="#C17B2B" />
-                    <Cell fill="#EF4444" />
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), '']}
-                    contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(value: string) => <span style={{ fontSize: 12, color: '#374151' }}>{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex-1 space-y-3 w-full">
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-[#C17B2B]" />
-                  <span className="text-sm text-gray-600">Ingresos</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.ingresos)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-red-500" />
-                  <span className="text-sm text-gray-600">Gastos</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.gastos)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-gray-700">Margen neto</span>
-                <span className={`text-sm font-bold ${gastosVsIngresos.margen >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatTooltipValue(gastosVsIngresos.margen)}
+          {gastosLoading ? (
+            <div className="h-48 flex items-center justify-center text-sm text-gray-400">Cargando...</div>
+          ) : gastosError ? (
+            <div className="h-48 flex items-center justify-center text-sm text-red-400">No se pudieron cargar los datos financieros.</div>
+          ) : gastosVsIngresos && (gastosVsIngresos.ingresos > 0 || gastosVsIngresos.gastos > 0) ? (
+            <>
+              <p className="text-xs text-gray-400 mb-4">
+                Margen: <span className={gastosVsIngresos.margen >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                  {formatTooltipValue(gastosVsIngresos.margen)} ({gastosVsIngresos.margen_porcentaje}%)
                 </span>
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="h-48 w-full sm:w-64 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Ingresos', value: gastosVsIngresos.ingresos },
+                          { name: 'Gastos', value: gastosVsIngresos.gastos },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={52}
+                        outerRadius={80}
+                        dataKey="value"
+                        startAngle={90}
+                        endAngle={-270}
+                      >
+                        <Cell fill="#C17B2B" />
+                        <Cell fill="#EF4444" />
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), '']}
+                        contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                      />
+                      <Legend
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value: string) => <span style={{ fontSize: 12, color: '#374151' }}>{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-3 w-full">
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-[#C17B2B]" />
+                      <span className="text-sm text-gray-600">Ingresos</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.ingresos)}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-red-500" />
+                      <span className="text-sm text-gray-600">Gastos</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.gastos)}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm font-medium text-gray-700">Margen neto</span>
+                    <span className={`text-sm font-bold ${gastosVsIngresos.margen >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatTooltipValue(gastosVsIngresos.margen)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-sm text-gray-400">Sin movimientos en este período.</div>
+          )}
         </div>
       )}
 
