@@ -9,7 +9,7 @@ from uuid import UUID
 import pytest
 from app.datos.db import Base, get_db
 from app.datos.modelos import Usuarios
-from app.datos.modelos_tenant import Tenants
+from app.datos.modelos_tenant import Planes, Tenants
 from app.main import app
 from app.utils.seguridad import create_access_token, hash_password
 from fastapi.testclient import TestClient
@@ -72,9 +72,19 @@ def tenant_admin_token(db_session: Session):
             "user": Usuarios
         }
     """
+    # Create plan (required FK)
+    plan = Planes(nombre="Test Plan", precio_mensual=0)
+    db_session.add(plan)
+    db_session.flush()
+
     # Create tenant
     tenant = Tenants(
-        nombre="Test Tenant", slug="test-tenant", nit="900123456-7", estado="ACTIVO", email_contacto="test@test.com"
+        nombre="Test Tenant",
+        slug="test-tenant",
+        nit="900123456-7",
+        estado="ACTIVO",
+        email_contacto="test@test.com",
+        plan_id=plan.id,
     )
     db_session.add(tenant)
     db_session.flush()
