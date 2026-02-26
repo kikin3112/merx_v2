@@ -127,7 +127,7 @@ export default function ProductInventoryModule() {
         <div className="flex items-center gap-3">
           <SuccessBadge show={showSuccess} message="Guardado" />
           <button onClick={openCreate} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
-            + Nuevo Producto
+            + Nuevo producto
           </button>
         </div>
       </div>
@@ -236,11 +236,11 @@ export default function ProductInventoryModule() {
             {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código Interno *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Código interno *</label>
                 <input type="text" required disabled value={form.codigo_interno} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-100 text-gray-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código Barras</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Código de barras</label>
                 <input type="text" value={form.codigo_barras ?? ''} onChange={(e) => setForm({ ...form, codigo_barras: e.target.value || null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
@@ -264,27 +264,27 @@ export default function ProductInventoryModule() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo IVA</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de IVA</label>
                 <select value={form.tipo_iva} onChange={(e) => setForm({ ...form, tipo_iva: e.target.value, porcentaje_iva: e.target.value === 'Gravado' ? 19 : 0 })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                   {['Excluido','Exento','Gravado'].map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">% IVA</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">IVA (%)</label>
                 <input type="number" min={0} max={100} step={0.01} value={form.porcentaje_iva ?? 0} onChange={(e) => setForm({ ...form, porcentaje_iva: parseFloat(e.target.value) || 0 })} disabled={form.tipo_iva !== 'Gravado'} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio Venta</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta</label>
                 <input type="number" min={0} step={0.01} value={form.precio_venta ?? 0} onChange={(e) => setForm({ ...form, precio_venta: parseFloat(e.target.value) || 0 })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Mínimo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stock mínimo</label>
                 <input type="number" min={0} value={form.stock_minimo ?? ''} onChange={(e) => setForm({ ...form, stock_minimo: e.target.value ? parseFloat(e.target.value) : null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Máximo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stock máximo</label>
                 <input type="number" min={0} value={form.stock_maximo ?? ''} onChange={(e) => setForm({ ...form, stock_maximo: e.target.value ? parseFloat(e.target.value) : null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div className="flex flex-col gap-2 justify-end pb-2">
@@ -314,11 +314,11 @@ export default function ProductInventoryModule() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad Inicial *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad inicial *</label>
                 <input type="number" required min={0.01} step={0.01} value={invForm.cantidad} onChange={(e) => setInvForm({ ...invForm, cantidad: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Costo Unitario *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario *</label>
                 <input type="number" required min={0} step={0.01} value={invForm.costo_unitario} onChange={(e) => setInvForm({ ...invForm, costo_unitario: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function ProductInventoryModule() {
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button type="button" onClick={() => { flash(); closeModal(); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Omitir</button>
               <button type="submit" disabled={entradaMut.isPending} className="px-4 py-2 text-sm font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50">
-                {entradaMut.isPending ? 'Registrando...' : 'Registrar Inventario'}
+                {entradaMut.isPending ? 'Registrando...' : 'Registrar inventario'}
               </button>
             </div>
           </form>

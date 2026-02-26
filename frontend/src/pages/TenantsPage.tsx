@@ -320,8 +320,8 @@ export default function TenantsPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Centro de Control SaaS</h1>
-        <p className="text-sm text-gray-500 mt-1">Panel de SuperAdmin</p>
+        <h1 className="text-xl font-bold text-gray-900">Control de tenants</h1>
+        <p className="text-sm text-gray-500 mt-1">Panel de superadmin</p>
       </div>
 
       {/* KPI Cards */}
@@ -613,7 +613,7 @@ export default function TenantsPage() {
           {/* Revenue por plan */}
           {kpis && kpis.revenue_por_plan.length > 0 && (
             <div className="mt-6 bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Revenue por Plan</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Utilidad por plan</h3>
               <div className="space-y-2">
                 {kpis.revenue_por_plan.map((rp) => (
                   <div key={rp.plan_id} className="flex items-center justify-between">
@@ -836,7 +836,7 @@ export default function TenantsPage() {
       <Modal
         open={planModal}
         onClose={() => { setPlanModal(false); setEditingPlan(null); }}
-        title={editingPlan ? `Editar: ${editingPlan.nombre}` : 'Nuevo Plan'}
+        title={editingPlan ? `Editar: ${editingPlan.nombre}` : 'Nuevo plan'}
         maxWidth="max-w-lg"
       >
         <PlanForm
@@ -1199,7 +1199,7 @@ function TenantDetailPanel({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Telefono</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Teléfono</label>
               <input
                 value={editTelefono}
                 onChange={(e) => setEditTelefono(e.target.value)}
@@ -1278,7 +1278,7 @@ function TenantDetailPanel({
             })}
             className="rounded-lg bg-primary-500 text-white px-4 py-2 text-sm font-medium hover:bg-primary-600 transition-colors"
           >
-            Guardar Cambios
+            Guardar cambios
           </button>
 
           {/* Actions */}
@@ -1300,7 +1300,7 @@ function TenantDetailPanel({
                     onClick={() => onExtenderTrial(trialDias)}
                     className="rounded px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                   >
-                    Extender Trial
+                    Extender trial
                   </button>
                 </div>
               )}
@@ -1345,7 +1345,7 @@ function TenantDetailPanel({
                   disabled={isPending}
                   className="rounded px-3 py-1.5 text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
                 >
-                  Modo Mantenimiento
+                  Modo mantenimiento
                 </button>
               )}
 
@@ -1356,7 +1356,7 @@ function TenantDetailPanel({
                   disabled={isPending}
                   className="rounded px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
                 >
-                  Salir Mantenimiento
+                  Salir mantenimiento
                 </button>
               )}
             </div>
@@ -1444,7 +1444,7 @@ function TenantDetailPanel({
 
           {/* Pagos */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Historial de Pagos</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Historial de pagos</h4>
             {pagos && pagos.length > 0 ? (
               <div className="space-y-2">
                 {pagos.map((p) => (
@@ -1538,7 +1538,7 @@ function TenantDetailPanel({
                 {/* Barra de score */}
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-gray-700">Health Score</span>
+                    <span className="text-sm font-semibold text-gray-700">Health score</span>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         pulse.estado_salud === 'saludable'
@@ -1569,7 +1569,7 @@ function TenantDetailPanel({
                   </div>
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
                     <span>Critico</span>
-                    <span>En Riesgo</span>
+                    <span>En riesgo</span>
                     <span>Saludable</span>
                   </div>
                 </div>
@@ -1613,7 +1613,7 @@ function TenantDetailPanel({
             </div>
           ) : (
             <div className="text-center py-10 text-gray-400">
-              <p>No se pudo calcular el Pulso</p>
+              <p>No se pudo calcular el pulso</p>
             </div>
           )}
         </div>

@@ -73,7 +73,7 @@ export default function FacturasPage() {
           onClick={() => setShowForm(true)}
           className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
         >
-          + Nueva Factura
+          + Nueva factura
         </button>
       </div>
 

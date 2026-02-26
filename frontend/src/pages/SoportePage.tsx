@@ -47,7 +47,7 @@ export default function SoportePage() {
           onClick={() => setShowCreate(true)}
           className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
         >
-          + Nuevo Ticket
+          + Nuevo ticket
         </button>
       </div>
 
@@ -73,7 +73,7 @@ export default function SoportePage() {
         >
           <option value="">Todos los estados</option>
           <option value="ABIERTO">Abierto</option>
-          <option value="EN_PROCESO">En Proceso</option>
+          <option value="EN_PROCESO">En proceso</option>
           <option value="RESUELTO">Resuelto</option>
           <option value="CERRADO">Cerrado</option>
         </select>

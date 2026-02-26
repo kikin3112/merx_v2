@@ -38,8 +38,8 @@ export default function LoginPage() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500 flex items-center justify-center mb-4">
             <span className="text-white text-2xl font-bold">C</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Chandelier</h1>
-          <p className="text-sm text-gray-500 mt-1">ERP para candeleria</p>
+          <h1 className="text-2xl font-bold text-gray-900">ChandeliERP</h1>
+          <p className="text-sm text-gray-500 mt-1">ERP para cerer@s hecho con <3</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
@@ -57,19 +57,19 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
-              placeholder="admin@example.com"
+              placeholder="correo@ejemplo.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
-              placeholder="admin123"
+              placeholder="*******"
             />
           </div>
 

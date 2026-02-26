@@ -140,12 +140,12 @@ export default function RecetasPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Recetas de Produccion</h1>
+        <h1 className="text-xl font-bold text-gray-900">Recetas para producción</h1>
         <button
           onClick={() => setShowForm(true)}
           className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
         >
-          + Nueva Receta
+          + Nueva receta
         </button>
       </div>
 
@@ -173,7 +173,7 @@ export default function RecetasPage() {
                     <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
                     <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
                     {r.costo_unitario != null && (
-                      <span>Costo unit.: <strong>{formatCurrency(r.costo_unitario)}</strong></span>
+                      <span>Costo unitario: <strong>{formatCurrency(r.costo_unitario)}</strong></span>
                     )}
                     {r.tiempo_produccion_minutos && (
                       <span>Tiempo: {r.tiempo_produccion_minutos} min</span>
@@ -185,7 +185,7 @@ export default function RecetasPage() {
                     onClick={() => costoMutation.mutate(r.id)}
                     className="rounded px-2.5 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                   >
-                    Calcular Costo
+                    Calcular costo
                   </button>
                   <button
                     onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
@@ -339,7 +339,7 @@ export default function RecetasPage() {
         <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
           <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-2xl md:mx-4 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Nueva Receta</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Nueva receta</h2>
               <button onClick={resetForm} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <div className="px-4 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">

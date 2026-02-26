@@ -12,11 +12,11 @@ const TIPOS_TERCERO = ['CLIENTE', 'PROVEEDOR', 'AMBOS'] as const;
 const GRUPOS_CLIENTE = ['', 'VIP', 'Mayorista', 'Minorista', 'Corporativo'] as const;
 
 const TIPO_DOC_LABELS: Record<string, string> = {
-  CC: 'Cedula Ciudadania',
+  CC: 'Cedula de ciudadania',
   NIT: 'NIT',
-  CE: 'Cedula Extranjeria',
+  CE: 'Cedula de extranjeria',
   PAS: 'Pasaporte',
-  TI: 'Tarjeta Identidad',
+  TI: 'Tarjeta de identidad',
 };
 
 function emptyForm(): TerceroCreate {
@@ -265,7 +265,7 @@ export default function TercerosPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Telefono</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Teléfono</label>
                   <input
                     type="text"
                     value={detailForm.telefono || ''}
@@ -283,7 +283,7 @@ export default function TercerosPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Direccion</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Dirección</label>
                   <input
                     type="text"
                     value={detailForm.direccion || ''}
@@ -303,7 +303,7 @@ export default function TercerosPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Sector economico</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Sector económico</label>
                   <input
                     type="text"
                     value={detailForm.sector_economico || ''}
@@ -343,7 +343,7 @@ export default function TercerosPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Plazo pago (dias)</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Plazo pago (días)</label>
                   <input
                     type="number"
                     min={0}
@@ -540,7 +540,7 @@ export default function TercerosPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Documento</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Grupo</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Telefono</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Teléfono</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
                 </tr>
@@ -697,7 +697,7 @@ export default function TercerosPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Documento *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de documento *</label>
               <select
                 value={form.tipo_documento}
                 onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })}
@@ -712,7 +712,7 @@ export default function TercerosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Numero Documento *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numero de documento *</label>
               <input
                 type="text"
                 required
@@ -725,7 +725,7 @@ export default function TercerosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Tercero *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de tercero *</label>
             <div className="flex gap-4">
               {TIPOS_TERCERO.map((tt) => (
                 <label key={tt} className="flex items-center gap-2 text-sm text-gray-700">
@@ -754,7 +754,7 @@ export default function TercerosPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
               <input
                 type="text"
                 value={form.telefono || ''}
@@ -765,7 +765,7 @@ export default function TercerosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Direccion</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
             <input
               type="text"
               value={form.direccion || ''}
@@ -811,7 +811,7 @@ export default function TercerosPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Plazo pago (dias)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Plazo pago (días)</label>
               <input
                 type="number"
                 min={0}

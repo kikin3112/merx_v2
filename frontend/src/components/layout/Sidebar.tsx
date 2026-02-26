@@ -16,7 +16,7 @@ export default function Sidebar() {
   const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
 
   const logoSrc = buildLogoUrl(tenantLogo);
-  const logoAlt = tenantName || 'Chandelier';
+  const logoAlt = tenantName || 'ChandeliERP';
 
   return (
     <aside className="hidden lg:flex h-screen w-60 flex-col bg-white border-r border-gray-200">

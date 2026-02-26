@@ -325,7 +325,7 @@ export default function POSPage() {
       <div className="flex-1 overflow-y-auto space-y-2 mb-3">
         {cart.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
-            <p className="text-lg mb-1">Carrito vacio</p>
+            <p className="text-lg mb-1">Carrito vacío</p>
             <p className="text-sm">Agrega productos para comenzar</p>
           </div>
         ) : (
@@ -379,7 +379,7 @@ export default function POSPage() {
         {/* Global discount */}
         <div className="flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center gap-2">
-            <span>Desc. global</span>
+            <span>Descuento global</span>
             <input
               type="number"
               min={0}
@@ -417,7 +417,7 @@ export default function POSPage() {
         {checkoutOk && lastFactura && (
           <div className="text-center space-y-2">
             <p className="text-sm font-medium text-green-600">
-              Factura {lastFactura.numero_venta} emitida!
+              ¡Factura {lastFactura.numero_venta} emitida!
             </p>
             <button
               onClick={() => descargarPdf(lastFactura.id, lastFactura.numero_venta)}
