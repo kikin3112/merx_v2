@@ -42,7 +42,7 @@ export function Pricing() {
               {/* Price */}
               <div className="mt-6 flex items-baseline justify-center gap-2">
                 <span className="text-sm text-gray-500">Desde</span>
-                <span className="text-5xl font-extrabold text-gray-900">$5.000</span>
+                <span className="text-5xl font-extrabold text-gray-900">$29.800</span>
                 <span className="text-lg text-gray-500">COP/mes</span>
               </div>
             </div>
