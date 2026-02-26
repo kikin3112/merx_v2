@@ -1022,7 +1022,7 @@ class TenantBase(BaseModel):
     direccion: Optional[str] = None
     ciudad: Optional[str] = Field(None, max_length=100)
     departamento: Optional[str] = Field(None, max_length=100)
-    url_logo: Optional[str] = Field(None, max_length=500)
+    url_logo: Optional[str] = None
     color_primario: str = Field(default="#1976D2", max_length=20)
     color_secundario: str = Field(default="#424242", max_length=20)
 
