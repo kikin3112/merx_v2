@@ -79,6 +79,7 @@ def _get_tenant_info(db: Session, tenant_id: UUID) -> dict:
         "direccion": tenant.direccion,
         "ciudad": tenant.ciudad,
         "departamento": tenant.departamento,
+        "url_logo": tenant.url_logo,
     }
 
 

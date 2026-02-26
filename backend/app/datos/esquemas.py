@@ -1068,6 +1068,7 @@ class TenantBriefResponse(BaseModel):
     nombre: str
     slug: str
     estado: str
+    url_logo: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 

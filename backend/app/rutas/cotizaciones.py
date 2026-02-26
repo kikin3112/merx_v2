@@ -32,6 +32,7 @@ def _generar_pdf_cotizacion(db: Session, cot: Cotizaciones, tenant_id: UUID) -> 
         "direccion": getattr(tenant, "direccion", None),
         "ciudad": getattr(tenant, "ciudad", None),
         "departamento": getattr(tenant, "departamento", None),
+        "url_logo": getattr(tenant, "url_logo", None),
     }
 
     tercero = db.query(Terceros).filter(Terceros.id == cot.tercero_id).first()

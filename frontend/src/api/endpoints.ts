@@ -278,6 +278,13 @@ export const tenants = {
     client.post<TenantDetail>(`/tenants/${id}/mantenimiento`, null, { params: motivo ? { motivo } : {} }),
   salirMantenimiento: (id: string) =>
     client.post<TenantDetail>(`/tenants/${id}/salir-mantenimiento`),
+  uploadLogo: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return client.post<TenantDetail>(`/tenants/${id}/logo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   dashboard: () =>
     client.get<SaaSDashboardKPIs>('/tenants/dashboard/'),
   planes: {

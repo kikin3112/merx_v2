@@ -21,6 +21,7 @@ interface AuthState {
   tenants: Tenant[];
   tenantId: string | null;
   tenantName: string | null;
+  tenantLogo: string | null;
   impersonation: ImpersonationState | null;
 
   login: (email: string, password: string) => Promise<Tenant[]>;
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
       tenants: [],
       tenantId: null,
       tenantName: null,
+      tenantLogo: null,
       impersonation: null,
 
       login: async (email: string, password: string) => {
@@ -71,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
           user: data.user,
           tenantId: data.tenant.id,
           tenantName: data.tenant.nombre,
+          tenantLogo: data.tenant.url_logo ?? null,
         });
       },
 
@@ -97,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
           tenants: [],
           tenantId: null,
           tenantName: null,
+          tenantLogo: null,
           impersonation: null,
         });
       },
@@ -135,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: impersonation.originalRefresh,
           tenantId: null,
           tenantName: null,
+          tenantLogo: null,
           impersonation: null,
         });
       },
@@ -148,6 +153,7 @@ export const useAuthStore = create<AuthState>()(
         tenants: state.tenants,
         tenantId: state.tenantId,
         tenantName: state.tenantName,
+        tenantLogo: state.tenantLogo,
         impersonation: state.impersonation,
       }),
     }

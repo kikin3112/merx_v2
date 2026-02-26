@@ -4,6 +4,7 @@ Utiliza ReportLab para generar PDFs profesionales.
 """
 
 import io
+import os
 from typing import Optional
 
 from reportlab.lib import colors
@@ -12,6 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm, mm
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Image as RLImage
 
 
 def _formato_moneda(valor) -> str:
@@ -112,6 +114,22 @@ class ServicioPDF:
     def _build_header(self, titulo: str, numero: str, fecha: str, fecha_vencimiento: Optional[str] = None) -> list:
         """Construye el header del documento."""
         elements = []
+
+        # Logo del tenant (si existe)
+        url_logo = self.tenant.get("url_logo")
+        if url_logo:
+            # Convertir URL relativa a path absoluto en el filesystem
+            static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
+            logo_rel = url_logo.replace("/static/", "", 1)
+            logo_path = os.path.normpath(os.path.join(static_base, logo_rel))
+            if os.path.exists(logo_path):
+                try:
+                    logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
+                    logo_img.hAlign = "CENTER"
+                    elements.append(logo_img)
+                    elements.append(Spacer(1, 0.3 * cm))
+                except Exception:
+                    pass
 
         # Nombre empresa
         elements.append(Paragraph(self.tenant.get("nombre", "Empresa"), self.styles["DocTitle"]))
