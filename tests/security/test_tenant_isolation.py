@@ -52,7 +52,7 @@ def two_tenants(db: Session):
         nombre="Tenant Alpha",
         slug="tenant-alpha",
         nit="111111111-1",
-        estado="ACTIVO",
+        estado="activo",
         email_contacto="alpha@test.com",
         plan_id=plan.id,
     )
@@ -60,7 +60,7 @@ def two_tenants(db: Session):
         nombre="Tenant Beta",
         slug="tenant-beta",
         nit="222222222-2",
-        estado="ACTIVO",
+        estado="activo",
         email_contacto="beta@test.com",
         plan_id=plan.id,
     )

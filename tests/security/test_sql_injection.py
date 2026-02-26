@@ -76,7 +76,7 @@ def auth_headers(db: Session):
         nombre="SQLi Test Tenant",
         slug="sqli-test-tenant",
         nit="444444444-4",
-        estado="ACTIVO",
+        estado="activo",
         email_contacto="sqli@test.com",
         plan_id=plan.id,
     )
