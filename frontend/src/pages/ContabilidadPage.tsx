@@ -102,9 +102,9 @@ function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
         }
         fields={[
           { label: 'Concepto', value: asiento.concepto || '-' },
-          { label: 'Total Debito', value: formatCurrency(totalDebito) },
+          { label: 'Total debito', value: formatCurrency(totalDebito) },
           { label: 'Referencia', value: asiento.documento_referencia || '-' },
-          { label: 'Total Credito', value: formatCurrency(totalCredito) },
+          { label: 'Total credito', value: formatCurrency(totalCredito) },
         ]}
         onClick={() => setExpanded(!expanded)}
       />

@@ -199,17 +199,17 @@ export default function DashboardPage() {
                   Ir al POS
                 </a>
                 <a href="/ventas" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
-                  Ver Ventas
+                  Ver ventas
                 </a>
               </>
             )}
             {effectiveRole === 'operador' && (
               <>
                 <a href="/productos" className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
-                  Gestionar Productos
+                  Gestionar productos
                 </a>
                 <a href="/inventario" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
-                  Ver Inventario
+                  Ver inventario
                 </a>
               </>
             )}
@@ -219,7 +219,7 @@ export default function DashboardPage() {
         {/* Alertas de stock - todos pueden verlas */}
         {alertas && alertas.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">⚠️ Alertas de Stock</h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">⚠️ Alertas de stock</h2>
             <div className="space-y-2">
               {alertas.slice(0, 5).map((alerta) => (
                 <div
@@ -267,25 +267,25 @@ export default function DashboardPage() {
       {/* KPI Cards - Row 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KPICard
-          title="Ventas en Periodo"
+          title="Ventas en periodo"
           value={formatCurrency(kpis?.total_ventas ?? 0)}
           subtitle={`${kpis?.cantidad_ventas ?? 0} ventas`}
           color="text-primary-600"
         />
         <KPICard
-          title="Ventas Hoy"
+          title="Ventas hoy"
           value={formatCurrency(kpis?.ventas_hoy ?? 0)}
           subtitle={`${kpis?.cantidad_hoy ?? 0} ventas`}
           color="text-green-600"
         />
         <KPICard
-          title="Promedio por Venta"
+          title="Promedio por venta"
           value={formatCurrency(kpis?.promedio_venta ?? 0)}
           subtitle={`${kpis?.cantidad_ventas ?? 0} ventas en periodo`}
           color="text-blue-600"
         />
         <KPICard
-          title="Alertas Stock"
+          title="Alertas stock"
           value={String(kpis?.alertas_stock_bajo ?? 0)}
           subtitle="productos bajo minimo"
           color={kpis?.alertas_stock_bajo ? 'text-red-600' : 'text-gray-600'}
@@ -295,13 +295,13 @@ export default function DashboardPage() {
       {/* KPI Cards - Row 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KPICard
-          title="Ventas Ult. 30 dias"
+          title="Ventas últ. 30 días"
           value={formatCurrency(kpis?.ventas_mes ?? 0)}
           subtitle={`${kpis?.cantidad_mes ?? 0} ventas`}
           color="text-secondary-600"
         />
         <KPICard
-          title="Facturas Pendientes"
+          title="Facturas pendientes"
           value={formatCurrency(kpis?.facturas_pendientes ?? 0)}
           subtitle={`${kpis?.cantidad_facturas_pendientes ?? 0} facturas por cobrar`}
           color={kpis?.cantidad_facturas_pendientes ? 'text-orange-600' : 'text-gray-600'}
@@ -349,7 +349,7 @@ export default function DashboardPage() {
       {/* Gastos vs Ingresos */}
       {canViewReports && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-1">Ingresos vs Gastos ({period.label})</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-1">Ingresos vs gastos ({period.label})</h2>
           {gastosLoading ? (
             <div className="h-48 flex items-center justify-center text-sm text-gray-400">Cargando...</div>
           ) : gastosError ? (
@@ -428,7 +428,7 @@ export default function DashboardPage() {
         {/* Top Productos */}
         {topProductos && topProductos.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top Productos ({period.label})</h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top productos ({period.label})</h2>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topProductos} layout="vertical">
@@ -469,7 +469,7 @@ export default function DashboardPage() {
         {/* Top Clientes */}
         {topClientes && topClientes.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top Clientes ({period.label})</h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top clientes ({period.label})</h2>
             <div className="space-y-3">
               {topClientes.map((c, i) => (
                 <div key={c.tercero_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
@@ -493,7 +493,7 @@ export default function DashboardPage() {
       {/* Alertas de stock */}
       {alertas && alertas.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Alertas de Stock Bajo</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Alertas de stock bajo</h2>
           <div className="space-y-2">
             {alertas.slice(0, 8).map((a) => (
               <div key={a.producto_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
@@ -514,7 +514,7 @@ export default function DashboardPage() {
       {/* Feed SSE de eventos en tiempo real */}
       <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-900">Actividad en Tiempo Real</h2>
+          <h2 className="text-sm font-semibold text-gray-900">Actividad en vivo</h2>
           <SSEIndicator connected={sseConnected} />
         </div>
         <FacturaEventFeed events={recentFacturaEvents} />

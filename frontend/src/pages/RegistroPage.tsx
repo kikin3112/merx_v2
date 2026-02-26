@@ -28,7 +28,7 @@ function slugify(text: string): string {
 function StepIndicator({ current }: { current: Step }) {
   const steps = [
     { num: 1, label: 'Empresa' },
-    { num: 2, label: 'Admin' },
+    { num: 2, label: 'Administrador(a)' },
     { num: 3, label: 'Confirmar' },
   ];
   return (
@@ -161,8 +161,8 @@ export default function RegistroPage() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500 flex items-center justify-center mb-4">
             <span className="text-white text-2xl font-bold">C</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
-          <p className="text-sm text-gray-500 mt-1">14 días de prueba gratuita</p>
+          <h1 className="text-2xl font-bold text-gray-900">¡Crea tu cuenta!</h1>
+          <p className="text-sm text-gray-500 mt-1">14 días de prueba, ¡gratis!</p>
         </div>
 
         <StepIndicator current={step} />

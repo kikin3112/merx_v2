@@ -67,7 +67,7 @@ function ComparativaTab({ period }: { period: PeriodValue }) {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Comparativa Mensual</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Comparativa mensual</h3>
         <div className="text-xs text-gray-500 mb-2">
           {data.mes_actual.periodo}
         </div>
@@ -98,7 +98,7 @@ function RentabilidadTab() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Margen % por Categoria</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Margen por categoría (%)</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
@@ -115,12 +115,12 @@ function RentabilidadTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoria</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoría</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500">Productos</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Precio Prom.</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Prom.</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen %</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Valor Inv.</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-500">Precio prom.</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-500">Costo prom.</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen (%)</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-500">Valor invertido</th>
             </tr>
           </thead>
           <tbody>
@@ -152,9 +152,9 @@ function RentabilidadTab() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div><span className="text-gray-500">Productos:</span> <span className="font-medium">{row.cantidad_productos}</span></div>
-              <div><span className="text-gray-500">Precio Prom:</span> <span className="font-medium">{formatCurrency(row.precio_promedio)}</span></div>
-              <div><span className="text-gray-500">Costo Prom:</span> <span className="font-medium">{formatCurrency(row.costo_promedio)}</span></div>
-              <div><span className="text-gray-500">Valor Inv:</span> <span className="font-semibold">{formatCurrency(row.valor_inventario)}</span></div>
+              <div><span className="text-gray-500">Precio prom:</span> <span className="font-medium">{formatCurrency(row.precio_promedio)}</span></div>
+              <div><span className="text-gray-500">Costo prom:</span> <span className="font-medium">{formatCurrency(row.costo_promedio)}</span></div>
+              <div><span className="text-gray-500">Valor invertido</span> <span className="font-semibold">{formatCurrency(row.valor_inventario)}</span></div>
             </div>
           </div>
         ))}
@@ -181,7 +181,7 @@ function FlujoCajaTab() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Proyeccion Acumulada (30 dias)</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Proyección acumulada (30 días)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data.proyeccion}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -222,7 +222,7 @@ function MargenesTab({ period }: { period: PeriodValue }) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Ingresos vs Costo por Categoria</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Ingresos vs costo por categoría</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -241,11 +241,11 @@ function MargenesTab({ period }: { period: PeriodValue }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoria</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoría</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500">Ingresos</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500">Costo</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500">Margen</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen %</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen (%)</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500">Items</th>
             </tr>
           </thead>
@@ -305,7 +305,7 @@ export default function ReportesPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Reportes Avanzados</h1>
+        <h1 className="text-xl font-bold text-gray-900">Reportes avanzados</h1>
         {showPeriodSelector && (
           <PeriodSelector value={period} onChange={setPeriod} />
         )}

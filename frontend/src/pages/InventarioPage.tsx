@@ -139,8 +139,8 @@ export default function InventarioPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Producto</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Promedio</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Valor Total</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo promedio</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Valor total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,8 +176,8 @@ export default function InventarioPage() {
                     subtitle={inv.codigo}
                     fields={[
                       { label: 'Stock', value: formatNumber(inv.cantidad) },
-                      { label: 'Costo Promedio', value: formatCurrency(inv.costo_promedio) },
-                      { label: 'Valor Total', value: formatCurrency(inv.valor_total) },
+                      { label: 'Costo promedio', value: formatCurrency(inv.costo_promedio) },
+                      { label: 'Valor total', value: formatCurrency(inv.valor_total) },
                     ]}
                   />
                 ))
@@ -200,10 +200,10 @@ export default function InventarioPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo Unit.</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo unit.</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Observaciones</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Creado Por</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Creado por</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -542,14 +542,14 @@ function EntradaForm({ productos, error, saving, onSubmit, onCancel }: {
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Costo Unitario *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario *</label>
           <input type="number" required min={0} step={0.01} value={costoUnitario} onChange={(e) => setCostoUnitario(e.target.value)}
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Documento Referencia</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Documento referencia</label>
         <input type="text" value={docRef} onChange={(e) => setDocRef(e.target.value)}
           placeholder="Ej: FACTURA-001, REMISION-023"
           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
@@ -617,7 +617,7 @@ function AjusteForm({ productos, error, saving, onSubmit, onCancel }: {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad Nueva *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad nueva *</label>
         <input type="number" required min={0} step={0.01} value={cantidadNueva} onChange={(e) => setCantidadNueva(e.target.value)}
           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
         <p className="text-xs text-gray-400 mt-1">Se ajustara el stock a esta cantidad exacta</p>

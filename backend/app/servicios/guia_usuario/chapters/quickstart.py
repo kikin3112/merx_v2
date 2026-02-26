@@ -34,7 +34,7 @@ class QuickStartChapter:
 
         # Introducción
         chapter.add_intro(
-            "Este capítulo te guiará para comenzar a usar Chandelier ERP/POS en menos de 5 minutos. "
+            "Este capítulo te guiará para comenzar a usar ChandeliERP en menos de 5 minutos. "
             "Aprenderás a acceder al sistema, iniciar sesión y navegar por el dashboard principal."
         )
 
@@ -42,7 +42,7 @@ class QuickStartChapter:
 
         # Sección 1: ¿Qué es Chandelier ERP/POS?
         chapter.add_section(
-            "1.1 ¿Qué es Chandelier ERP/POS?",
+            "1.1 ¿Qué es ChandeliERP?",
             "Chandelier es un sistema ERP/POS diseñado específicamente para microempresas de "
             "velas y aromáticos en Colombia. Incluye gestión de productos, inventario, facturas, "
             "cotizaciones, clientes y contabilidad básica. El sistema es multi-tenant, lo que significa "
