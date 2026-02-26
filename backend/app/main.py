@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -8,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -387,6 +389,15 @@ async def not_found_handler(request: Request, exc):
             "available_routes": f"{settings.API_PREFIX}/docs",
         },
     )
+
+
+# ============================================================================
+# ARCHIVOS ESTÁTICOS (logos de tenants, etc.)
+# ============================================================================
+
+_static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+os.makedirs(_static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
 # ============================================================================

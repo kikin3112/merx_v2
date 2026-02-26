@@ -102,11 +102,11 @@ function formatTooltipValue(value: number): string {
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<PeriodValue>(getDefaultPeriod);
-  const { user, impersonation } = useAuthStore();
+  const { user, rolEnTenant, impersonation } = useAuthStore();
   const onboarding = useOnboarding();
 
-  // Determinar rol efectivo
-  const effectiveRole = impersonation ? impersonation.rolEnTenant : user?.rol;
+  // Determinar rol efectivo: usar rolEnTenant (rol en el tenant actual), no el rol global del sistema
+  const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
 
   // Solo admin y contador pueden ver reportes detallados
   const canViewReports = effectiveRole === 'admin' || effectiveRole === 'contador';

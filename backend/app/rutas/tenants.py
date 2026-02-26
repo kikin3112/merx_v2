@@ -2,11 +2,12 @@
 Rutas para gestión de Tenants y Multi-Tenancy.
 """
 
+import os
 from datetime import timedelta
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
@@ -41,6 +42,7 @@ from ..datos.esquemas import (
     UsuarioTenantResponse,
 )
 from ..datos.modelos import Usuarios
+from ..datos.modelos_tenant import Tenants
 from ..servicios.servicio_audit import ServicioAuditLog
 from ..servicios.servicio_tenants import ServicioTenants
 from ..utils.logger import setup_logger
@@ -1192,3 +1194,78 @@ async def listar_audit_logs_tenant(
         page=page,
         limit=limit,
     )
+
+
+# ============================================================================
+# LOGO UPLOAD (Superadmin)
+# ============================================================================
+
+_LOGOS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "static", "logos")
+_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
+_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
+
+
+@router.post(
+    "/{tenant_id}/logo",
+    response_model=TenantResponse,
+    summary="Subir logo del tenant",
+    dependencies=[Depends(get_superadmin)],
+)
+async def subir_logo_tenant(
+    request: Request,
+    tenant_id: UUID,
+    file: UploadFile = File(...),
+    superadmin: Usuarios = Depends(get_superadmin),
+    db: Session = Depends(get_db),
+):
+    """
+    Sube el logo de un tenant. Acepta JPEG, PNG o WebP (máx. 2 MB).
+    **Requiere ser SuperAdmin.**
+    """
+    # Validar tipo MIME
+    if file.content_type not in _ALLOWED_MIME:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo de archivo no permitido. Use JPEG, PNG o WebP.",
+        )
+
+    # Leer contenido y validar tamaño
+    content = await file.read()
+    if len(content) > _MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo supera el límite de 2 MB.",
+        )
+
+    # Determinar extensión
+    ext_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+    ext = ext_map[file.content_type]
+
+    # Guardar en disco
+    os.makedirs(_LOGOS_DIR, exist_ok=True)
+    filename = f"{tenant_id}.{ext}"
+    filepath = os.path.join(_LOGOS_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    # Actualizar url_logo en DB
+    tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+
+    tenant.url_logo = f"/static/logos/{filename}"
+    db.commit()
+    db.refresh(tenant)
+
+    audit = ServicioAuditLog(db)
+    audit.registrar_desde_request(
+        request,
+        superadmin,
+        "tenant.logo_upload",
+        "tenant",
+        resource_id=tenant_id,
+        tenant_id=tenant_id,
+        changes={"url_logo": tenant.url_logo},
+    )
+
+    return TenantResponse.model_validate(tenant)

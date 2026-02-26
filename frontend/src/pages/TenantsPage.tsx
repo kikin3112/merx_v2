@@ -1113,6 +1113,26 @@ function TenantDetailPanel({
   const [editTelefono, setEditTelefono] = useState(tenant.telefono || '');
   const [editCiudad, setEditCiudad] = useState(tenant.ciudad || '');
 
+  // Logo upload
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(tenant.url_logo ?? null);
+  const qcLocal = useQueryClient();
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const { data } = await tenants.uploadLogo(tenant.id, file);
+      setLogoPreview(data.url_logo ?? null);
+      qcLocal.invalidateQueries({ queryKey: ['tenants'] });
+    } catch {
+      // silent fail — user sees no change
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   // Pulse query (lazy — only when tab is active)
   const { data: pulse, isLoading: loadingPulse } = useQuery<TenantPulse>({
     queryKey: ['tenant-pulse', tenant.id],
@@ -1223,6 +1243,28 @@ function TenantDetailPanel({
             <div>
               <span className="text-xs text-gray-500">Fin suscripcion</span>
               <p className="font-medium">{tenant.fecha_fin_suscripcion ? formatDate(tenant.fecha_fin_suscripcion) : '-'}</p>
+            </div>
+          </div>
+
+          {/* Logo del tenant */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-2">Logo del tenant</label>
+            <div className="flex items-center gap-3">
+              {logoPreview ? (
+                <img
+                  src={logoPreview.startsWith('http') ? logoPreview : `${(import.meta.env.VITE_API_URL as string || '/api/v1').replace(/\/api\/v\d+\/?$/, '')}${logoPreview}`}
+                  alt="Logo actual"
+                  className="h-12 w-12 rounded-full object-cover border border-gray-200"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Sin logo</div>
+              )}
+              <label className={`cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors ${logoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {logoUploading ? 'Subiendo...' : 'Subir logo'}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleLogoChange} />
+              </label>
+              <span className="text-xs text-gray-400">JPEG, PNG o WebP · máx. 2 MB</span>
             </div>
           </div>
 

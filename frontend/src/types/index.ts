@@ -51,6 +51,7 @@ export interface Tenant {
   nombre: string;
   slug: string;
   estado: string;
+  url_logo?: string | null;
 }
 
 export interface LoginResponse {
