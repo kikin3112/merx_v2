@@ -25,8 +25,8 @@ interface TicketDetailProps {
 
 export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
   const queryClient = useQueryClient();
-  const { user, impersonation } = useAuthStore();
-  const effectiveRole = impersonation ? impersonation.rolEnTenant : user?.rol;
+  const { user, impersonation, rolEnTenant } = useAuthStore();
+  const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
   const isAdmin = effectiveRole === 'admin' || user?.es_superadmin;
 
   const [respuesta, setRespuesta] = useState('');

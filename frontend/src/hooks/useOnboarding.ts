@@ -29,7 +29,8 @@ function saveState(tenantId: string, state: OnboardingState) {
 export function useOnboarding() {
   const tenantId = useAuthStore((s) => s.tenantId);
   const user = useAuthStore((s) => s.user);
-  const effectiveRole = user?.rol;
+  const rolEnTenant = useAuthStore((s) => s.rolEnTenant);
+  const effectiveRole = rolEnTenant ?? user?.rol;
 
   // Only show for admin users
   const isAdmin = effectiveRole === 'admin';

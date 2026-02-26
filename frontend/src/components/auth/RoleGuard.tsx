@@ -17,12 +17,12 @@ export default function RoleGuard({
   allowedRoles,
   fallback = '/'
 }: RoleGuardProps) {
-  const { user, impersonation } = useAuthStore();
+  const { user, impersonation, rolEnTenant } = useAuthStore();
 
-  // Determine effective role
+  // Determine effective role: impersonation > tenant role > global role
   const effectiveRole = impersonation
     ? impersonation.rolEnTenant
-    : user?.rol;
+    : (rolEnTenant ?? user?.rol);
 
   // Superadmin bypasses all role checks (when not impersonating)
   if (user?.es_superadmin && !impersonation) {
