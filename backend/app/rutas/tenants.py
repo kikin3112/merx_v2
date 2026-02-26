@@ -2,6 +2,7 @@
 Rutas para gestión de Tenants y Multi-Tenancy.
 """
 
+import base64
 import os
 from datetime import timedelta
 from typing import List, Optional
@@ -1237,23 +1238,16 @@ async def subir_logo_tenant(
             detail="El archivo supera el límite de 2 MB.",
         )
 
-    # Determinar extensión
-    ext_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
-    ext = ext_map[file.content_type]
-
-    # Guardar en disco
-    os.makedirs(_LOGOS_DIR, exist_ok=True)
-    filename = f"{tenant_id}.{ext}"
-    filepath = os.path.join(_LOGOS_DIR, filename)
-    with open(filepath, "wb") as f:
-        f.write(content)
+    # Convertir a data URL base64 (persistente entre redeploys)
+    b64 = base64.b64encode(content).decode("utf-8")
+    data_url = f"data:{file.content_type};base64,{b64}"
 
     # Actualizar url_logo en DB
     tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
 
-    tenant.url_logo = f"/static/logos/{filename}"
+    tenant.url_logo = data_url
     db.commit()
     db.refresh(tenant)
 
@@ -1265,7 +1259,7 @@ async def subir_logo_tenant(
         "tenant",
         resource_id=tenant_id,
         tenant_id=tenant_id,
-        changes={"url_logo": tenant.url_logo},
+        changes={"url_logo": f"data:{file.content_type};base64,<{len(content)} bytes>"},
     )
 
     return TenantResponse.model_validate(tenant)

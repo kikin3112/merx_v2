@@ -96,7 +96,7 @@ class Tenants(Base):
     departamento = Column(String(100))
 
     # Configuración visual
-    url_logo = Column(String(500))
+    url_logo = Column(Text)
     color_primario = Column(String(20), default="#1976D2")
     color_secundario = Column(String(20), default="#424242")
 
