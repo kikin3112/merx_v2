@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend'))
 
 from app.main import app
 from app.datos.db import Base, get_db
-from app.datos.modelos_tenant import Tenants
+from app.datos.modelos_tenant import Planes, Tenants
 from app.datos.modelos import Usuarios
 from app.utils.seguridad import hash_password, create_access_token
 
@@ -73,12 +73,17 @@ def client(db: Session):
 
 @pytest.fixture(scope="module")
 def tenant_and_token(db: Session):
+    plan = Planes(nombre="Auth Test Plan", precio_mensual=0)
+    db.add(plan)
+    db.flush()
+
     tenant = Tenants(
         nombre="Auth Test Tenant",
         slug="auth-test-tenant",
         nit="333333333-3",
         estado="ACTIVO",
-        email_contacto="authtest@test.com"
+        email_contacto="authtest@test.com",
+        plan_id=plan.id,
     )
     db.add(tenant)
     db.flush()

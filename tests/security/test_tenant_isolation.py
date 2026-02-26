@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend'))
 from app.main import app
 from app.datos.db import Base, get_db
 from app.datos.modelos import Usuarios
-from app.datos.modelos_tenant import Tenants
+from app.datos.modelos_tenant import Planes, Tenants
 from app.utils.seguridad import hash_password, create_access_token
 
 
@@ -44,19 +44,25 @@ def db(engine):
 @pytest.fixture(scope="module")
 def two_tenants(db: Session):
     """Create two isolated tenants with their own admin users."""
+    plan = Planes(nombre="Isolation Test Plan", precio_mensual=0)
+    db.add(plan)
+    db.flush()
+
     tenant_a = Tenants(
         nombre="Tenant Alpha",
         slug="tenant-alpha",
         nit="111111111-1",
         estado="ACTIVO",
-        email_contacto="alpha@test.com"
+        email_contacto="alpha@test.com",
+        plan_id=plan.id,
     )
     tenant_b = Tenants(
         nombre="Tenant Beta",
         slug="tenant-beta",
         nit="222222222-2",
         estado="ACTIVO",
-        email_contacto="beta@test.com"
+        email_contacto="beta@test.com",
+        plan_id=plan.id,
     )
     db.add_all([tenant_a, tenant_b])
     db.flush()
