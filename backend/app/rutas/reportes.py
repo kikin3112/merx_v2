@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..datos.db import get_db
 from ..datos.modelos import Cartera, Compras, Inventarios, Productos, Terceros, Ventas, VentasDetalle
@@ -706,6 +706,7 @@ async def gastos_vs_ingresos(
 
     ventas = (
         db.query(Ventas)
+        .options(joinedload(Ventas.detalles))
         .filter(
             Ventas.tenant_id == ctx.tenant_id,
             Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
@@ -717,6 +718,7 @@ async def gastos_vs_ingresos(
 
     compras = (
         db.query(Compras)
+        .options(joinedload(Compras.detalles))
         .filter(
             Compras.tenant_id == ctx.tenant_id,
             Compras.estado == "RECIBIDA",
