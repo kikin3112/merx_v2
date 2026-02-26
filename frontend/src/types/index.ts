@@ -957,3 +957,31 @@ export interface TicketPQRSUpdate {
   estado?: EstadoTicket;
   prioridad?: PrioridadTicket;
 }
+
+export interface TicketPQRSAdmin extends TicketPQRS {
+  tenant_id: string | null;
+}
+
+export interface CalificacionCreate {
+  estrellas: number;
+  titulo?: string;
+  comentario?: string;
+}
+
+export interface CalificacionResponse {
+  id: string;
+  tenant_id: string;
+  estrellas: number;
+  titulo: string | null;
+  comentario: string | null;
+  estado: string;
+  created_at: string;
+}
+
+export interface CalificacionPublica {
+  estrellas: number;
+  titulo: string | null;
+  comentario: string | null;
+  nombre_empresa: string;
+  created_at: string;
+}

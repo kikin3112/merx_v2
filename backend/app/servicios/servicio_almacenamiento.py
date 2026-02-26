@@ -20,16 +20,17 @@ class ServicioAlmacenamiento:
         if self.is_enabled:
             try:
                 import boto3
+
                 kwargs = {
-                    'service_name': 's3',
-                    'region_name': settings.S3_REGION,
+                    "service_name": "s3",
+                    "region_name": settings.S3_REGION,
                 }
                 if settings.AWS_ACCESS_KEY_ID:
-                    kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+                    kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
                 if settings.AWS_SECRET_ACCESS_KEY:
-                    kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+                    kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
                 if settings.S3_ENDPOINT_URL:
-                    kwargs['endpoint_url'] = settings.S3_ENDPOINT_URL
+                    kwargs["endpoint_url"] = settings.S3_ENDPOINT_URL
 
                 self._client = boto3.client(**kwargs)
                 logger.info("S3 client initialized successfully")
@@ -39,7 +40,7 @@ class ServicioAlmacenamiento:
 
     @property
     def is_enabled(self) -> bool:
-        return getattr(settings, 'S3_ENABLED', False)
+        return getattr(settings, "S3_ENABLED", False)
 
     def subir_pdf(
         self,
@@ -71,7 +72,7 @@ class ServicioAlmacenamiento:
                 Bucket=settings.S3_BUCKET,
                 Key=key,
                 Body=contenido,
-                ContentType='application/pdf',
+                ContentType="application/pdf",
             )
             logger.info(f"PDF uploaded to S3: {key}")
             return key
@@ -94,10 +95,10 @@ class ServicioAlmacenamiento:
 
         try:
             url = self._client.generate_presigned_url(
-                'get_object',
+                "get_object",
                 Params={
-                    'Bucket': settings.S3_BUCKET,
-                    'Key': key,
+                    "Bucket": settings.S3_BUCKET,
+                    "Key": key,
                 },
                 ExpiresIn=settings.S3_PRESIGNED_URL_EXPIRY,
             )

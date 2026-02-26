@@ -63,9 +63,12 @@ import type {
   TenantRegisterRequest,
   TenantRegisterResponse,
   TicketPQRS,
+  TicketPQRSAdmin,
   TicketPQRSCreate,
   TicketPQRSUpdate,
   GastosVsIngresos,
+  CalificacionCreate,
+  CalificacionResponse,
 } from '../types';
 
 // Auth
@@ -410,4 +413,20 @@ export const pqrs = {
     client.patch<TicketPQRS>(`/pqrs/${id}`, data),
   responder: (id: string, contenido: string) =>
     client.post<TicketPQRS>(`/pqrs/${id}/respuestas`, { contenido }),
+  adminTodos: (params?: { tenant_id?: string; tipo?: string; estado?: string; prioridad?: string }) =>
+    client.get<TicketPQRSAdmin[]>('/pqrs/admin/todos', { params }),
+  adminResponder: (id: string, contenido: string) =>
+    client.post<TicketPQRSAdmin>(`/pqrs/admin/${id}/responder`, { contenido }),
+};
+
+// Calificaciones
+export const calificaciones = {
+  crear: (data: CalificacionCreate) =>
+    client.post<CalificacionResponse>('/calificaciones/', data),
+  miCalificacion: () =>
+    client.get<CalificacionResponse>('/calificaciones/mi-tenant'),
+  adminList: (params?: { estado?: string }) =>
+    client.get<CalificacionResponse[]>('/calificaciones/admin', { params }),
+  moderar: (id: string, nuevo_estado: string) =>
+    client.patch<CalificacionResponse>(`/calificaciones/${id}/moderar`, { nuevo_estado }),
 };

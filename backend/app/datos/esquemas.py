@@ -1580,3 +1580,55 @@ class TicketPQRSResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TicketPQRSAdminResponse(TicketPQRSResponse):
+    """Response de ticket PQRS para superadmin — incluye tenant_id."""
+
+    tenant_id: Optional[UUID] = None
+
+
+# ============================================================================
+# CALIFICACIONES
+# ============================================================================
+
+
+class CalificacionCreate(BaseModel):
+    """Request para crear o actualizar la calificación del tenant."""
+
+    estrellas: int = Field(..., ge=1, le=5, description="Calificación de 1 a 5 estrellas")
+    titulo: Optional[str] = Field(None, max_length=200)
+    comentario: Optional[str] = None
+
+
+class CalificacionResponse(BaseModel):
+    """Response de una calificación."""
+
+    id: UUID
+    tenant_id: UUID
+    estrellas: int
+    titulo: Optional[str] = None
+    comentario: Optional[str] = None
+    estado: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CalificacionPublicaResponse(BaseModel):
+    """Para la landing page — sin datos sensibles de tenant."""
+
+    estrellas: int
+    titulo: Optional[str] = None
+    comentario: Optional[str] = None
+    nombre_empresa: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CalificacionModerarRequest(BaseModel):
+    """Request para moderar una calificación (superadmin)."""
+
+    nuevo_estado: str = Field(..., pattern="^(aprobada|rechazada)$")

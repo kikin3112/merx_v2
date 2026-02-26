@@ -54,6 +54,7 @@ from .middleware.tenant_context import TenantContextMiddleware
 from .middleware.user_context import UserContextMiddleware
 from .rutas import (
     auth,
+    calificaciones,
     cartera,
     compras,
     configuracion_contable,
@@ -477,6 +478,9 @@ app.include_router(sse.router, prefix=f"{prefix}/sse", tags=["Tiempo Real (SSE)"
 
 # PQRS - Sistema de soporte
 app.include_router(pqrs.router, prefix=f"{prefix}/pqrs", tags=["PQRS / Soporte"])
+
+# Calificaciones
+app.include_router(calificaciones.router, prefix=f"{prefix}/calificaciones", tags=["Calificaciones"])
 
 
 # ============================================================================

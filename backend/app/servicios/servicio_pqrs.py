@@ -106,6 +106,25 @@ class ServicioPQRS:
         logger.info(f"Ticket {ticket_id} actualizado: estado={ticket.estado}, prioridad={ticket.prioridad}")
         return ticket
 
+    def listar_todos_tickets(
+        self,
+        tenant_id_filtro: Optional[UUID] = None,
+        tipo: Optional[str] = None,
+        estado: Optional[str] = None,
+        prioridad: Optional[str] = None,
+    ) -> list[TicketsPQRS]:
+        """Superadmin: lista tickets de todos los tenants sin restricción de tenant."""
+        query = self.db.query(TicketsPQRS).filter(TicketsPQRS.deleted_at.is_(None))
+        if tenant_id_filtro:
+            query = query.filter(TicketsPQRS.tenant_id == tenant_id_filtro)
+        if tipo:
+            query = query.filter(TicketsPQRS.tipo == TipoPQRS(tipo))
+        if estado:
+            query = query.filter(TicketsPQRS.estado == EstadoTicket(estado))
+        if prioridad:
+            query = query.filter(TicketsPQRS.prioridad == PrioridadTicket(prioridad))
+        return query.order_by(TicketsPQRS.created_at.desc()).all()
+
     def agregar_respuesta(
         self,
         ticket_id: UUID,

@@ -180,9 +180,7 @@ class CalculadoraMargenes:
         margen_contribucion = precio_venta - costo_variable_unitario
 
         if margen_contribucion <= 0:
-            raise ValueError(
-                "El margen de contribucion debe ser positivo. " "El precio debe ser mayor al costo variable."
-            )
+            raise ValueError("El margen de contribucion debe ser positivo. El precio debe ser mayor al costo variable.")
 
         punto_equilibrio_unidades = costo_fijo / margen_contribucion
         punto_equilibrio_ventas = punto_equilibrio_unidades * precio_venta
