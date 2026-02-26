@@ -39,7 +39,7 @@ export default function LoginPage() {
             <span className="text-white text-2xl font-bold">C</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">ChandeliERP</h1>
-          <p className="text-sm text-gray-500 mt-1">ERP para cerer@s hecho con <3</p>
+          <p className="text-sm text-gray-500 mt-1">ERP para cerer@s hecho con &lt;3</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
