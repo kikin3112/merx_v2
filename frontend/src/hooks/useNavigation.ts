@@ -51,10 +51,10 @@ const superadminItems: NavItem[] = [
 const BOTTOM_NAV_PATHS = ['/', '/pos', '/ventas', '/productos'];
 
 export function useNavigation() {
-  const { user, tenantId, impersonation } = useAuthStore();
+  const { user, tenantId, impersonation, rolEnTenant } = useAuthStore();
 
   const isSuperadminOnly = user?.es_superadmin && !tenantId;
-  const effectiveRole = impersonation ? impersonation.rolEnTenant : user?.rol;
+  const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
 
   const filterByRole = (items: NavItem[]) => {
     if (isSuperadminOnly) return [];

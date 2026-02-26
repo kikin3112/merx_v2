@@ -144,6 +144,7 @@ export const useAuthStore = create<AuthState>()(
           tenantId: null,
           tenantName: null,
           tenantLogo: null,
+          rolEnTenant: null,
           impersonation: null,
         });
       },
