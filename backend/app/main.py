@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +18,7 @@ from .config import settings
 from .datos.db import engine
 from .utils.logger import clear_request_context, set_request_context, setup_logger
 from .utils.rate_limiter import limiter
+from .utils.seguridad import get_superadmin
 
 # Sentry integration (production/staging only)
 if hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
@@ -490,20 +491,12 @@ app.include_router(calificaciones.router, prefix=f"{prefix}/calificaciones", tag
 
 @app.post(f"{prefix}/admin/seed", tags=["Administración"])
 def ejecutar_seeds(
-    current_user=None,  # TODO: Agregar dependency de autenticación admin
+    _current_user=Depends(get_superadmin),
 ):
     """
     Ejecuta la siembra de datos iniciales.
-
-    ⚠️ ADVERTENCIA: Este endpoint debe estar protegido por autenticación.
-    Solo usuarios con rol 'admin' deberían poder ejecutarlo.
+    Requiere autenticación como superadmin.
     """
-    # TODO: Descomentar cuando el sistema de auth esté completo
-    # if current_user.rol != "admin":
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="Requiere permisos de administrador"
-    #     )
 
     try:
         from .utils.seeders import run_all_seeders
