@@ -64,6 +64,7 @@ export default function EmpresaWizardPage() {
   const navigate = useNavigate();
   const selectTenant = useAuthStore((s) => s.selectTenant);
   const token = useAuthStore((s) => s.token);
+  const tenants = useAuthStore((s) => s.tenants);
 
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
@@ -316,12 +317,14 @@ export default function EmpresaWizardPage() {
           </div>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          ¿Ya tienes una empresa?{' '}
-          <Link to="/select-tenant" className="text-primary-500 hover:text-primary-600 font-medium">
-            Seleccionarla
-          </Link>
-        </p>
+        {tenants.length > 0 && (
+          <p className="text-center text-sm text-gray-500 mt-4">
+            ¿Ya tienes una empresa?{' '}
+            <Link to="/select-tenant" className="text-primary-500 hover:text-primary-600 font-medium">
+              Seleccionarla
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );
