@@ -670,22 +670,40 @@ def is_token_expired(token: str) -> bool:
 
 CLERK_JWKS_URL = "https://api.clerk.com/v1/jwks"
 
+# Singleton: una sola instancia compartida entre todos los requests
+# para que cache_keys=True funcione efectivamente
+_clerk_jwks_client: Optional[PyJWKClient] = None
+
+
+def _get_clerk_jwks_client() -> PyJWKClient:
+    """Retorna el cliente JWKS de Clerk, creándolo si no existe."""
+    global _clerk_jwks_client
+    if _clerk_jwks_client is None:
+        # api.clerk.com/v1/jwks es el endpoint autenticado de Clerk Backend API.
+        # Requiere Authorization: Bearer <CLERK_SECRET_KEY>
+        headers: dict = {}
+        if settings.CLERK_SECRET_KEY:
+            headers["Authorization"] = f"Bearer {settings.CLERK_SECRET_KEY}"
+        else:
+            logger.warning("CLERK_SECRET_KEY no configurado — verify_clerk_token fallará con 403")
+        _clerk_jwks_client = PyJWKClient(
+            CLERK_JWKS_URL,
+            cache_keys=True,
+            headers=headers,
+        )
+    return _clerk_jwks_client
+
 
 def verify_clerk_token(token: str) -> dict:
     """
-    Verifica un JWT de Clerk usando su endpoint JWKS público.
-
-    Args:
-        token: JWT emitido por Clerk
-
-    Returns:
-        Payload del token con email, sub (clerk user id), etc.
+    Verifica un JWT de Clerk usando su endpoint JWKS autenticado.
 
     Raises:
-        HTTPException 401: Si el token es inválido o no pertenece a Clerk
+        HTTPException 401: Si el token es inválido o expirado
+        HTTPException 503: Si no se puede conectar al endpoint JWKS de Clerk
     """
     try:
-        jwks_client = PyJWKClient(CLERK_JWKS_URL, cache_keys=True)
+        jwks_client = _get_clerk_jwks_client()
         signing_key = jwks_client.get_signing_key_from_jwt(token)
         payload = pyjwt.decode(
             token,
@@ -694,6 +712,8 @@ def verify_clerk_token(token: str) -> dict:
             options={"verify_aud": False},
         )
         return payload
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions sin envolverlas
     except Exception as e:
         logger.warning(f"Token de Clerk inválido: {str(e)}")
         raise HTTPException(
