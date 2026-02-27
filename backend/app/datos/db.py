@@ -1,6 +1,7 @@
 from typing import Generator, Optional
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
@@ -129,6 +130,11 @@ def get_db() -> Generator[Session, None, None]:
         yield db
         # Nota: El commit debe hacerse explícitamente en el Servicio (Service Layer),
         # no aquí, para mantener el control transaccional.
+    except HTTPException:
+        # No loguear HTTPExceptions como errores de BD — son excepciones
+        # de negocio/autenticación que se propagan normalmente
+        db.rollback()
+        raise
     except Exception as e:
         logger.error(f"Error en sesión de base de datos: {str(e)}")
         db.rollback()
@@ -151,6 +157,11 @@ def get_db_with_tenant(tenant_id: UUID) -> Generator[Session, None, None]:
     try:
         set_tenant_context(db, tenant_id)
         yield db
+    except HTTPException:
+        # No loguear HTTPExceptions como errores de BD — son excepciones
+        # de negocio/autenticación que se propagan normalmente
+        db.rollback()
+        raise
     except Exception as e:
         logger.error(f"Error en sesión de base de datos: {str(e)}")
         db.rollback()
