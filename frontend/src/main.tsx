@@ -11,7 +11,13 @@ const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undef
 function AppRoot() {
   if (clerkPubKey) {
     return (
-      <ClerkProvider publishableKey={clerkPubKey} localization={esES} afterSignOutUrl="/login">
+      <ClerkProvider
+        publishableKey={clerkPubKey}
+        localization={esES}
+        afterSignOutUrl="/login"
+        signInUrl="/login"
+        signUpUrl="/registro"
+      >
         <App />
       </ClerkProvider>
     );
