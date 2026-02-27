@@ -94,6 +94,8 @@ export default function TenantsPage() {
   const [newPassword, setNewPassword] = useState('');
 
   const startImpersonation = useAuthStore((s) => s.startImpersonation);
+  const currentUser = useAuthStore((s) => s.user);
+  const isSelf = selectedUser?.id === currentUser?.id;
 
   // Error banner
   const [error, setError] = useState<string | null>(null);
@@ -902,6 +904,12 @@ export default function TenantsPage() {
               )}
             </div>
 
+            {isSelf && (
+              <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                Estás viendo tu propia cuenta. El reseteo de contraseña no está disponible para prevenir auto-bloqueo.
+              </div>
+            )}
+
             {/* Sub-tabs */}
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
               <div className="flex border-b border-gray-200 mb-4 w-max md:w-auto">
@@ -909,7 +917,7 @@ export default function TenantsPage() {
                   { key: 'info', label: 'Info' },
                   { key: 'tenants', label: 'Tenants / Impersonar' },
                   { key: 'password', label: 'Contraseña' },
-                ] as const).map((tab) => (
+                ] as const).filter((tab) => !(isSelf && tab.key === 'password')).map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setUserModalTab(tab.key)}
