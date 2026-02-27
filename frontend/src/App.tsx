@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import { usePageTracking } from './hooks/useAnalytics';
@@ -41,20 +41,17 @@ function RequireAuth() {
   const token = useAuthStore((s) => s.token);
   const tenantId = useAuthStore((s) => s.tenantId);
   const user = useAuthStore((s) => s.user);
+  const impersonation = useAuthStore((s) => s.impersonation);
+  const location = useLocation();
 
   if (!token) return <Navigate to="/login" replace />;
-  // Superadmin bypasses tenant selection — goes straight to admin panel
   if (!tenantId && !user?.es_superadmin) return <Navigate to="/select-tenant" replace />;
+  // Superadmin sin impersonación: acceso exclusivo a /tenants
+  if (user?.es_superadmin && !impersonation && !location.pathname.startsWith('/tenants')) {
+    return <Navigate to="/tenants" replace />;
+  }
 
   return <Outlet />;
-}
-
-function SuperadminRedirect({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((s) => s.user);
-  const tenantId = useAuthStore((s) => s.tenantId);
-  // Superadmin without a tenant context → go to tenant management
-  if (user?.es_superadmin && !tenantId) return <Navigate to="/tenants" replace />;
-  return <>{children}</>;
 }
 
 function RequireToken() {
@@ -87,7 +84,7 @@ export default function App() {
 
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
-              <Route path="/" element={<SuperadminRedirect><DashboardPage /></SuperadminRedirect>} />
+              <Route path="/" element={<DashboardPage />} />
 
               {/* Open to all authenticated roles */}
               <Route path="/ventas" element={<VentasPage />} />
