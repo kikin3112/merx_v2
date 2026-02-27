@@ -380,16 +380,23 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
     """
-    Maneja rutas no encontradas (404).
+    Maneja 404s — tanto fallos de routing como HTTPException(404) desde handlers.
+    Preserva exc.detail para 404s de negocio; usa "Ruta no encontrada" solo para
+    fallos de routing genuinos (donde no hay detail significativo).
     """
-    logger.warning(f"Ruta no encontrada: {request.method} {request.url.path}")
+    exc_detail = getattr(exc, "detail", None)
+    # Routing misses have no detail, or Starlette sets it to "Not Found" or the int 404
+    is_routing_miss = exc_detail is None or exc_detail in ("Not Found", 404)
+    if is_routing_miss:
+        detail = f"Ruta no encontrada: {request.method} {request.url.path}"
+        logger.warning(f"Ruta no encontrada: {request.method} {request.url.path}")
+    else:
+        detail = exc_detail
+        logger.warning(f"Recurso no encontrado ({request.method} {request.url.path}): {detail}")
 
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={
-            "detail": f"Ruta no encontrada: {request.method} {request.url.path}",
-            "available_routes": f"{settings.API_PREFIX}/docs",
-        },
+        content={"detail": detail},
     )
 
 
