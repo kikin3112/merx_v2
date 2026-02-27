@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ArrowRightStartOnRectangleIcon, StarIcon } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import CalificacionModal from '../CalificacionModal';
+import LogoutButton from './LogoutButton';
 
 const _API_ORIGIN = (import.meta.env.VITE_API_URL as string || '/api/v1').replace(/\/api\/v\d+\/?$/, '');
 
@@ -14,7 +15,7 @@ function buildLogoUrl(urlLogo: string | null | undefined): string {
 }
 
 export default function Sidebar() {
-  const { tenantName, tenantLogo, logout } = useAuthStore();
+  const { tenantName, tenantLogo } = useAuthStore();
   const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
   const [showCalificacion, setShowCalificacion] = useState(false);
 
@@ -120,13 +121,7 @@ export default function Sidebar() {
             <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre || 'Usuario'}</p>
             <p className="text-xs text-gray-500 truncate">{user?.rol}</p>
           </div>
-          <button
-            onClick={logout}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-            title="Cerrar sesion"
-          >
-            <ArrowRightStartOnRectangleIcon className="h-4 w-4" />
-          </button>
+          <LogoutButton className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" />
         </div>
       </div>
     </aside>

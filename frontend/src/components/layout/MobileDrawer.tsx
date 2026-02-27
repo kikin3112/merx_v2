@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { XMarkIcon, ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useAuthStore } from '../../stores/authStore';
+import LogoutButton from './LogoutButton';
 
 interface Props {
   open: boolean;
@@ -11,7 +12,7 @@ interface Props {
 
 export default function MobileDrawer({ open, onClose }: Props) {
   const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
-  const { tenantName, logout } = useAuthStore();
+  const { tenantName } = useAuthStore();
 
   // Lock body scroll when open
   useEffect(() => {
@@ -128,13 +129,10 @@ export default function MobileDrawer({ open, onClose }: Props) {
               <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre || 'Usuario'}</p>
               <p className="text-xs text-gray-500 truncate">{user?.rol}</p>
             </div>
-            <button
-              onClick={() => { logout(); onClose(); }}
+            <LogoutButton
               className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Cerrar sesion"
-            >
-              <ArrowRightStartOnRectangleIcon className="h-4 w-4" />
-            </button>
+              onBeforeLogout={onClose}
+            />
           </div>
         </div>
       </aside>
