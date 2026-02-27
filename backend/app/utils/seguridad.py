@@ -717,7 +717,15 @@ def verify_clerk_token(token: str) -> dict:
             jwks_url = f"{iss}/.well-known/jwks.json"
 
         jwks_client = _get_clerk_jwks_client(jwks_url)
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        try:
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+        except Exception:
+            # Clerk dev tokens may have no 'kid' in header — try first available key
+            keys = jwks_client.get_signing_keys()
+            if not keys:
+                raise
+            signing_key = keys[0]
+
         payload = pyjwt.decode(
             token,
             signing_key.key,
