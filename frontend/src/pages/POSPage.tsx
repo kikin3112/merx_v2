@@ -87,9 +87,13 @@ export default function POSPage() {
     },
   });
 
-  // Set default client
+  // Set default client — also invalidates stale clienteId from a previous tenant session.
+  // posStore persists clienteId across sessions; on tenant switch the UUID may belong
+  // to a different tenant and the backend will 404 on "Tercero no encontrado".
   useEffect(() => {
-    if (tercerosData?.length && !clienteId) {
+    if (!tercerosData?.length) return;
+    const clienteValido = clienteId && tercerosData.some(t => t.id === clienteId);
+    if (!clienteValido) {
       const mostrador = tercerosData.find(t =>
         t.nombre.toLowerCase().includes('mostrador') || t.numero_documento === '222222222222'
       );
