@@ -22,6 +22,7 @@ def test_vendedor_cannot_delete_producto(client, vendedor_token, tenant_admin_to
         precio_venta=Decimal("10000"),
         porcentaje_iva=Decimal("19"),
         categoria="Producto_Propio",
+        unidad_medida="UNIDAD",
         estado=True,
     )
     db_session.add(producto)
