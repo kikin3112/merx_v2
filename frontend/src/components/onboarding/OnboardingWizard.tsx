@@ -45,12 +45,11 @@ export default function OnboardingWizard({
         nombre: prodNombre.trim(),
         categoria: prodCategoria,
         unidad_medida: 'UNIDAD',
-        tipo_iva: 'Gravado',
-        porcentaje_iva: 19,
+        tipo_iva: 'Excluido',
+        porcentaje_iva: 0,
         precio_venta: parseFloat(prodPrecio) || 0,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-check'] });
       onCompleteStep(1);
       setError('');
     },

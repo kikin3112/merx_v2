@@ -25,7 +25,7 @@ const CAT_LABELS: Record<string, string> = {
 function emptyForm(): ProductoCreate {
   return {
     codigo_interno: '', nombre: '', categoria: 'Producto_Propio',
-    unidad_medida: 'UNIDAD', tipo_iva: 'Gravado', porcentaje_iva: 19,
+    unidad_medida: 'UNIDAD', tipo_iva: 'Excluido', porcentaje_iva: 0,
     precio_venta: 0, maneja_inventario: true, stock_minimo: 5, estado: true,
   };
 }
