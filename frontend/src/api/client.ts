@@ -52,7 +52,9 @@ const client = axios.create({
 // Request interceptor: add auth token and tenant ID from localStorage
 client.interceptors.request.use((config) => {
   const { token, tenantId } = getPersistedAuth();
-  if (token) {
+  // Only inject stored token if request doesn't already carry its own Authorization
+  // (e.g. clerk-exchange passes the Clerk JWT explicitly)
+  if (token && !config.headers['Authorization']) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   if (tenantId) {

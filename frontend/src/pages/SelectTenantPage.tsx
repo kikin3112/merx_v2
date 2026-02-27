@@ -13,6 +13,11 @@ export default function SelectTenantPage() {
     return <Navigate to="/tenants" replace />;
   }
 
+  // New user with no tenants — redirect to company creation wizard
+  if (tenants.length === 0) {
+    return <Navigate to="/registro/empresa" replace />;
+  }
+
   const handleSelect = async (tenantId: string) => {
     setLoading(true);
     setError('');
