@@ -4,6 +4,8 @@ Usa Argon2 para hashing (más seguro que bcrypt).
 Soporte multi-tenant con tenant_id en JWT payload.
 """
 
+import base64 as _base64
+import json as _json_mod
 from datetime import datetime, timedelta, timezone
 from typing import Callable, NamedTuple, Optional
 from uuid import UUID
@@ -668,42 +670,53 @@ def is_token_expired(token: str) -> bool:
     return datetime.now(timezone.utc) > expiration
 
 
-# Cache de clientes JWKS por issuer (el iss del JWT determina el endpoint público)
+# Cache de clientes JWKS por URL
 _clerk_jwks_clients: dict = {}
 
 
-def _get_clerk_jwks_client_for_issuer(iss: str) -> PyJWKClient:
-    """Retorna un PyJWKClient para el issuer dado, usando el endpoint público de JWKS.
+def _get_clerk_jwks_client(jwks_url: str) -> PyJWKClient:
+    """Retorna un PyJWKClient cacheado para la URL dada."""
+    if jwks_url not in _clerk_jwks_clients:
+        _clerk_jwks_clients[jwks_url] = PyJWKClient(jwks_url, cache_keys=True, cache_jwk_set=True)
+    return _clerk_jwks_clients[jwks_url]
 
-    El endpoint {iss}/.well-known/jwks.json es público — no requiere auth.
-    Es el enfoque estándar JWT: verificar contra el JWKS del issuer.
-    """
-    if iss not in _clerk_jwks_clients:
-        jwks_url = f"{iss}/.well-known/jwks.json"
-        _clerk_jwks_clients[iss] = PyJWKClient(jwks_url, cache_keys=True, cache_jwk_set=True)
-    return _clerk_jwks_clients[iss]
+
+def _decode_jwt_payload_raw(token: str) -> dict:
+    """Decodifica el payload de un JWT con base64 puro, sin depender de pyjwt."""
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise ValueError("Token no tiene formato JWT válido")
+    padding = "=" * (4 - len(parts[1]) % 4)
+    payload_bytes = _base64.urlsafe_b64decode(parts[1] + padding)
+    return _json_mod.loads(payload_bytes)
 
 
 def verify_clerk_token(token: str) -> dict:
     """
-    Verifica un JWT de Clerk usando el endpoint público JWKS del issuer.
+    Verifica un JWT de Clerk usando el endpoint público JWKS.
 
-    El JWT de Clerk contiene 'iss' (Frontend API URL). El JWKS público está en
-    {iss}/.well-known/jwks.json — no requiere autenticación, sigue el estándar JWT.
+    Usa CLERK_JWKS_URL si está configurado (recomendado).
+    Fallback: deriva la URL del campo 'iss' del JWT via base64 raw decode.
 
     Raises:
         HTTPException 401: Si el token es inválido o expirado
     """
     try:
-        # Decodificar sin verificar para obtener el issuer
-        unverified_payload = pyjwt.decode(token, options={"verify_signature": False})
-        iss = unverified_payload.get("iss", "")
+        # Preferir URL explícita en config (más confiable)
+        jwks_url = settings.CLERK_JWKS_URL
 
-        if not iss:
-            raise ValueError("Token de Clerk no contiene campo 'iss'")
+        if not jwks_url:
+            # Fallback: extraer iss con base64 puro (no depende de pyjwt behavior)
+            payload_raw = _decode_jwt_payload_raw(token)
+            iss = payload_raw.get("iss", "")
+            if not iss:
+                raise ValueError(
+                    "CLERK_JWKS_URL no configurado y token sin campo 'iss'. "
+                    "Configura CLERK_JWKS_URL=https://<tu-instancia>.clerk.accounts.dev/.well-known/jwks.json"
+                )
+            jwks_url = f"{iss}/.well-known/jwks.json"
 
-        # Verificar usando el JWKS público del issuer (sin auth)
-        jwks_client = _get_clerk_jwks_client_for_issuer(iss)
+        jwks_client = _get_clerk_jwks_client(jwks_url)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
         payload = pyjwt.decode(
             token,
@@ -713,7 +726,7 @@ def verify_clerk_token(token: str) -> dict:
         )
         return payload
     except HTTPException:
-        raise  # Re-raise HTTPExceptions sin envolverlas
+        raise
     except Exception as e:
         logger.warning(f"Token de Clerk inválido: {str(e)}")
         raise HTTPException(

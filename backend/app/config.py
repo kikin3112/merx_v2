@@ -184,6 +184,11 @@ class Settings(BaseSettings):
 
     CLERK_WEBHOOK_SECRET: Optional[str] = Field(default=None, description="Clerk webhook signing secret (whsec_...)")
 
+    CLERK_JWKS_URL: Optional[str] = Field(
+        default=None,
+        description="Clerk JWKS URL (e.g., https://xxx.clerk.accounts.dev/.well-known/jwks.json)",
+    )
+
     # ============================================================================
     # TIMEOUTS
     # ============================================================================
