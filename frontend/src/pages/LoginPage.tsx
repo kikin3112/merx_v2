@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { SignIn } from '@clerk/clerk-react';
+import { SignIn, useAuth } from '@clerk/clerk-react';
 import { useAuthStore } from '../stores/authStore';
 
 const CLERK_PUB_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
@@ -96,22 +96,36 @@ function LegacyLoginForm() {
   );
 }
 
+function ClerkLoginView() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate('/clerk-callback', { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
+
+  if (!isLoaded || isSignedIn) return null;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+      <SignIn
+        routing="hash"
+        forceRedirectUrl="/clerk-callback"
+        appearance={{
+          variables: {
+            colorPrimary: '#C17B2B',
+          },
+        }}
+      />
+    </div>
+  );
+}
+
 export default function LoginPage() {
   if (CLERK_PUB_KEY) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
-        <SignIn
-          routing="hash"
-          afterSignInUrl="/clerk-callback"
-          appearance={{
-            variables: {
-              colorPrimary: '#C17B2B',
-            },
-          }}
-        />
-      </div>
-    );
+    return <ClerkLoginView />;
   }
-
   return <LegacyLoginForm />;
 }
