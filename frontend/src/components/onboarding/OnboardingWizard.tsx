@@ -25,7 +25,7 @@ export default function OnboardingWizard({
   // Step 1: Producto
   const [prodNombre, setProdNombre] = useState('');
   const [prodPrecio, setProdPrecio] = useState('');
-  const [prodCategoria, setProdCategoria] = useState('TERMINADO');
+  const [prodCategoria, setProdCategoria] = useState('Producto_Propio');
 
   // Step 2: Receta
   const [recetaNombre, setRecetaNombre] = useState('');
@@ -45,7 +45,7 @@ export default function OnboardingWizard({
         nombre: prodNombre.trim(),
         categoria: prodCategoria,
         unidad_medida: 'UNIDAD',
-        tipo_iva: 'GRAVADO',
+        tipo_iva: 'Gravado',
         porcentaje_iva: 19,
         precio_venta: parseFloat(prodPrecio) || 0,
       }),
@@ -149,9 +149,10 @@ export default function OnboardingWizard({
               <input type="text" value={prodNombre} onChange={(e) => setProdNombre(e.target.value)} placeholder="Nombre del producto" className={inputClass} />
               <input type="number" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio de venta" className={inputClass} />
               <select value={prodCategoria} onChange={(e) => setProdCategoria(e.target.value)} className={inputClass}>
-                <option value="TERMINADO">Producto Terminado</option>
-                <option value="MATERIA_PRIMA">Materia Prima</option>
-                <option value="INSUMO">Insumo</option>
+                <option value="Producto_Propio">Producto Terminado</option>
+                <option value="Insumo">Insumo / Materia Prima</option>
+                <option value="Producto_Tercero">Producto Tercero</option>
+                <option value="Servicio">Servicio</option>
               </select>
             </div>
             <button
