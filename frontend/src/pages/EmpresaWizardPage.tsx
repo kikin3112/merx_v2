@@ -65,12 +65,6 @@ export default function EmpresaWizardPage() {
   const selectTenant = useAuthStore((s) => s.selectTenant);
   const token = useAuthStore((s) => s.token);
 
-  // Redirigir si no hay token (no pasó por clerk-callback)
-  if (!token) {
-    navigate('/registro', { replace: true });
-    return null;
-  }
-
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -83,6 +77,12 @@ export default function EmpresaWizardPage() {
   const [telefono, setTelefono] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [departamento, setDepartamento] = useState('');
+
+  // Redirigir si no hay token (no pasó por clerk-callback)
+  if (!token) {
+    navigate('/registro', { replace: true });
+    return null;
+  }
 
   const inputClass =
     'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none';
