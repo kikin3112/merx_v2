@@ -76,7 +76,7 @@ export default function App() {
         <AnalyticsTracker />
         <ImpersonationBanner />
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/*" element={<LoginPage />} />
           <Route path="/registro" element={<RegistroPage />} />
           <Route path="/clerk-callback" element={<ClerkCallbackPage />} />
 

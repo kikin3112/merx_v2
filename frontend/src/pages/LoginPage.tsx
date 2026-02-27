@@ -134,7 +134,8 @@ function ClerkLoginView() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
       <SignIn
-        routing="hash"
+        routing="path"
+        path="/login"
         forceRedirectUrl="/clerk-callback"
         appearance={{
           variables: {
