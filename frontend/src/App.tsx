@@ -8,6 +8,8 @@ import RoleGuard from './components/auth/RoleGuard';
 import SuperadminGuard from './components/auth/SuperadminGuard';
 import LoginPage from './pages/LoginPage';
 import RegistroPage from './pages/RegistroPage';
+import ClerkCallbackPage from './pages/ClerkCallbackPage';
+import EmpresaWizardPage from './pages/EmpresaWizardPage';
 import SelectTenantPage from './pages/SelectTenantPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductosPage from './pages/ProductosPage';
@@ -76,9 +78,11 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegistroPage />} />
+          <Route path="/clerk-callback" element={<ClerkCallbackPage />} />
 
           <Route element={<RequireToken />}>
             <Route path="/select-tenant" element={<SelectTenantPage />} />
+            <Route path="/registro/empresa" element={<EmpresaWizardPage />} />
           </Route>
 
           <Route element={<RequireAuth />}>

@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { SignIn } from '@clerk/clerk-react';
 import { useAuthStore } from '../stores/authStore';
 
-export default function LoginPage() {
+const CLERK_PUB_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
+
+function LegacyLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +27,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Error al iniciar sesion';
+        'Error al iniciar sesión';
       setError(msg);
     } finally {
       setLoading(false);
@@ -91,4 +94,24 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export default function LoginPage() {
+  if (CLERK_PUB_KEY) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+        <SignIn
+          routing="hash"
+          afterSignInUrl="/clerk-callback"
+          appearance={{
+            variables: {
+              colorPrimary: '#C17B2B',
+            },
+          }}
+        />
+      </div>
+    );
+  }
+
+  return <LegacyLoginForm />;
 }

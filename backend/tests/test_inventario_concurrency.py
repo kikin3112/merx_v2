@@ -32,6 +32,7 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
         precio_venta=Decimal("10000"),
         porcentaje_iva=Decimal("19"),
         categoria="Producto_Propio",
+        unidad_medida="UNIDAD",
         maneja_inventario=True,
         estado=True,
     )
@@ -99,6 +100,7 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
         precio_venta=Decimal("0"),
         porcentaje_iva=Decimal("19"),
         categoria="Insumo",
+        unidad_medida="UNIDAD",
         maneja_inventario=True,
         estado=True,
     )

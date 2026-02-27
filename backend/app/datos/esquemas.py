@@ -1172,6 +1172,19 @@ class TenantRegisterResponse(BaseModel):
     message: str = "Tenant registrado exitosamente"
 
 
+class TenantRegisterWithClerkRequest(BaseModel):
+    """Request para registrar un tenant con usuario ya autenticado via Clerk"""
+
+    nombre_empresa: str = Field(..., max_length=200)
+    slug: str = Field(..., max_length=100, pattern=r"^[a-z0-9-]+$")
+    nit: Optional[str] = Field(None, max_length=50)
+    email_empresa: EmailStr
+    telefono: Optional[str] = Field(None, max_length=50)
+    ciudad: Optional[str] = Field(None, max_length=100)
+    departamento: Optional[str] = Field(None, max_length=100)
+    plan_id: Optional[UUID] = None
+
+
 # ============================================================================
 # TENANT ACCIONES (Superadmin)
 # ============================================================================

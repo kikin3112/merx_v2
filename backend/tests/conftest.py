@@ -117,7 +117,7 @@ def vendedor_token(db_session: Session, tenant_admin_token):
         email="vendedor@test.com",
         nombre="Test Vendedor",
         password_hash=hash_password("test123"),
-        rol="vendedor",
+        rol="operador",
         estado=True,
     )
     db_session.add(user)

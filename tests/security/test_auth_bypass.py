@@ -92,7 +92,7 @@ def tenant_and_token(db: Session):
         email="vendedor@authtest.com",
         nombre="Test Vendedor",
         password_hash=hash_password("vendedor123"),
-        rol="vendedor",
+        rol="operador",
         estado=True,
         es_superadmin=False,
     )

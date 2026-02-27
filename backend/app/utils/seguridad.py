@@ -8,9 +8,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable, NamedTuple, Optional
 from uuid import UUID
 
+import jwt as pyjwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+from jwt import PyJWKClient
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -664,6 +666,41 @@ def is_token_expired(token: str) -> bool:
     if not expiration:
         return True
     return datetime.now(timezone.utc) > expiration
+
+
+CLERK_JWKS_URL = "https://api.clerk.com/v1/jwks"
+
+
+def verify_clerk_token(token: str) -> dict:
+    """
+    Verifica un JWT de Clerk usando su endpoint JWKS público.
+
+    Args:
+        token: JWT emitido por Clerk
+
+    Returns:
+        Payload del token con email, sub (clerk user id), etc.
+
+    Raises:
+        HTTPException 401: Si el token es inválido o no pertenece a Clerk
+    """
+    try:
+        jwks_client = PyJWKClient(CLERK_JWKS_URL, cache_keys=True)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        payload = pyjwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            options={"verify_aud": False},
+        )
+        return payload
+    except Exception as e:
+        logger.warning(f"Token de Clerk inválido: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de Clerk inválido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 def get_tenant_id_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UUID:

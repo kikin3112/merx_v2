@@ -1,13 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { SignUp } from '@clerk/clerk-react';
 import { registro } from '../api/endpoints';
 import { useAuthStore } from '../stores/authStore';
-import type { TenantRegisterRequest } from '../types';
 
-const CLERK_PUB_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
-
-type Step = 1 | 2 | 3;
+/**
+ * Wizard de empresa para usuarios que ya se autenticaron via Clerk
+ * pero todavía no tienen ningún tenant.
+ *
+ * Ruta: /registro/empresa
+ * Requiere: custom JWT (obtenido en /clerk-callback via clerkExchange)
+ */
 
 const DEPARTAMENTOS_CO = [
   'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá',
@@ -28,11 +30,12 @@ function slugify(text: string): string {
     .slice(0, 60);
 }
 
+type Step = 1 | 2;
+
 function StepIndicator({ current }: { current: Step }) {
   const steps = [
     { num: 1, label: 'Empresa' },
-    { num: 2, label: 'Administrador(a)' },
-    { num: 3, label: 'Confirmar' },
+    { num: 2, label: 'Confirmar' },
   ];
   return (
     <div className="flex items-center justify-center gap-2 mb-6">
@@ -57,15 +60,15 @@ function StepIndicator({ current }: { current: Step }) {
   );
 }
 
-function LegacyRegistroPage() {
+export default function EmpresaWizardPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const selectTenant = useAuthStore((s) => s.selectTenant);
+  const token = useAuthStore((s) => s.token);
 
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1: Empresa
   const [nombreEmpresa, setNombreEmpresa] = useState('');
   const [slug, setSlug] = useState('');
   const [slugManual, setSlugManual] = useState(false);
@@ -75,47 +78,34 @@ function LegacyRegistroPage() {
   const [ciudad, setCiudad] = useState('');
   const [departamento, setDepartamento] = useState('');
 
-  // Step 2: Admin
-  const [adminNombre, setAdminNombre] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Redirigir si no hay token (no pasó por clerk-callback)
+  if (!token) {
+    navigate('/registro', { replace: true });
+    return null;
+  }
+
+  const inputClass =
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none';
 
   const handleNombreChange = (value: string) => {
     setNombreEmpresa(value);
-    if (!slugManual) {
-      setSlug(slugify(value));
-    }
+    if (!slugManual) setSlug(slugify(value));
   };
 
   const validateStep1 = (): string | null => {
     if (!nombreEmpresa.trim()) return 'El nombre de la empresa es requerido';
-    if (!slug.trim() || !/^[a-z0-9-]+$/.test(slug)) return 'El slug solo puede contener letras minúsculas, números y guiones';
+    if (!slug.trim() || !/^[a-z0-9-]+$/.test(slug))
+      return 'El slug solo puede contener letras minúsculas, números y guiones';
     if (!emailEmpresa.trim()) return 'El email de la empresa es requerido';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEmpresa)) return 'Email de empresa inválido';
     return null;
   };
 
-  const validateStep2 = (): string | null => {
-    if (!adminNombre.trim()) return 'El nombre del administrador es requerido';
-    if (!adminEmail.trim()) return 'El email del administrador es requerido';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) return 'Email de admin inválido';
-    if (adminPassword.length < 8) return 'La contraseña debe tener mínimo 8 caracteres';
-    if (adminPassword !== confirmPassword) return 'Las contraseñas no coinciden';
-    return null;
-  };
-
   const handleNext = () => {
     setError('');
-    if (step === 1) {
-      const err = validateStep1();
-      if (err) { setError(err); return; }
-      setStep(2);
-    } else if (step === 2) {
-      const err = validateStep2();
-      if (err) { setError(err); return; }
-      setStep(3);
-    }
+    const err = validateStep1();
+    if (err) { setError(err); return; }
+    setStep(2);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -123,39 +113,28 @@ function LegacyRegistroPage() {
     setError('');
     setLoading(true);
 
-    const data: TenantRegisterRequest = {
-      nombre_empresa: nombreEmpresa.trim(),
-      slug: slug.trim(),
-      nit: nit.trim() || null,
-      email_empresa: emailEmpresa.trim(),
-      telefono: telefono.trim() || null,
-      ciudad: ciudad.trim() || null,
-      departamento: departamento || null,
-      admin_nombre: adminNombre.trim(),
-      admin_email: adminEmail.trim(),
-      admin_password: adminPassword,
-    };
-
     try {
-      await registro.register(data);
-      // Auto-login con las credenciales del admin recién creado
-      const tenants = await login(adminEmail.trim(), adminPassword);
-      if (tenants.length === 1) {
-        navigate('/');
-      } else {
-        navigate('/select-tenant');
-      }
+      const { data } = await registro.registerWithClerk({
+        nombre_empresa: nombreEmpresa.trim(),
+        slug: slug.trim(),
+        nit: nit.trim() || undefined,
+        email_empresa: emailEmpresa.trim(),
+        telefono: telefono.trim() || undefined,
+        ciudad: ciudad.trim() || undefined,
+        departamento: departamento || undefined,
+      });
+
+      // Seleccionar el tenant recién creado
+      await selectTenant(data.tenant.id);
+      navigate('/', { replace: true });
     } catch (err: unknown) {
       const detail =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(detail || 'Error al registrar. Intenta de nuevo.');
+      setError(detail || 'Error al registrar la empresa. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
-
-  const inputClass =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4 py-8">
@@ -165,14 +144,14 @@ function LegacyRegistroPage() {
             <img src="/logo.png" alt="ChandeliERP logo" className="h-10 w-10 rounded-full object-cover" />
             <span className="text-3xl font-bold text-amber-500">ChandeliERP</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">¡Crea tu cuenta!</h1>
-          <p className="text-sm text-gray-500 mt-1">14 días de prueba, ¡gratis!</p>
+          <h1 className="text-2xl font-bold text-gray-900">Registra tu empresa</h1>
+          <p className="text-sm text-gray-500 mt-1">14 días de prueba gratuita</p>
         </div>
 
         <StepIndicator current={step} />
 
         <form
-          onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}
+          onSubmit={step === 2 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4"
         >
           {error && (
@@ -181,7 +160,6 @@ function LegacyRegistroPage() {
             </div>
           )}
 
-          {/* Step 1: Info Empresa */}
           {step === 1 && (
             <>
               <div>
@@ -281,64 +259,9 @@ function LegacyRegistroPage() {
             </>
           )}
 
-          {/* Step 2: Admin */}
           {step === 2 && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
-                <input
-                  type="text"
-                  value={adminNombre}
-                  onChange={(e) => setAdminNombre(e.target.value)}
-                  required
-                  className={inputClass}
-                  placeholder="Juan Pérez"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email de acceso *</label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  required
-                  className={inputClass}
-                  placeholder="juan@micandeleria.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  className={inputClass}
-                  placeholder="Mínimo 8 caracteres"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className={inputClass}
-                  placeholder="Repetir contraseña"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Resumen */}
-          {step === 3 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">Resumen de tu registro</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Resumen de tu empresa</h3>
 
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -367,29 +290,17 @@ function LegacyRegistroPage() {
                 )}
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Admin:</span>
-                  <span className="font-medium text-gray-900">{adminNombre}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Email acceso:</span>
-                  <span className="text-gray-700">{adminEmail}</span>
-                </div>
-              </div>
-
               <div className="bg-primary-50 rounded-lg p-3 text-sm text-primary-700">
-                Se creará tu cuenta con 14 días de prueba gratuita. Podrás acceder inmediatamente después del registro.
+                Se creará tu empresa con 14 días de prueba gratuita. Accederás inmediatamente.
               </div>
             </div>
           )}
 
-          {/* Navigation buttons */}
           <div className="flex gap-3">
             {step > 1 && (
               <button
                 type="button"
-                onClick={() => { setError(''); setStep((step - 1) as Step); }}
+                onClick={() => { setError(''); setStep(1); }}
                 className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Atrás
@@ -398,40 +309,20 @@ function LegacyRegistroPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 focus:ring-2 focus:ring-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Registrando...' : step === 3 ? 'Crear cuenta' : 'Siguiente'}
+              {loading ? 'Registrando...' : step === 2 ? 'Crear empresa' : 'Siguiente'}
             </button>
           </div>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="text-primary-500 hover:text-primary-600 font-medium">
-            Iniciar sesión
+          ¿Ya tienes una empresa?{' '}
+          <Link to="/select-tenant" className="text-primary-500 hover:text-primary-600 font-medium">
+            Seleccionarla
           </Link>
         </p>
       </div>
     </div>
   );
-}
-
-export default function RegistroPage() {
-  if (CLERK_PUB_KEY) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
-        <SignUp
-          routing="hash"
-          afterSignUpUrl="/clerk-callback"
-          appearance={{
-            variables: {
-              colorPrimary: '#C17B2B',
-            },
-          }}
-        />
-      </div>
-    );
-  }
-
-  return <LegacyRegistroPage />;
 }
