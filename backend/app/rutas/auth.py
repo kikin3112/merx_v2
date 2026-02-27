@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from svix.webhooks import Webhook, WebhookVerificationError
@@ -375,16 +376,33 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
     # Verificar JWT de Clerk (llama a JWKS público)
     clerk_payload = verify_clerk_token(clerk_token)
 
-    # Extraer email del payload de Clerk
-    email = (
-        clerk_payload.get("email_addresses", [{}])[0].get("email_address")
-        if isinstance(clerk_payload.get("email_addresses"), list)
-        else None
-    )
-    # Fallback: algunos tokens tienen el email directamente
-    if not email:
-        email = clerk_payload.get("email")
-    # Otra variante: primary_email_address_id lookup no factible — usar preferred_username como fallback
+    # Los JWTs de sesión de Clerk no incluyen email en el payload.
+    # Necesitamos obtenerlo desde el Backend API usando el sub (user_id).
+    clerk_user_id = clerk_payload.get("sub")
+    if not clerk_user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token de Clerk no contiene user ID (sub)")
+
+    # Obtener email via Clerk Backend API
+    email = None
+    try:
+        resp = httpx.get(
+            f"https://api.clerk.com/v1/users/{clerk_user_id}",
+            headers={"Authorization": f"Bearer {settings.CLERK_SECRET_KEY}"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        user_data = resp.json()
+        email_addresses = user_data.get("email_addresses", [])
+        primary_id = user_data.get("primary_email_address_id")
+        for ea in email_addresses:
+            if ea.get("id") == primary_id:
+                email = ea.get("email_address")
+                break
+        if not email and email_addresses:
+            email = email_addresses[0].get("email_address")
+    except Exception as exc:
+        logger.error(f"Error al consultar Clerk Backend API: {exc}")
+
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No se pudo obtener el email del token de Clerk"
