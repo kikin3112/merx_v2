@@ -57,11 +57,8 @@ export function useNavigation() {
   const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
 
   const filterByRole = (items: NavItem[]) => {
-    if (isSuperadminOnly) return [];
-    return items.filter(item => {
-      if (user?.es_superadmin && !impersonation) return true;
-      return effectiveRole && item.roles.includes(effectiveRole);
-    });
+    if (user?.es_superadmin && !impersonation) return [];
+    return items.filter(item => effectiveRole && item.roles.includes(effectiveRole));
   };
 
   const mainItems = filterByRole(navItems);

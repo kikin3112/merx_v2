@@ -75,6 +75,10 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: data.refresh_token,
           user: data.user,
           tenants: data.tenants,
+          tenantId: null,
+          tenantName: null,
+          tenantLogo: null,
+          rolEnTenant: null,
           impersonation: null,
         });
         if (data.tenants.length === 1) {
