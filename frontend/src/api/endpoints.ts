@@ -240,8 +240,18 @@ export const periodosContables = {
 export const registro = {
   register: (data: TenantRegisterRequest) =>
     client.post<TenantRegisterResponse>('/tenants/register', data),
+  registerWithClerk: (data: Omit<TenantRegisterRequest, 'admin_nombre' | 'admin_email' | 'admin_password'>) =>
+    client.post<TenantRegisterResponse>('/tenants/register-with-clerk', data),
   planes: () =>
     client.get<PlanWithStats[]>('/tenants/planes/'),
+};
+
+// Clerk auth exchange
+export const clerkAuth = {
+  exchange: (clerkToken: string) =>
+    client.post<LoginResponse>('/auth/clerk-exchange', {}, {
+      headers: { Authorization: `Bearer ${clerkToken}` },
+    }),
 };
 
 // Tenants (superadmin)

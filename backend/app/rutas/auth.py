@@ -1,9 +1,11 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+from svix.webhooks import Webhook, WebhookVerificationError
 
 from ..config import settings
 from ..datos.db import get_db
@@ -30,6 +32,7 @@ from ..utils.seguridad import (
     get_current_user,
     hash_password,
     require_not_impersonating,
+    verify_clerk_token,
     verify_password,
 )
 
@@ -348,3 +351,172 @@ async def logout(request: Request, current_user: Usuarios = Depends(get_current_
         action="auth.logout",
         resource_type="auth",
     )
+
+
+@router.post("/clerk-exchange", response_model=TokenWithTenants)
+@limiter.limit("10/minute")
+async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
+    """
+    Intercambia un JWT de Clerk por un JWT custom del sistema.
+
+    El cliente envía el token de Clerk en el header Authorization: Bearer <clerk_token>.
+    Si el usuario no existe en la DB, se crea automáticamente (lazy sync).
+
+    Retorna TokenWithTenants idéntico al /auth/login para que el frontend lo use igual.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de Clerk requerido en Authorization header"
+        )
+
+    clerk_token = auth_header.split(" ", 1)[1]
+
+    # Verificar JWT de Clerk (llama a JWKS público)
+    clerk_payload = verify_clerk_token(clerk_token)
+
+    # Extraer email del payload de Clerk
+    email = (
+        clerk_payload.get("email_addresses", [{}])[0].get("email_address")
+        if isinstance(clerk_payload.get("email_addresses"), list)
+        else None
+    )
+    # Fallback: algunos tokens tienen el email directamente
+    if not email:
+        email = clerk_payload.get("email")
+    # Otra variante: primary_email_address_id lookup no factible — usar preferred_username como fallback
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No se pudo obtener el email del token de Clerk"
+        )
+
+    # Buscar o crear usuario
+    user = db.query(Usuarios).filter(Usuarios.email == email).first()
+    if not user:
+        # Lazy sync: crear usuario sin tenant, con password aleatorio
+        nombre = clerk_payload.get("first_name", "") or ""
+        apellido = clerk_payload.get("last_name", "") or ""
+        nombre_completo = f"{nombre} {apellido}".strip() or email.split("@")[0]
+
+        user = Usuarios(
+            nombre=nombre_completo,
+            email=email,
+            password_hash=hash_password(secrets.token_urlsafe(32)),
+            rol="admin",
+            estado=True,
+            es_superadmin=False,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Usuario creado via Clerk sync: {email}")
+
+    if not user.estado:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo. Contacte al administrador."
+        )
+
+    user.ultimo_acceso = datetime.now(timezone.utc)
+    db.commit()
+
+    servicio_tenants = ServicioTenants(db)
+    usuarios_tenants = servicio_tenants.obtener_tenants_usuario(user.id)
+
+    tenants_response: List[TenantBriefResponse] = []
+    for ut in usuarios_tenants:
+        tenant = servicio_tenants.obtener_tenant_por_id(ut.tenant_id)
+        if tenant and tenant.esta_activo:
+            tenants_response.append(TenantBriefResponse.model_validate(tenant))
+
+    access_token = create_access_token(
+        data={"sub": str(user.id), "email": user.email, "rol": user.rol},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    refresh_token = create_refresh_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+    set_request_context(user_id=str(user.id))
+    logger.info(f"Clerk exchange exitoso: {email}")
+
+    return TokenWithTenants(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",  # nosec B106
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=UsuarioResponse.model_validate(user),
+        tenants=tenants_response,
+    )
+
+
+@router.post("/clerk-webhook", status_code=status.HTTP_200_OK)
+async def clerk_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Recibe eventos de Clerk para sincronización proactiva de usuarios.
+    Verifica la firma usando svix y CLERK_WEBHOOK_SECRET.
+
+    Eventos manejados: user.created, user.updated, user.deleted
+    """
+    webhook_secret = settings.CLERK_WEBHOOK_SECRET
+    if not webhook_secret:
+        logger.warning("CLERK_WEBHOOK_SECRET no configurado — webhook ignorado")
+        return {"status": "skipped"}
+
+    # Verificar firma svix
+    headers = dict(request.headers)
+    body = await request.body()
+
+    try:
+        wh = Webhook(webhook_secret)
+        payload = wh.verify(body, headers)
+    except WebhookVerificationError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Firma de webhook inválida")
+
+    event_type = payload.get("type")
+    data = payload.get("data", {})
+
+    # Extraer email del payload de Clerk
+    email_addresses = data.get("email_addresses", [])
+    email = email_addresses[0].get("email_address") if email_addresses else None
+
+    if not email:
+        logger.warning(f"Webhook Clerk sin email — evento: {event_type}")
+        return {"status": "ok"}
+
+    if event_type == "user.created":
+        existing = db.query(Usuarios).filter(Usuarios.email == email).first()
+        if not existing:
+            nombre = data.get("first_name", "") or ""
+            apellido = data.get("last_name", "") or ""
+            nombre_completo = f"{nombre} {apellido}".strip() or email.split("@")[0]
+            user = Usuarios(
+                nombre=nombre_completo,
+                email=email,
+                password_hash=hash_password(secrets.token_urlsafe(32)),
+                rol="admin",
+                estado=True,
+                es_superadmin=False,
+            )
+            db.add(user)
+            db.commit()
+            logger.info(f"Usuario creado via webhook Clerk: {email}")
+
+    elif event_type == "user.updated":
+        user = db.query(Usuarios).filter(Usuarios.email == email).first()
+        if user:
+            nombre = data.get("first_name", "") or ""
+            apellido = data.get("last_name", "") or ""
+            nombre_completo = f"{nombre} {apellido}".strip() or user.nombre
+            user.nombre = nombre_completo
+            db.commit()
+            logger.info(f"Usuario actualizado via webhook Clerk: {email}")
+
+    elif event_type == "user.deleted":
+        user = db.query(Usuarios).filter(Usuarios.email == email).first()
+        if user:
+            user.estado = False
+            db.commit()
+            logger.info(f"Usuario desactivado via webhook Clerk: {email}")
+
+    return {"status": "ok"}

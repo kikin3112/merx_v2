@@ -19,6 +19,7 @@ from ..datos.esquemas import (
     PlanUpdate,
     TenantCreate,
     TenantRegisterRequest,
+    TenantRegisterWithClerkRequest,
     TenantUpdate,
 )
 from ..datos.modelos import (
@@ -1521,3 +1522,80 @@ class ServicioTenants:
                 estado=True,
             )
             self.db.add(cliente)
+
+    # ========================================================================
+    # REGISTRO CON CLERK (Usuario ya autenticado via Clerk)
+    # ========================================================================
+
+    def registrar_tenant_con_clerk(
+        self, datos: TenantRegisterWithClerkRequest, admin_user: Usuarios
+    ) -> tuple[Tenants, Usuarios]:
+        """
+        Crea un Tenant y lo vincula a un usuario ya existente autenticado via Clerk.
+
+        Args:
+            datos: Datos del formulario de registro (sin campos admin_*)
+            admin_user: Usuario autenticado (ya existe en DB, creado en clerk-exchange)
+
+        Returns:
+            Tuple (tenant, usuario_admin)
+
+        Raises:
+            ValueError: Si hay datos duplicados
+        """
+        slug = self._normalizar_slug(datos.slug)
+
+        if self.obtener_tenant_por_slug(slug):
+            raise ValueError(f"El identificador '{slug}' ya está en uso")
+
+        if datos.nit and self.obtener_tenant_por_nit(datos.nit):
+            raise ValueError(f"El NIT '{datos.nit}' ya está registrado")
+
+        if datos.plan_id:
+            plan = self.obtener_plan_por_id(datos.plan_id)
+            if not plan or not plan.esta_activo:
+                raise ValueError("Plan no disponible")
+        else:
+            plan = self.obtener_plan_default()
+            if not plan:
+                raise ValueError("No hay plan default configurado")
+
+        tenant = Tenants(
+            nombre=datos.nombre_empresa,
+            slug=slug,
+            nit=datos.nit,
+            email_contacto=datos.email_empresa,
+            telefono=datos.telefono,
+            ciudad=datos.ciudad,
+            departamento=datos.departamento,
+            plan_id=plan.id,
+            estado="trial",
+            fecha_inicio_suscripcion=datetime.now(timezone.utc),
+            fecha_fin_suscripcion=datetime.now(timezone.utc) + timedelta(days=14),
+        )
+        self.db.add(tenant)
+        self.db.flush()
+
+        usuario_tenant = UsuariosTenants(
+            usuario_id=admin_user.id, tenant_id=tenant.id, rol="admin", esta_activo=True, es_default=True
+        )
+        self.db.add(usuario_tenant)
+
+        suscripcion = Suscripciones(
+            tenant_id=tenant.id,
+            plan_id=plan.id,
+            periodo_inicio=datetime.now(timezone.utc),
+            periodo_fin=datetime.now(timezone.utc) + timedelta(days=14),
+            estado="trial",
+        )
+        self.db.add(suscripcion)
+
+        self.db.commit()
+        self.db.refresh(tenant)
+        self.db.refresh(admin_user)
+
+        self._inicializar_configuracion_tenant(tenant.id)
+        self.db.commit()
+
+        logger.info(f"Nuevo tenant registrado via Clerk: {tenant.slug} (admin: {admin_user.email})")
+        return tenant, admin_user

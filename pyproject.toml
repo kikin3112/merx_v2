@@ -23,6 +23,9 @@ dependencies = [
     "slowapi>=0.1.9",
     "sentry-sdk[fastapi]>=1.40.0",
     "python-multipart>=0.0.9",
+    "pyjwt>=2.8.0",
+    "svix>=1.14.0",
+    "cryptography>=42.0.0",
 ]
 
 [project.optional-dependencies]

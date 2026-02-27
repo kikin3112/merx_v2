@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, Tenant, ImpersonationResponse } from '../types';
-import { auth } from '../api/endpoints';
+import { auth, clerkAuth } from '../api/endpoints';
 
 interface ImpersonationState {
   token: string;            // token de impersonación (15 min)
@@ -26,6 +26,7 @@ interface AuthState {
   impersonation: ImpersonationState | null;
 
   login: (email: string, password: string) => Promise<Tenant[]>;
+  clerkExchange: (clerkToken: string) => Promise<Tenant[]>;
   selectTenant: (tenantId: string) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => void;
@@ -62,6 +63,25 @@ export const useAuthStore = create<AuthState>()(
             await get().selectTenant(data.tenants[0].id);
           } catch {
             // Si falla, el usuario sera redirigido a SelectTenantPage
+          }
+        }
+        return data.tenants;
+      },
+
+      clerkExchange: async (clerkToken: string) => {
+        const { data } = await clerkAuth.exchange(clerkToken);
+        set({
+          token: data.access_token,
+          refreshToken: data.refresh_token,
+          user: data.user,
+          tenants: data.tenants,
+          impersonation: null,
+        });
+        if (data.tenants.length === 1) {
+          try {
+            await get().selectTenant(data.tenants[0].id);
+          } catch {
+            // Redirigir a SelectTenantPage
           }
         }
         return data.tenants;

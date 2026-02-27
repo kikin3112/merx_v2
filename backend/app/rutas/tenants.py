@@ -36,6 +36,7 @@ from ..datos.esquemas import (
     TenantPulse,
     TenantRegisterRequest,
     TenantRegisterResponse,
+    TenantRegisterWithClerkRequest,
     TenantResponse,
     TenantUpdate,
     UsuarioResponse,
@@ -78,6 +79,37 @@ async def registrar_tenant(datos: TenantRegisterRequest, db: Session = Depends(g
             tenant=TenantResponse.model_validate(tenant),
             user=admin,
             message="Tenant registrado exitosamente. Puede iniciar sesión.",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/register-with-clerk",
+    response_model=TenantRegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar nuevo tenant con usuario Clerk ya autenticado",
+    description="Crea un tenant y lo vincula al usuario autenticado via custom JWT (obtenido en /auth/clerk-exchange).",
+)
+async def registrar_tenant_con_clerk(
+    datos: TenantRegisterWithClerkRequest,
+    current_user: Usuarios = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Registra un nuevo tenant para un usuario ya autenticado via Clerk.
+    Requiere custom JWT (del clerk-exchange). El usuario autenticado se convierte en admin del tenant.
+    """
+    servicio = ServicioTenants(db)
+
+    try:
+        tenant, admin = servicio.registrar_tenant_con_clerk(datos, current_user)
+
+        return TenantRegisterResponse(
+            tenant=TenantResponse.model_validate(tenant),
+            user=UsuarioResponse.model_validate(admin),
+            message="Tenant registrado exitosamente.",
         )
 
     except ValueError as e:

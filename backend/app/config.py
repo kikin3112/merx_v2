@@ -177,6 +177,14 @@ class Settings(BaseSettings):
     )
 
     # ============================================================================
+    # CLERK
+    # ============================================================================
+
+    CLERK_SECRET_KEY: Optional[str] = Field(default=None, description="Clerk secret key (sk_test_...)")
+
+    CLERK_WEBHOOK_SECRET: Optional[str] = Field(default=None, description="Clerk webhook signing secret (whsec_...)")
+
+    # ============================================================================
     # TIMEOUTS
     # ============================================================================
 
