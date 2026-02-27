@@ -117,7 +117,6 @@ function LegacyLoginForm({ onBack }: LegacyFormProps) {
 function ClerkLoginView() {
   const { isSignedIn, isLoaded } = useAuth();
   const navigate = useNavigate();
-  const [showLegacy, setShowLegacy] = useState(false);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -127,12 +126,8 @@ function ClerkLoginView() {
 
   if (!isLoaded || isSignedIn) return null;
 
-  if (showLegacy) {
-    return <LegacyLoginForm onBack={() => setShowLegacy(false)} />;
-  }
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
       <SignIn
         routing="path"
         path="/login"
@@ -143,14 +138,6 @@ function ClerkLoginView() {
           },
         }}
       />
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => setShowLegacy(true)}
-          className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2"
-        >
-          Tengo una cuenta anterior — ingresar con usuario y contraseña
-        </button>
-      </div>
     </div>
   );
 }
