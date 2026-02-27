@@ -110,6 +110,8 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/logout",
         "/api/v1/tenants/register",  # Registro público de nuevos tenants
         "/api/v1/admin/seed",
+        "/api/v1/auth/clerk-exchange",  # Clerk: no tiene tenant aún al intercambiar token
+        "/api/v1/auth/clerk-webhook",  # Clerk: webhook del sistema, sin tenant
     }
 
     # Prefijos que no requieren tenant_id
