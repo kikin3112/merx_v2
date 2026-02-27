@@ -668,42 +668,42 @@ def is_token_expired(token: str) -> bool:
     return datetime.now(timezone.utc) > expiration
 
 
-CLERK_JWKS_URL = "https://api.clerk.com/v1/jwks"
-
-# Singleton: una sola instancia compartida entre todos los requests
-# para que cache_keys=True funcione efectivamente
-_clerk_jwks_client: Optional[PyJWKClient] = None
+# Cache de clientes JWKS por issuer (el iss del JWT determina el endpoint público)
+_clerk_jwks_clients: dict = {}
 
 
-def _get_clerk_jwks_client() -> PyJWKClient:
-    """Retorna el cliente JWKS de Clerk, creándolo si no existe."""
-    global _clerk_jwks_client
-    if _clerk_jwks_client is None:
-        # api.clerk.com/v1/jwks es el endpoint autenticado de Clerk Backend API.
-        # Requiere Authorization: Bearer <CLERK_SECRET_KEY>
-        headers: dict = {}
-        if settings.CLERK_SECRET_KEY:
-            headers["Authorization"] = f"Bearer {settings.CLERK_SECRET_KEY}"
-        else:
-            logger.warning("CLERK_SECRET_KEY no configurado — verify_clerk_token fallará con 403")
-        _clerk_jwks_client = PyJWKClient(
-            CLERK_JWKS_URL,
-            cache_keys=True,
-            headers=headers,
-        )
-    return _clerk_jwks_client
+def _get_clerk_jwks_client_for_issuer(iss: str) -> PyJWKClient:
+    """Retorna un PyJWKClient para el issuer dado, usando el endpoint público de JWKS.
+
+    El endpoint {iss}/.well-known/jwks.json es público — no requiere auth.
+    Es el enfoque estándar JWT: verificar contra el JWKS del issuer.
+    """
+    if iss not in _clerk_jwks_clients:
+        jwks_url = f"{iss}/.well-known/jwks.json"
+        _clerk_jwks_clients[iss] = PyJWKClient(jwks_url, cache_keys=True, cache_jwk_set=True)
+    return _clerk_jwks_clients[iss]
 
 
 def verify_clerk_token(token: str) -> dict:
     """
-    Verifica un JWT de Clerk usando su endpoint JWKS autenticado.
+    Verifica un JWT de Clerk usando el endpoint público JWKS del issuer.
+
+    El JWT de Clerk contiene 'iss' (Frontend API URL). El JWKS público está en
+    {iss}/.well-known/jwks.json — no requiere autenticación, sigue el estándar JWT.
 
     Raises:
         HTTPException 401: Si el token es inválido o expirado
-        HTTPException 503: Si no se puede conectar al endpoint JWKS de Clerk
     """
     try:
-        jwks_client = _get_clerk_jwks_client()
+        # Decodificar sin verificar para obtener el issuer
+        unverified_payload = pyjwt.decode(token, options={"verify_signature": False})
+        iss = unverified_payload.get("iss", "")
+
+        if not iss:
+            raise ValueError("Token de Clerk no contiene campo 'iss'")
+
+        # Verificar usando el JWKS público del issuer (sin auth)
+        jwks_client = _get_clerk_jwks_client_for_issuer(iss)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
         payload = pyjwt.decode(
             token,
