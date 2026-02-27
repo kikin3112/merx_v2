@@ -8,7 +8,7 @@ from contextvars import ContextVar
 from typing import Optional
 from uuid import UUID
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -144,14 +144,20 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         if not tenant_id_header:
             # Para rutas no excluidas, el header es requerido
             logger.warning(f"Request sin X-Tenant-ID: {request.method} {path}")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Tenant-ID es requerido")
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"detail": "Header X-Tenant-ID es requerido"},
+            )
 
         # Validar formato UUID
         try:
             tenant_id = UUID(tenant_id_header)
         except ValueError:
             logger.warning(f"X-Tenant-ID inválido: {tenant_id_header}")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Tenant-ID debe ser un UUID válido")
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"detail": "X-Tenant-ID debe ser un UUID válido"},
+            )
 
         # Establecer en ContextVar
         set_current_tenant_id(tenant_id)

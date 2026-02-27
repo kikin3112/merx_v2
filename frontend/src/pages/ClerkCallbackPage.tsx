@@ -15,6 +15,7 @@ export default function ClerkCallbackPage() {
   const navigate = useNavigate();
   const executed = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -52,7 +53,7 @@ export default function ClerkCallbackPage() {
     };
 
     doExchange();
-  }, [isLoaded, isSignedIn, getToken, clerkExchange, navigate]);
+  }, [isLoaded, isSignedIn, getToken, clerkExchange, navigate, retryCount]);
 
   if (error) {
     return (
@@ -68,6 +69,7 @@ export default function ClerkCallbackPage() {
               onClick={() => {
                 executed.current = false;
                 setError(null);
+                setRetryCount((c) => c + 1);
               }}
               className="w-full rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
             >

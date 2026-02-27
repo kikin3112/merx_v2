@@ -41,7 +41,7 @@ export default function OnboardingWizard({
   const crearProducto = useMutation({
     mutationFn: () =>
       productos.create({
-        codigo_interno: `PROD-001`,
+        codigo_interno: `PROD-${Date.now()}`,
         nombre: prodNombre.trim(),
         categoria: prodCategoria,
         unidad_medida: 'UNIDAD',

@@ -15,7 +15,7 @@ interface QuickClientForm {
 }
 
 const CATEGORIAS = ['Todas', 'Insumo', 'Producto_Propio', 'Producto_Tercero', 'Servicio'];
-const TIPOS_DOCUMENTO = ['CC', 'NIT', 'CE', 'TI', 'PP'];
+const TIPOS_DOCUMENTO = ['CC', 'NIT', 'CE', 'PAS', 'TI'];
 
 const emptyClientForm: QuickClientForm = {
   nombre: '',
