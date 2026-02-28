@@ -31,7 +31,8 @@ export default function ClerkCallbackPage() {
       try {
         const clerkToken = await getToken();
         if (!clerkToken) {
-          setError('No se pudo obtener el token de sesión. Intenta de nuevo.');
+          // Token unavailable — likely mid-logout. Redirect silently.
+          navigate('/login', { replace: true });
           return;
         }
 
@@ -45,6 +46,11 @@ export default function ClerkCallbackPage() {
           navigate('/select-tenant', { replace: true });
         }
       } catch (err: unknown) {
+        // If session ended mid-flight (e.g. during logout), go to login silently.
+        if (!isSignedIn) {
+          navigate('/login', { replace: true });
+          return;
+        }
         const msg =
           (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
           'Error al conectar con el servidor. Verifica tu conexión.';
