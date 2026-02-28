@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { productos, recetas, terceros } from '../../api/endpoints';
 import StepProgress from './StepProgress';
 
@@ -20,8 +20,6 @@ export default function OnboardingWizard({
   onDismiss,
 }: OnboardingWizardProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
   // Step 1: Producto
   const [prodNombre, setProdNombre] = useState('');
   const [prodPrecio, setProdPrecio] = useState('');
