@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { trackTenantSelect } from '../hooks/useAnalytics';
 
 export default function SelectTenantPage() {
   const { tenants, selectTenant, user } = useAuthStore();
@@ -23,6 +24,8 @@ export default function SelectTenantPage() {
     setError('');
     try {
       await selectTenant(tenantId);
+      const tenant = tenants.find((t) => t.id === tenantId);
+      trackTenantSelect(tenant?.nombre ?? tenantId);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Error al seleccionar empresa');

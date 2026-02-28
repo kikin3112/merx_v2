@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthStore } from '../stores/authStore';
+import { trackLogin } from '../hooks/useAnalytics';
 
 /**
  * Página de intercambio post-auth de Clerk.
@@ -37,6 +38,7 @@ export default function ClerkCallbackPage() {
         }
 
         const tenants = await clerkExchange(clerkToken);
+        trackLogin('clerk');
 
         if (tenants.length === 0) {
           navigate('/registro/empresa', { replace: true });

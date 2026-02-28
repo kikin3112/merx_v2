@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/format';
 import type { Producto, Tercero, Factura } from '../types';
 import { usePOSStore } from '../stores/posStore';
 import { useBreakpoint } from '../hooks/useMediaQuery';
+import { trackPOSSale, trackInvoiceCreated } from '../hooks/useAnalytics';
 
 interface QuickClientForm {
   nombre: string;
@@ -176,6 +177,8 @@ export default function POSPage() {
     },
     onSuccess: (response) => {
       const factura = response.data;
+      trackPOSSale(totals.total, cart.length);
+      trackInvoiceCreated(totals.total);
       clearCart();
       setCheckoutOk(true);
       setLastFactura(factura);

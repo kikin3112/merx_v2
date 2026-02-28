@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facturas } from '../api/endpoints';
+import { trackInvoiceCreated } from '../hooks/useAnalytics';
 import { formatCurrency, formatDate, statusColor } from '../utils/format';
 import type { Factura } from '../types';
 import DocumentForm from '../components/DocumentForm';
@@ -53,7 +54,10 @@ export default function FacturasPage() {
 
   const emitirMutation = useMutation({
     mutationFn: (id: string) => facturas.emitir(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['facturas'] }),
+    onSuccess: (response) => {
+      trackInvoiceCreated(response.data.total_venta);
+      queryClient.invalidateQueries({ queryKey: ['facturas'] });
+    },
     onError: (err: any) => showError(err, 'Error al emitir factura'),
   });
 
