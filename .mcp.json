@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "Railway": {
-      "command": "npx",
+      "command": "C:\\Windows\\System32\\cmd.exe",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@railway/mcp-server"
       ]
