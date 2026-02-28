@@ -531,7 +531,7 @@ class RecetaBase(BaseModel):
 
 
 class RecetaCreate(RecetaBase):
-    ingredientes: List[RecetaIngredienteCreate] = Field(..., min_length=1)
+    ingredientes: List[RecetaIngredienteCreate] = Field(default=[])
 
 
 class RecetaUpdate(BaseModel):
