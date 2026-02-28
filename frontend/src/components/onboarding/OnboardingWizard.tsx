@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { productos, recetas, terceros } from '../../api/endpoints';
+import { productos, recetas, terceros, inventarios } from '../../api/endpoints';
 import StepProgress from './StepProgress';
 
 interface OnboardingWizardProps {
@@ -24,6 +24,7 @@ export default function OnboardingWizard({
   const [prodNombre, setProdNombre] = useState('');
   const [prodPrecio, setProdPrecio] = useState('');
   const [prodCategoria, setProdCategoria] = useState('Producto_Propio');
+  const [prodCantidad, setProdCantidad] = useState('10');
 
   // Step 2: Receta
   const [recetaNombre, setRecetaNombre] = useState('');
@@ -37,8 +38,8 @@ export default function OnboardingWizard({
   const [error, setError] = useState('');
 
   const crearProducto = useMutation({
-    mutationFn: () =>
-      productos.create({
+    mutationFn: async () => {
+      const { data: prod } = await productos.create({
         codigo_interno: `PROD-${Date.now()}`,
         nombre: prodNombre.trim(),
         categoria: prodCategoria,
@@ -46,7 +47,16 @@ export default function OnboardingWizard({
         tipo_iva: 'Excluido',
         porcentaje_iva: 0,
         precio_venta: parseFloat(prodPrecio) || 0,
-      }),
+      });
+      const cantidad = parseFloat(prodCantidad) || 0;
+      if (cantidad > 0) {
+        await inventarios.ajuste({
+          producto_id: prod.id,
+          cantidad_nueva: cantidad,
+          motivo: 'Inventario inicial',
+        });
+      }
+    },
     onSuccess: () => {
       onCompleteStep(1);
       setError('');
@@ -142,7 +152,7 @@ export default function OnboardingWizard({
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-gray-900">Paso 1: Carga tu primer producto</h3>
             <p className="text-xs text-gray-500">Agrega un producto terminado (ej: una vela) para empezar.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input type="text" value={prodNombre} onChange={(e) => setProdNombre(e.target.value)} placeholder="Nombre del producto" className={inputClass} />
               <input type="number" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio de venta" className={inputClass} />
               <select value={prodCategoria} onChange={(e) => setProdCategoria(e.target.value)} className={inputClass}>
@@ -151,6 +161,7 @@ export default function OnboardingWizard({
                 <option value="Producto_Tercero">Producto Tercero</option>
                 <option value="Servicio">Servicio</option>
               </select>
+              <input type="number" min="0" value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} placeholder="Cantidad en inventario" className={inputClass} />
             </div>
             <button
               onClick={() => crearProducto.mutate()}
