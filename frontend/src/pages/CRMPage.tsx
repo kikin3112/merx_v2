@@ -6,6 +6,9 @@ import Modal from '../components/ui/Modal';
 import SearchInput from '../components/ui/SearchInput';
 import type { CrmDeal, CrmDealCreate } from '../types';
 
+// Set to false to restore full CRM functionality
+const CRM_UNDER_CONSTRUCTION = true;
+
 function emptyForm(): CrmDealCreate {
   return {
     nombre: '',
@@ -149,6 +152,18 @@ export default function CRMPage() {
   }, {} as Record<string, CrmDeal[]>) || {};
 
   const saving = createMut.isPending;
+
+  if (CRM_UNDER_CONSTRUCTION) {
+    return (
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 mb-6">CRM</h1>
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+          <p className="text-lg mb-2">Módulo CRM</p>
+          <p className="text-sm">Próximamente: pipelines, negocios y seguimiento de clientes</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
