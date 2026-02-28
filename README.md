@@ -117,4 +117,4 @@ trivy image chandelier-backend:local --severity CRITICAL,HIGH
 ## Reporte de vulnerabilidades
 
 Encontraste un bug de seguridad? No abras un issue público.
-Envía un email a: **[maintainer email]** con asunto `[SECURITY] descripción breve`.
+Envía un email a: **prometeoxlabs@gmail.com** con asunto `[SECURITY] descripción breve`.
