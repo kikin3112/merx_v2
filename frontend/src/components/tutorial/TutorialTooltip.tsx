@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TUTORIALES } from '../../data/tutorial-content';
 
 interface TutorialTooltipProps {
