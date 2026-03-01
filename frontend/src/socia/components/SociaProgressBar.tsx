@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { NIVELES, getNivelInfo } from '../achievements';
 
 interface SociaProgressBarProps {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TUTORIALES } from '../../data/tutorial-content';
 
 const CONCEPTOS_RELEVANTES = [

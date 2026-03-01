@@ -96,7 +96,7 @@ export function EscenariosPrecios({ recetaId }: Props) {
           <p className="text-xs text-gray-500">Escenarios para: <strong>{recetaNombre}</strong></p>
           <div className="grid grid-cols-1 gap-2">
             {escenarios.map((e) => (
-              <EscenarioCard key={e.nombre} escenario={e} volumen={volumen} />
+              <EscenarioCard key={e.nombre} escenario={e} />
             ))}
           </div>
         </div>
@@ -105,7 +105,7 @@ export function EscenariosPrecios({ recetaId }: Props) {
   );
 }
 
-function EscenarioCard({ escenario, volumen }: { escenario: EscenarioPrecio; volumen: number }) {
+function EscenarioCard({ escenario }: { escenario: EscenarioPrecio }) {
   const colorClass = getViabilidadColor(escenario.viabilidad);
   const isRecomendado = escenario.nombre === 'Objetivo' || escenario.nombre === 'Mercado';
 

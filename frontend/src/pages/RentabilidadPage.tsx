@@ -2,7 +2,7 @@
  * RentabilidadPage — Comparador de rentabilidad multi-producto.
  * Muestra ranking de recetas por margen de contribución.
  */
-import React from 'react';
+
 import { useComparadorRentabilidad } from '../hooks/useAnalisisPrecios';
 import { SociaInsight } from '../socia/components/SociaInsight';
 import { MargenIndicator } from '../components/recetas/MargenIndicator';
