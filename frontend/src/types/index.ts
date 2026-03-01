@@ -416,6 +416,7 @@ export interface RecetaIngrediente {
   unidad: string;
   notas: string | null;
   costo_linea: number | null;
+  producto_nombre: string | null;
 }
 
 export interface Receta {
@@ -426,6 +427,7 @@ export interface Receta {
   cantidad_resultado: number;
   costo_mano_obra: number;
   tiempo_produccion_minutos: number | null;
+  margen_objetivo: number | null;
   notas: string | null;
   estado: boolean;
   costo_ingredientes: number | null;
@@ -445,10 +447,13 @@ export interface RecetaCosto {
   cantidad_resultado: number;
   costo_ingredientes: number;
   costo_mano_obra: number;
+  costo_indirecto: number;
   costo_total: number;
   costo_unitario: number;
   precio_venta_actual: number;
   margen_actual_porcentaje: number;
+  margen_objetivo: number | null;
+  precio_sugerido: number | null;
   detalle_ingredientes: {
     producto_id: string;
     producto_nombre: string;
@@ -457,6 +462,107 @@ export interface RecetaCosto {
     costo_unitario: number;
     costo_linea: number;
   }[];
+}
+
+// ---- Socia: Costos Indirectos ----
+
+export interface CostoIndirecto {
+  id: string;
+  nombre: string;
+  monto: number;
+  tipo: 'FIJO' | 'PORCENTAJE';
+  activo: boolean;
+  created_at: string;
+}
+
+// ---- Socia: Análisis CVU ----
+
+export interface CVURequest {
+  receta_id: string;
+  precio_venta: number;
+  costos_fijos_periodo: number;
+  volumen_esperado: number;
+}
+
+export interface CVUResponse {
+  receta_nombre: string;
+  costo_variable_unitario: number;
+  margen_contribucion_unitario: number;
+  ratio_margen_contribucion: number;
+  punto_equilibrio_unidades: number;
+  punto_equilibrio_ingresos: number;
+  margen_seguridad_unidades: number;
+  margen_seguridad_porcentaje: number;
+  utilidad_esperada: number;
+}
+
+export interface VariacionSensibilidad {
+  variable: 'precio_venta' | 'mano_obra' | 'costos_fijos' | 'volumen';
+  delta_porcentaje: number;
+  ingrediente_id?: string;
+}
+
+export interface SensibilidadResultado {
+  variable: string;
+  delta_porcentaje: number;
+  nuevo_pe_unidades: number;
+  nuevo_pe_ingresos: number;
+  nueva_utilidad: number;
+  impacto_pe_porcentaje: number;
+}
+
+export interface SensibilidadResponse {
+  receta_nombre: string;
+  pe_base_unidades: number;
+  pe_base_ingresos: number;
+  utilidad_base: number;
+  resultados: SensibilidadResultado[];
+}
+
+export interface EscenarioPrecio {
+  nombre: string;
+  precio: number;
+  margen_porcentaje: number;
+  margen_contribucion: number;
+  punto_equilibrio_unidades: number;
+  viabilidad: 'VIABLE' | 'CRITICO' | 'NO_VIABLE';
+}
+
+export interface EscenariosResponse {
+  receta_nombre: string;
+  costo_variable_unitario: number;
+  escenarios: EscenarioPrecio[];
+}
+
+export interface RentabilidadItem {
+  receta_id: string;
+  receta_nombre: string;
+  costo_unitario: number;
+  precio_venta: number;
+  margen_contribucion: number;
+  margen_porcentaje: number;
+  tiempo_produccion_minutos: number;
+  mc_por_minuto: number | null;
+}
+
+export interface EscalaLote {
+  lote: number;
+  costo_unitario: number;
+  ahorro_vs_lote_1: number;
+}
+
+export interface EconomiaEscalaResponse {
+  receta_nombre: string;
+  costo_variable_unitario: number;
+  escala: EscalaLote[];
+}
+
+// ---- Socia: Gamificación ----
+
+export interface SociaProgreso {
+  nivel_actual: string;
+  logros: string[];
+  total_logros: number;
 }
 
 export interface ProduccionResponse {

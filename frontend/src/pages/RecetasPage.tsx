@@ -3,6 +3,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recetas, productos } from '../api/endpoints';
 import { formatCurrency } from '../utils/format';
 import type { Receta, Producto, RecetaCosto } from '../types';
+import { useAuthStore } from '../stores/authStore';
+import { useTutorial } from '../hooks/useTutorial';
+import { CostoIndirectoManager } from '../components/recetas/CostoIndirectoManager';
+import { CostoBreakdownChart } from '../components/recetas/CostoBreakdownChart';
+import { PuntoEquilibrioPanel } from '../components/recetas/PuntoEquilibrioPanel';
+import { EscenariosPrecios } from '../components/recetas/EscenariosPrecios';
+import { MargenIndicator } from '../components/recetas/MargenIndicator';
+import { TutorialTooltip } from '../components/tutorial/TutorialTooltip';
+import { TutorialGuide } from '../components/tutorial/TutorialGuide';
+import { HelpPanel } from '../components/tutorial/HelpPanel';
+import { SociaOnboarding } from '../socia/components/SociaOnboarding';
+
+type Tab = 'recetas' | 'analisis' | 'indirectos';
 
 const UNIDADES = ['UNIDAD', 'GRAMO', 'KILOGRAMO', 'MILILITRO', 'LITRO', 'METRO', 'CENTIMETRO'] as const;
 
@@ -16,6 +29,14 @@ interface IngredienteForm {
 
 export default function RecetasPage() {
   const queryClient = useQueryClient();
+  const auth = useAuthStore();
+  const userId = (auth as { user?: { id?: string } }).user?.id ?? 'anon';
+  const tenantId = (auth as { tenantId?: string }).tenantId ?? 'default';
+
+  const tutorial = useTutorial(userId, tenantId);
+  const [showOnboarding, setShowOnboarding] = useState(() => tutorial.debesMostrar);
+  const [showTour, setShowTour] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('recetas');
   const [showForm, setShowForm] = useState(false);
   const [selectedReceta, setSelectedReceta] = useState<Receta | null>(null);
   const [costoInfo, setCostoInfo] = useState<RecetaCosto | null>(null);
@@ -30,6 +51,7 @@ export default function RecetasPage() {
   const [cantidadResultado, setCantidadResultado] = useState(1);
   const [costoManoObra, setCostoManoObra] = useState(0);
   const [tiempoMinutos, setTiempoMinutos] = useState<number | ''>('');
+  const [margenObjetivo, setMargenObjetivo] = useState<number | ''>('');
   const [ingredientes, setIngredientes] = useState<IngredienteForm[]>([]);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [busquedaIngrediente, setBusquedaIngrediente] = useState('');
@@ -60,7 +82,22 @@ export default function RecetasPage() {
 
   const costoMutation = useMutation({
     mutationFn: (id: string) => recetas.calcularCosto(id),
-    onSuccess: ({ data }) => setCostoInfo(data),
+    onSuccess: ({ data: raw }) => {
+      const data = {
+        ...raw,
+        costo_ingredientes: Number(raw.costo_ingredientes),
+        costo_mano_obra: Number(raw.costo_mano_obra),
+        costo_indirecto: Number(raw.costo_indirecto),
+        costo_total: Number(raw.costo_total),
+        costo_unitario: Number(raw.costo_unitario),
+        precio_venta_actual: Number(raw.precio_venta_actual),
+        margen_actual_porcentaje: Number(raw.margen_actual_porcentaje),
+        margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
+        precio_sugerido: raw.precio_sugerido != null ? Number(raw.precio_sugerido) : null,
+      };
+      setCostoInfo(data);
+      setSelectedReceta(recetasList?.find((r) => r.id === data.receta_id) ?? null);
+    },
   });
 
   const producirMutation = useMutation({
@@ -105,6 +142,7 @@ export default function RecetasPage() {
     setCantidadResultado(1);
     setCostoManoObra(0);
     setTiempoMinutos('');
+    setMargenObjetivo('');
     setIngredientes([]);
     setBusquedaProducto('');
     setBusquedaIngrediente('');
@@ -119,6 +157,7 @@ export default function RecetasPage() {
       cantidad_resultado: cantidadResultado,
       costo_mano_obra: costoManoObra,
       tiempo_produccion_minutos: tiempoMinutos || null,
+      margen_objetivo: margenObjetivo || null,
       ingredientes: ingredientes.map((i) => ({
         producto_id: i.producto_id,
         cantidad: i.cantidad,
@@ -138,107 +177,217 @@ export default function RecetasPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Recetas para producción</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
-        >
-          + Nueva receta
-        </button>
+    <div className="max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Recetas para producción</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Costos, precios y análisis con tu Socia</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTour(true)}
+            className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-1"
+          >
+            📖 Tutorial
+          </button>
+          <button
+            id="btn-nueva-receta"
+            onClick={() => setShowForm(true)}
+            className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+          >
+            + Nueva receta
+          </button>
+        </div>
       </div>
 
-      {/* List */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {recetasList?.map((r) => (
-            <div
-              key={r.id}
-              className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900">{r.nombre}</h3>
-                  {r.descripcion && (
-                    <p className="text-xs text-gray-500 mt-0.5">{r.descripcion}</p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
-                    <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
-                    <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
-                    {r.costo_unitario != null && (
-                      <span>Costo unitario: <strong>{formatCurrency(r.costo_unitario)}</strong></span>
-                    )}
-                    {r.tiempo_produccion_minutos && (
-                      <span>Tiempo: {r.tiempo_produccion_minutos} min</span>
-                    )}
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-4 gap-1">
+        {([
+          { id: 'recetas', label: '🕯️ Recetas' },
+          { id: 'analisis', label: '📊 Análisis de precios' },
+          { id: 'indirectos', label: '💡 Gastos adicionales' },
+        ] as const).map((tab) => (
+          <button
+            key={tab.id}
+            id={tab.id === 'analisis' ? 'tab-analisis' : tab.id === 'indirectos' ? 'tab-indirectos' : undefined}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? 'border-amber-500 text-amber-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* === TAB: Recetas === */}
+      {activeTab === 'recetas' && (
+        isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recetasList?.map((r) => (
+              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-semibold text-gray-900">{r.nombre}</h3>
+                      {r.costo_unitario != null && r.margen_objetivo != null && (
+                        <MargenIndicator margen={r.margen_objetivo} />
+                      )}
+                    </div>
+                    {r.descripcion && <p className="text-xs text-gray-500 mt-0.5">{r.descripcion}</p>}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
+                      <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
+                      <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
+                      {r.costo_unitario != null && (
+                        <span>Costo: <strong>{formatCurrency(r.costo_unitario)}</strong></span>
+                      )}
+                      {r.tiempo_produccion_minutos && (
+                        <span>Tiempo: {r.tiempo_produccion_minutos} min</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => costoMutation.mutate(r.id)}
+                      disabled={costoMutation.isPending}
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                    >
+                      {costoMutation.isPending ? '...' : 'Calcular costo'}
+                    </button>
+                    <button
+                      onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                    >
+                      Producir
+                    </button>
+                    <button
+                      onClick={() => { if (confirm(`Eliminar receta "${r.nombre}"?`)) deleteMutation.mutate(r.id); }}
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => costoMutation.mutate(r.id)}
-                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                  >
-                    Calcular costo
-                  </button>
-                  <button
-                    onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
-                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-                  >
-                    Producir
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Eliminar receta "${r.nombre}"?`)) deleteMutation.mutate(r.id);
-                    }}
-                    className="rounded px-2.5 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                  >
-                    Eliminar
-                  </button>
-                </div>
+                {r.ingredientes.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {r.ingredientes.map((ing) => (
+                      <span key={ing.id} className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
+                        {ing.producto_nombre ? `${ing.producto_nombre} · ` : ''}{ing.cantidad} {ing.unidad.toLowerCase()}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {recetasList?.length === 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+                <p className="text-lg mb-2">🕯️ Sin recetas todavía</p>
+                <p className="text-sm">Define materias primas y crea tu primera receta</p>
+              </div>
+            )}
+          </div>
+        )
+      )}
+
+      {/* === TAB: Análisis === */}
+      {activeTab === 'analisis' && (
+        <div className="space-y-6">
+          {recetasList && recetasList.length > 0 ? (
+            <>
+              {/* Selector de receta */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Selecciona una receta para analizar</label>
+                <select
+                  value={selectedReceta?.id ?? ''}
+                  onChange={(e) => setSelectedReceta(recetasList.find((r) => r.id === e.target.value) ?? null)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400"
+                >
+                  <option value="">— Elige una receta —</option>
+                  {recetasList.map((r) => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
               </div>
 
-              {/* Ingredientes preview */}
-              {r.ingredientes.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {r.ingredientes.map((ing) => (
-                    <span
-                      key={ing.id}
-                      className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600"
-                    >
-                      {ing.cantidad} {ing.unidad.toLowerCase()}
-                    </span>
-                  ))}
+              {selectedReceta ? (
+                <div className="space-y-6">
+                  {/* Costo breakdown si ya se calculó */}
+                  {costoInfo && costoInfo.receta_id === selectedReceta.id && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <h3 className="text-sm font-semibold text-gray-900">Desglose de costos</h3>
+                        <TutorialTooltip concepto="costoIngredientes" />
+                      </div>
+                      <CostoBreakdownChart costo={costoInfo} />
+                    </div>
+                  )}
+                  {!costoInfo && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                      <p className="text-sm text-amber-700 mb-3">Primero calcula el costo de esta receta para ver el desglose completo</p>
+                      <button
+                        onClick={() => costoMutation.mutate(selectedReceta.id)}
+                        disabled={costoMutation.isPending}
+                        className="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                      >
+                        {costoMutation.isPending ? 'Calculando...' : 'Calcular costo ahora'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Punto de equilibrio */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <PuntoEquilibrioPanel
+                      recetaId={selectedReceta.id}
+                      precioVentaDefault={costoInfo?.precio_venta_actual ?? 0}
+                    />
+                  </div>
+
+                  {/* Escenarios de precio */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <EscenariosPrecios recetaId={selectedReceta.id} />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+                  <p className="text-lg mb-2">📊</p>
+                  <p className="text-sm">Selecciona una receta para ver su análisis de precios</p>
                 </div>
               )}
-            </div>
-          ))}
-
-          {recetasList?.length === 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-              <p className="text-lg mb-2">Sin recetas</p>
-              <p className="text-sm">Define materias primas y crea tu primera receta</p>
+            </>
+          ) : (
+            <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+              <p className="text-lg mb-2">🕯️</p>
+              <p className="text-sm">Crea tu primera receta para acceder al análisis de precios</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Costo Modal */}
-      {costoInfo && (
+      {/* === TAB: Costos Indirectos === */}
+      {activeTab === 'indirectos' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <CostoIndirectoManager />
+        </div>
+      )}
+
+      {/* === Modal: Costo calculado === */}
+      {costoInfo && activeTab === 'recetas' && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
           <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Costo: {costoInfo.receta_nombre}</h2>
               <button onClick={() => setCostoInfo(null)} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
-            <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="space-y-2">
+            <div className="p-4 md:p-6 overflow-y-auto flex-1">
+              <CostoBreakdownChart costo={costoInfo} />
+              <div className="mt-4 border-t border-gray-100 pt-3 space-y-1.5">
                 {costoInfo.detalle_ingredientes.map((d, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-600">{d.producto_nombre} ({d.cantidad} {d.unidad})</span>
@@ -246,42 +395,23 @@ export default function RecetasPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-gray-200 pt-3 space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Costo ingredientes</span>
-                  <span>{formatCurrency(costoInfo.costo_ingredientes)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Mano de obra</span>
-                  <span>{formatCurrency(costoInfo.costo_mano_obra)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold">
-                  <span>Costo total</span>
-                  <span>{formatCurrency(costoInfo.costo_total)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold text-primary-700">
-                  <span>Costo unitario</span>
-                  <span>{formatCurrency(costoInfo.costo_unitario)}</span>
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Precio venta actual</span>
-                  <span>{formatCurrency(costoInfo.precio_venta_actual)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold">
-                  <span>Margen</span>
-                  <span className={costoInfo.margen_actual_porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {costoInfo.margen_actual_porcentaje.toFixed(1)}%
-                  </span>
-                </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => { setActiveTab('analisis'); setCostoInfo(costoInfo); }}
+                  className="flex-1 py-2 text-sm font-semibold bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors border border-amber-200"
+                >
+                  Ver análisis completo →
+                </button>
+                <button onClick={() => setCostoInfo(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Producir Modal */}
+      {/* === Modal: Producir === */}
       {showProducir && selectedReceta && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
           <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-sm md:mx-4 flex flex-col">
@@ -291,8 +421,7 @@ export default function RecetasPage() {
             </div>
             <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
               <p className="text-sm text-gray-600">
-                Receta: <strong>{selectedReceta.nombre}</strong>
-                <br />
+                Receta: <strong>{selectedReceta.nombre}</strong><br />
                 Rinde: {selectedReceta.cantidad_resultado} uds por lote
               </p>
               <div>
@@ -304,9 +433,7 @@ export default function RecetasPage() {
                   onChange={(e) => setCantidadProducir(Math.max(1, Number(e.target.value)))}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Total producido: {cantidadProducir * selectedReceta.cantidad_resultado} unidades
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Total: {cantidadProducir * selectedReceta.cantidad_resultado} unidades</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
@@ -334,7 +461,7 @@ export default function RecetasPage() {
         </div>
       )}
 
-      {/* Create Form Modal */}
+      {/* === Modal: Crear receta === */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
           <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-2xl md:mx-4 flex flex-col">
@@ -343,7 +470,6 @@ export default function RecetasPage() {
               <button onClick={resetForm} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <div className="px-4 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">
-              {/* Nombre */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre receta *</label>
                 <input
@@ -364,7 +490,6 @@ export default function RecetasPage() {
                 />
               </div>
 
-              {/* Producto resultado */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Producto resultado *</label>
                 {productoSeleccionado ? (
@@ -387,11 +512,8 @@ export default function RecetasPage() {
                     {busquedaProducto && productosResultado.length > 0 && (
                       <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-md">
                         {productosResultado.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => { setProductoResultadoId(p.id); setBusquedaProducto(''); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50"
-                          >
+                          <button key={p.id} onClick={() => { setProductoResultadoId(p.id); setBusquedaProducto(''); }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50">
                             <span className="font-medium">{p.nombre}</span>
                             <span className="text-gray-500 ml-2 text-xs">{p.codigo_interno}</span>
                           </button>
@@ -402,62 +524,51 @@ export default function RecetasPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rendimiento (uds)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={cantidadResultado}
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Rendimiento (uds)</label>
+                  <input type="number" min={1} value={cantidadResultado}
                     onChange={(e) => setCantidadResultado(Math.max(1, Number(e.target.value)))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo mano obra</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={costoManoObra}
+                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    Mano de obra <TutorialTooltip concepto="costoManoObra" />
+                  </label>
+                  <input type="number" min={0} step={100} value={costoManoObra}
                     onChange={(e) => setCostoManoObra(Number(e.target.value) || 0)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo (min)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={tiempoMinutos}
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Tiempo (min)</label>
+                  <input type="number" min={0} value={tiempoMinutos}
                     onChange={(e) => setTiempoMinutos(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    Margen (%) <TutorialTooltip concepto="margenObjetivo" />
+                  </label>
+                  <input type="number" min={1} max={99} step={1} placeholder="60"
+                    value={margenObjetivo}
+                    onChange={(e) => setMargenObjetivo(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                 </div>
               </div>
 
-              {/* Ingredientes */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">Ingredientes *</label>
-                </div>
-
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                  Ingredientes * <TutorialTooltip concepto="costoIngredientes" />
+                </label>
                 <div className="mb-3">
-                  <input
-                    type="text"
-                    placeholder="Buscar materia prima..."
-                    value={busquedaIngrediente}
+                  <input type="text" placeholder="Buscar materia prima..." value={busquedaIngrediente}
                     onChange={(e) => setBusquedaIngrediente(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   {busquedaIngrediente && productosIngrediente.length > 0 && (
                     <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-md">
                       {productosIngrediente.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => agregarIngrediente(p)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50"
-                        >
+                        <button key={p.id} onClick={() => agregarIngrediente(p)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50">
                           <span className="font-medium">{p.nombre}</span>
                           <span className="text-gray-500 ml-2 text-xs">{p.codigo_interno}</span>
                         </button>
@@ -465,43 +576,21 @@ export default function RecetasPage() {
                     </div>
                   )}
                 </div>
-
                 {ingredientes.length > 0 ? (
                   <div className="space-y-2">
                     {ingredientes.map((ing, i) => (
                       <div key={i} className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                         <span className="flex-1 min-w-[120px] text-sm font-medium text-gray-900 truncate">{ing.nombre}</span>
-                        <input
-                          type="number"
-                          min={0.01}
-                          step={0.01}
-                          value={ing.cantidad}
-                          onChange={(e) =>
-                            setIngredientes((prev) =>
-                              prev.map((item, idx) => (idx === i ? { ...item, cantidad: Number(e.target.value) || 0 } : item))
-                            )
-                          }
-                          className="w-20 text-center rounded border border-gray-200 px-2 py-1 text-sm"
-                        />
-                        <select
-                          value={ing.unidad}
-                          onChange={(e) =>
-                            setIngredientes((prev) =>
-                              prev.map((item, idx) => (idx === i ? { ...item, unidad: e.target.value } : item))
-                            )
-                          }
-                          className="rounded border border-gray-200 px-2 py-1 text-sm"
-                        >
-                          {UNIDADES.map((u) => (
-                            <option key={u} value={u}>{u.toLowerCase()}</option>
-                          ))}
+                        <input type="number" min={0.01} step={0.01} value={ing.cantidad}
+                          onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, cantidad: Number(e.target.value) || 0 } : item))}
+                          className="w-20 text-center rounded border border-gray-200 px-2 py-1 text-sm" />
+                        <select value={ing.unidad}
+                          onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, unidad: e.target.value } : item))}
+                          className="rounded border border-gray-200 px-2 py-1 text-sm">
+                          {UNIDADES.map((u) => <option key={u} value={u}>{u.toLowerCase()}</option>)}
                         </select>
-                        <button
-                          onClick={() => setIngredientes((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-400 hover:text-red-600 text-lg"
-                        >
-                          &times;
-                        </button>
+                        <button onClick={() => setIngredientes((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-red-400 hover:text-red-600 text-lg">&times;</button>
                       </div>
                     ))}
                   </div>
@@ -513,11 +602,8 @@ export default function RecetasPage() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-4 py-4 md:px-6 border-t border-gray-100">
-              <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                Cancelar
-              </button>
+              <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
               <button
                 onClick={handleCrear}
                 disabled={!nombre || !productoResultadoId || ingredientes.length === 0 || crearMutation.isPending}
@@ -529,6 +615,29 @@ export default function RecetasPage() {
           </div>
         </div>
       )}
+
+      {/* === Tutorial: Onboarding inicial === */}
+      {showOnboarding && (
+        <SociaOnboarding
+          onCompletar={() => {
+            tutorial.completar();
+            setShowOnboarding(false);
+          }}
+        />
+      )}
+
+      {/* === Tutorial: Tour paso a paso === */}
+      {showTour && !showOnboarding && (
+        <TutorialGuide
+          paso={tutorial.state.pasoActual}
+          onAvanzar={tutorial.avanzar}
+          onOmitir={() => { tutorial.omitir(); setShowTour(false); }}
+          onCompletar={() => { tutorial.completar(); setShowTour(false); }}
+        />
+      )}
+
+      {/* === Help Panel flotante === */}
+      <HelpPanel />
     </div>
   );
 }

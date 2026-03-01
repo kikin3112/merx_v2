@@ -20,6 +20,7 @@ from ..datos.esquemas import (
     RecetaUpdate,
 )
 from ..datos.modelos import Productos, Recetas, RecetasIngredientes, Usuarios
+from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
 from ..utils.logger import setup_logger
@@ -40,7 +41,6 @@ async def crear_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Crea una nueva receta con sus ingredientes.
 
@@ -49,6 +49,7 @@ async def crear_receta(
     - Producto resultado debe existir
     - Ingredientes deben existir y ser diferentes al producto resultado
     """
+    tenant_id = ctx.tenant_id
     # Validar nombre unico
     existente = (
         db.query(Recetas)
@@ -85,6 +86,7 @@ async def crear_receta(
             cantidad_resultado=receta_data.cantidad_resultado,
             costo_mano_obra=receta_data.costo_mano_obra,
             tiempo_produccion_minutos=receta_data.tiempo_produccion_minutos,
+            margen_objetivo=receta_data.margen_objetivo,
             notas=receta_data.notas,
             estado=True,
         )
@@ -161,7 +163,11 @@ async def listar_recetas(
     """
     query = (
         db.query(Recetas)
-        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .options(
+            selectinload(Recetas.created_by_user),
+            selectinload(Recetas.updated_by_user),
+            selectinload(Recetas.ingredientes).selectinload(RecetasIngredientes.producto),
+        )
         .filter(Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
     )
 
@@ -187,7 +193,11 @@ async def obtener_receta(
     """
     receta = (
         db.query(Recetas)
-        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .options(
+            selectinload(Recetas.created_by_user),
+            selectinload(Recetas.updated_by_user),
+            selectinload(Recetas.ingredientes).selectinload(RecetasIngredientes.producto),
+        )
         .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
         .first()
     )
@@ -205,10 +215,10 @@ async def actualizar_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Actualiza una receta existente.
     """
+    tenant_id = ctx.tenant_id
     receta = (
         db.query(Recetas)
         .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
@@ -264,10 +274,10 @@ async def eliminar_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina una receta (soft delete).
     """
+    tenant_id = ctx.tenant_id
     from datetime import datetime
 
     receta = (
@@ -298,10 +308,10 @@ async def agregar_ingrediente(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Agrega un ingrediente a una receta existente.
     """
+    tenant_id = ctx.tenant_id
     receta = (
         db.query(Recetas)
         .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
@@ -365,10 +375,10 @@ async def eliminar_ingrediente(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina un ingrediente de una receta.
     """
+    tenant_id = ctx.tenant_id
     # Verificar receta
     receta = (
         db.query(Recetas)
@@ -416,9 +426,17 @@ async def calcular_costo_receta(
     - Margen actual si tiene precio de venta
     """
     calculadora = CalculadoraMargenes(db, ctx.tenant_id)
+    svc_indirectos = ServicioCostosIndirectos(db=db, tenant_id=ctx.tenant_id)
 
     try:
-        resultado = calculadora.calcular_costo_receta(receta_id)
+        # Calcular costos indirectos basados en costos variables de la receta
+        # Primero hacemos un cálculo sin indirectos para obtener el costo base
+        resultado_base = calculadora.calcular_costo_receta(receta_id)
+        costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
+        costo_indirecto, _ = svc_indirectos.calcular_total_para_costo_base(costo_base)
+
+        # Recalcular con indirectos
+        resultado = calculadora.calcular_costo_receta(receta_id, costo_indirecto=costo_indirecto)
         return RecetaCostoResponse(**resultado)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

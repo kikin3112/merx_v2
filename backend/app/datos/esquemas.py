@@ -516,7 +516,18 @@ class RecetaIngredienteResponse(RecetaIngredienteBase):
     id: UUID
     receta_id: UUID
     costo_linea: Optional[Decimal] = None
+    producto_nombre: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_orm_with_nombre(cls, obj: object) -> "RecetaIngredienteResponse":
+        """Construye la respuesta incluyendo el nombre del producto si está cargado."""
+        instance = cls.model_validate(obj)
+        producto = getattr(obj, "producto", None)
+        if producto:
+            instance.producto_nombre = getattr(producto, "nombre", None)
+        return instance
 
 
 class RecetaBase(BaseModel):
@@ -526,6 +537,7 @@ class RecetaBase(BaseModel):
     cantidad_resultado: Decimal = Field(default=Decimal("1.00"), gt=0)
     costo_mano_obra: Decimal = Field(default=Decimal("0.00"), ge=0)
     tiempo_produccion_minutos: Optional[int] = Field(None, ge=0)
+    margen_objetivo: Optional[Decimal] = Field(None, gt=0, lt=100)
     notas: Optional[str] = None
     estado: bool = True
 
@@ -540,6 +552,7 @@ class RecetaUpdate(BaseModel):
     cantidad_resultado: Optional[Decimal] = None
     costo_mano_obra: Optional[Decimal] = None
     tiempo_produccion_minutos: Optional[int] = None
+    margen_objetivo: Optional[Decimal] = Field(None, gt=0, lt=100)
     notas: Optional[str] = None
     estado: Optional[bool] = None
 
@@ -559,6 +572,18 @@ class RecetaResponse(RecetaBase):
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
+    @classmethod
+    def model_validate(cls, obj: object, **kwargs: object) -> "RecetaResponse":  # type: ignore[override]
+        """Hydrata producto_nombre en cada ingrediente al serializar desde ORM."""
+        instance = super().model_validate(obj, **kwargs)
+        orm_ingredientes = getattr(obj, "ingredientes", []) or []
+        for i, ing_orm in enumerate(orm_ingredientes):
+            if i < len(instance.ingredientes):
+                producto = getattr(ing_orm, "producto", None)
+                if producto:
+                    instance.ingredientes[i].producto_nombre = getattr(producto, "nombre", None)
+        return instance
+
 
 # ============================================================================
 # RECETAS - CALCULAR COSTO
@@ -568,23 +593,26 @@ class RecetaResponse(RecetaBase):
 class IngredienteCostoDetalle(BaseModel):
     producto_id: str
     producto_nombre: str
-    cantidad: float
+    cantidad: Decimal
     unidad: str
-    costo_unitario: float
-    costo_linea: float
+    costo_unitario: Decimal
+    costo_linea: Decimal
 
 
 class RecetaCostoResponse(BaseModel):
     receta_id: str
     receta_nombre: str
     producto_resultado_id: str
-    cantidad_resultado: float
-    costo_ingredientes: float
-    costo_mano_obra: float
-    costo_total: float
-    costo_unitario: float
-    precio_venta_actual: float
-    margen_actual_porcentaje: float
+    cantidad_resultado: Decimal
+    costo_ingredientes: Decimal
+    costo_mano_obra: Decimal
+    costo_indirecto: Decimal = Decimal("0.00")
+    costo_total: Decimal
+    costo_unitario: Decimal
+    precio_venta_actual: Decimal
+    margen_actual_porcentaje: Decimal
+    margen_objetivo: Optional[Decimal] = None
+    precio_sugerido: Optional[Decimal] = None
     detalle_ingredientes: List[IngredienteCostoDetalle]
 
 
@@ -609,6 +637,189 @@ class ProduccionResponse(BaseModel):
     costo_unitario: float
     documento_referencia: str
     movimiento_id: str
+
+
+# ============================================================================
+# SOCIA — COSTOS INDIRECTOS
+# ============================================================================
+
+
+class CostoIndirectoCreate(BaseModel):
+    nombre: str = Field(..., max_length=150, description="Ej: Empaque, Gas, Arrendamiento")
+    monto: Decimal = Field(..., ge=0, description="COP por unidad (FIJO) o % del costo base (PORCENTAJE)")
+    tipo: str = Field(..., description="FIJO o PORCENTAJE")
+
+    @field_validator("tipo")
+    @classmethod
+    def tipo_valido(cls, v: str) -> str:
+        if v not in ("FIJO", "PORCENTAJE"):
+            raise ValueError("tipo debe ser FIJO o PORCENTAJE")
+        return v
+
+
+class CostoIndirectoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    monto: Optional[Decimal] = Field(None, ge=0)
+    tipo: Optional[str] = None
+    activo: Optional[bool] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def tipo_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ("FIJO", "PORCENTAJE"):
+            raise ValueError("tipo debe ser FIJO o PORCENTAJE")
+        return v
+
+
+class CostoIndirectoResponse(BaseModel):
+    id: UUID
+    nombre: str
+    monto: Decimal
+    tipo: str
+    activo: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CostoIndirectoDetalle(BaseModel):
+    """Detalle de un costo indirecto aplicado en un cálculo."""
+
+    id: str
+    nombre: str
+    tipo: str
+    monto_configurado: Decimal
+    monto_aplicado: Decimal
+
+
+# ============================================================================
+# SOCIA — ANÁLISIS CVU / PRECIOS
+# ============================================================================
+
+
+class CVURequest(BaseModel):
+    receta_id: UUID
+    precio_venta: Decimal = Field(gt=0, description="Precio de venta unitario en COP")
+    costos_fijos_periodo: Decimal = Field(ge=0, description="Costos fijos totales del periodo (ej: mes)")
+    volumen_esperado: int = Field(gt=0, description="Unidades esperadas a producir/vender en el periodo")
+
+
+class CVUResponse(BaseModel):
+    receta_nombre: str
+    costo_variable_unitario: Decimal
+    margen_contribucion_unitario: Decimal
+    ratio_margen_contribucion: Decimal
+    punto_equilibrio_unidades: Decimal
+    punto_equilibrio_ingresos: Decimal
+    margen_seguridad_unidades: Decimal
+    margen_seguridad_porcentaje: Decimal
+    utilidad_esperada: Decimal
+
+
+class VariacionSensibilidad(BaseModel):
+    variable: str = Field(..., description="precio_venta | mano_obra | ingrediente | costos_fijos | volumen")
+    ingrediente_id: Optional[UUID] = None
+    delta_porcentaje: Decimal = Field(..., description="Ej: 20 = +20%, -10 = -10%")
+
+
+class SensibilidadRequest(BaseModel):
+    receta_id: UUID
+    precio_venta: Decimal = Field(gt=0)
+    costos_fijos: Decimal = Field(ge=0)
+    volumen_base: int = Field(gt=0)
+    variaciones: List[VariacionSensibilidad]
+
+
+class SensibilidadResultado(BaseModel):
+    variable: str
+    delta_porcentaje: Decimal
+    nuevo_pe_unidades: Decimal
+    nuevo_pe_ingresos: Decimal
+    nueva_utilidad: Decimal
+    impacto_pe_porcentaje: Decimal
+
+
+class SensibilidadResponse(BaseModel):
+    receta_nombre: str
+    pe_base_unidades: Decimal
+    pe_base_ingresos: Decimal
+    utilidad_base: Decimal
+    resultados: List[SensibilidadResultado]
+
+
+class EscenarioPrecioCompleto(BaseModel):
+    nombre: str
+    precio: Decimal
+    margen_porcentaje: Decimal
+    margen_contribucion: Decimal
+    punto_equilibrio_unidades: Decimal
+    viabilidad: str  # VIABLE | CRITICO | NO_VIABLE
+
+
+class EscenariosRequest(BaseModel):
+    receta_id: UUID
+    costos_fijos: Decimal = Field(ge=0)
+    volumen: int = Field(gt=0)
+    precio_mercado_referencia: Optional[Decimal] = Field(None, gt=0)
+
+
+class EscenariosResponse(BaseModel):
+    receta_nombre: str
+    costo_variable_unitario: Decimal
+    escenarios: List[EscenarioPrecioCompleto]
+
+
+class RentabilidadItem(BaseModel):
+    receta_id: str
+    receta_nombre: str
+    costo_unitario: Decimal
+    precio_venta: Decimal
+    margen_contribucion: Decimal
+    margen_porcentaje: Decimal
+    tiempo_produccion_minutos: int
+    mc_por_minuto: Optional[Decimal] = None
+
+
+class EscalaLote(BaseModel):
+    lote: int
+    costo_unitario: Decimal
+    ahorro_vs_lote_1: Decimal
+
+
+class EconomiaEscalaRequest(BaseModel):
+    receta_id: UUID
+    costos_fijos_setup: Decimal = Field(ge=0, description="Costo fijo de preparación/setup por lote")
+    lotes: List[int] = Field(default=[1, 5, 10, 20, 50], description="Tamaños de lote a evaluar")
+
+
+class EconomiaEscalaResponse(BaseModel):
+    receta_nombre: str
+    costo_variable_unitario: Decimal
+    escala: List[EscalaLote]
+
+
+# ============================================================================
+# SOCIA — PROGRESO Y LOGROS
+# ============================================================================
+
+
+class SociaLogroCreate(BaseModel):
+    logro_id: str = Field(..., max_length=50)
+
+
+class SociaLogroResponse(BaseModel):
+    id: UUID
+    logro_id: str
+    desbloqueado_en: datetime
+    nivel_actual: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SociaProgresoResponse(BaseModel):
+    nivel_actual: str
+    logros: List[str]
+    total_logros: int
 
 
 # ============================================================================
