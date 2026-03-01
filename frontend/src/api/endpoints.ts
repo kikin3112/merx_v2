@@ -69,6 +69,14 @@ import type {
   GastosVsIngresos,
   CalificacionCreate,
   CalificacionResponse,
+  CostoIndirecto,
+  CVURequest,
+  CVUResponse,
+  SensibilidadResponse,
+  EscenariosResponse,
+  RentabilidadItem,
+  EconomiaEscalaResponse,
+  SociaProgreso,
 } from '../types';
 
 // Auth
@@ -439,4 +447,55 @@ export const calificaciones = {
     client.get<CalificacionResponse[]>('/calificaciones/admin', { params }),
   moderar: (id: string, nuevo_estado: string) =>
     client.patch<CalificacionResponse>(`/calificaciones/${id}/moderar`, { nuevo_estado }),
+};
+
+// Socia — Costos Indirectos
+export const costosIndirectos = {
+  list: (params?: { solo_activos?: boolean }) =>
+    client.get<CostoIndirecto[]>('/costos-indirectos/', { params }),
+  create: (data: { nombre: string; monto: number; tipo: 'FIJO' | 'PORCENTAJE' }) =>
+    client.post<CostoIndirecto>('/costos-indirectos/', data),
+  update: (id: string, data: { nombre?: string; monto?: number; tipo?: string; activo?: boolean }) =>
+    client.put<CostoIndirecto>(`/costos-indirectos/${id}`, data),
+  delete: (id: string) =>
+    client.delete(`/costos-indirectos/${id}`),
+};
+
+// Socia — Análisis de Precios (IO/AO)
+export const analisisPrecios = {
+  cvu: (data: CVURequest) =>
+    client.post<CVUResponse>('/analisis-precios/cvu', data),
+  sensibilidad: (data: {
+    receta_id: string;
+    precio_venta: number;
+    costos_fijos: number;
+    volumen_base: number;
+    variaciones: Array<{ variable: string; delta_porcentaje: number; ingrediente_id?: string }>;
+  }) =>
+    client.post<SensibilidadResponse>('/analisis-precios/sensibilidad', data),
+  escenarios: (data: {
+    receta_id: string;
+    costos_fijos: number;
+    volumen: number;
+    precio_mercado_referencia?: number;
+  }) =>
+    client.post<EscenariosResponse>('/analisis-precios/escenarios', data),
+  comparador: (receta_ids?: string) =>
+    client.get<RentabilidadItem[]>('/analisis-precios/comparador', {
+      params: receta_ids ? { receta_ids } : undefined,
+    }),
+  economiaEscala: (data: {
+    receta_id: string;
+    costos_fijos_setup: number;
+    lotes?: number[];
+  }) =>
+    client.post<EconomiaEscalaResponse>('/analisis-precios/economia-escala', data),
+};
+
+// Socia — Gamificación
+export const socia = {
+  progreso: () =>
+    client.get<SociaProgreso>('/socia/progreso'),
+  registrarLogro: (logro_id: string) =>
+    client.post<{ logro_id: string; nivel_actual: string }>(`/socia/logro/${logro_id}`),
 };

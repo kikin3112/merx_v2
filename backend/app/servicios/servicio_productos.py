@@ -8,9 +8,9 @@ from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from ..datos.modelos import Inventarios, Productos, Recetas
+from ..datos.modelos import Inventarios, Productos, Recetas, RecetasIngredientes
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -26,15 +26,24 @@ class CalculadoraMargenes:
         self.db = db
         self.tenant_id = tenant_id
 
-    def calcular_costo_receta(self, receta_id: UUID) -> dict:
+    def calcular_costo_receta(self, receta_id: UUID, costo_indirecto: Optional[Decimal] = None) -> dict:
         """
         Calcula el costo total de una receta.
+        Usa joinedload para eliminar N+1 queries.
+
+        Args:
+            receta_id: UUID de la receta
+            costo_indirecto: Costo indirecto total ya calculado (opcional, lo provee el servicio de indirectos)
 
         Returns:
-            dict con desglose de costos
+            dict con desglose de costos (todos los valores son Decimal)
         """
         receta = (
             self.db.query(Recetas)
+            .options(
+                joinedload(Recetas.ingredientes).joinedload(RecetasIngredientes.producto),
+                joinedload(Recetas.producto_resultado),
+            )
             .filter(Recetas.id == receta_id, Recetas.tenant_id == self.tenant_id, Recetas.deleted_at.is_(None))
             .first()
         )
@@ -42,63 +51,84 @@ class CalculadoraMargenes:
         if not receta:
             raise ValueError("Receta no encontrada")
 
+        # Cargar inventarios en un solo query para todos los productos
+        product_ids = [ing.producto_id for ing in receta.ingredientes]
+        inventarios_map: dict = {}
+        if product_ids:
+            inventarios = (
+                self.db.query(Inventarios)
+                .filter(Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id.in_(product_ids))
+                .all()
+            )
+            inventarios_map = {inv.producto_id: inv for inv in inventarios}
+
         # Calcular costo de ingredientes
         costo_ingredientes = Decimal("0.00")
         detalle_ingredientes = []
 
         for ing in receta.ingredientes:
-            # Obtener costo promedio del inventario
-            inventario = (
-                self.db.query(Inventarios)
-                .filter(Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id == ing.producto_id)
-                .first()
-            )
+            inv = inventarios_map.get(ing.producto_id)
+            costo_unitario_ing = Decimal("0.00")
+            if inv:
+                costo_unitario_ing = inv.costo_promedio_ponderado or Decimal("0.00")
 
-            costo_unitario = Decimal("0.00")
-            if inventario:
-                costo_unitario = inventario.costo_promedio_ponderado
-
-            costo_linea = ing.cantidad * costo_unitario
+            costo_linea = ing.cantidad * costo_unitario_ing
             costo_ingredientes += costo_linea
 
             detalle_ingredientes.append(
                 {
                     "producto_id": str(ing.producto_id),
                     "producto_nombre": ing.producto.nombre if ing.producto else "N/A",
-                    "cantidad": float(ing.cantidad),
+                    "cantidad": ing.cantidad,
                     "unidad": ing.unidad,
-                    "costo_unitario": float(costo_unitario),
-                    "costo_linea": float(costo_linea),
+                    "costo_unitario": costo_unitario_ing,
+                    "costo_linea": costo_linea,
                 }
             )
 
-        # Costo total (ingredientes + mano obra)
-        costo_total = costo_ingredientes + receta.costo_mano_obra
+        # Costos indirectos (si no se proveen externamente, default 0)
+        costo_indirecto_total = costo_indirecto if costo_indirecto is not None else Decimal("0.00")
+
+        # Costo total (ingredientes + mano obra + indirectos)
+        costo_total = costo_ingredientes + receta.costo_mano_obra + costo_indirecto_total
 
         # Costo por unidad producida
         costo_unitario = Decimal("0.00")
         if receta.cantidad_resultado > 0:
-            costo_unitario = costo_total / receta.cantidad_resultado
+            costo_unitario = (costo_total / receta.cantidad_resultado).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         # Obtener precio de venta del producto resultado
         precio_venta = Decimal("0.00")
         margen_actual = Decimal("0.00")
         if receta.producto_resultado:
-            precio_venta = receta.producto_resultado.precio_venta
-            if precio_venta > 0:
-                margen_actual = ((precio_venta - costo_unitario) / precio_venta) * 100
+            precio_venta = receta.producto_resultado.precio_venta or Decimal("0.00")
+            if precio_venta > 0 and costo_unitario >= 0:
+                margen_actual = ((precio_venta - costo_unitario) / precio_venta * 100).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
+
+        # Precio sugerido si hay margen objetivo
+        precio_sugerido = None
+        margen_objetivo = getattr(receta, "margen_objetivo", None)
+        if margen_objetivo and margen_objetivo > 0 and costo_unitario > 0:
+            precio_sugerido = (costo_unitario / (1 - margen_objetivo / 100)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
 
         return {
             "receta_id": str(receta_id),
             "receta_nombre": receta.nombre,
             "producto_resultado_id": str(receta.producto_resultado_id),
-            "cantidad_resultado": float(receta.cantidad_resultado),
-            "costo_ingredientes": float(costo_ingredientes),
-            "costo_mano_obra": float(receta.costo_mano_obra),
-            "costo_total": float(costo_total),
-            "costo_unitario": float(costo_unitario),
-            "precio_venta_actual": float(precio_venta),
-            "margen_actual_porcentaje": float(margen_actual.quantize(Decimal("0.01"))),
+            "cantidad_resultado": receta.cantidad_resultado,
+            "costo_ingredientes": costo_ingredientes,
+            "costo_mano_obra": receta.costo_mano_obra,
+            "costo_indirecto": costo_indirecto_total,
+            "costo_total": costo_total,
+            "costo_unitario": costo_unitario,
+            "precio_venta_actual": precio_venta,
+            "margen_actual_porcentaje": margen_actual,
+            "margen_objetivo": margen_objetivo,
+            "precio_sugerido": precio_sugerido,
             "detalle_ingredientes": detalle_ingredientes,
         }
 

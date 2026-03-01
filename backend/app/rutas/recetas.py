@@ -20,6 +20,7 @@ from ..datos.esquemas import (
     RecetaUpdate,
 )
 from ..datos.modelos import Productos, Recetas, RecetasIngredientes, Usuarios
+from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
 from ..utils.logger import setup_logger
@@ -85,6 +86,7 @@ async def crear_receta(
             cantidad_resultado=receta_data.cantidad_resultado,
             costo_mano_obra=receta_data.costo_mano_obra,
             tiempo_produccion_minutos=receta_data.tiempo_produccion_minutos,
+            margen_objetivo=receta_data.margen_objetivo,
             notas=receta_data.notas,
             estado=True,
         )
@@ -416,9 +418,17 @@ async def calcular_costo_receta(
     - Margen actual si tiene precio de venta
     """
     calculadora = CalculadoraMargenes(db, ctx.tenant_id)
+    svc_indirectos = ServicioCostosIndirectos(db=db, tenant_id=ctx.tenant_id)
 
     try:
-        resultado = calculadora.calcular_costo_receta(receta_id)
+        # Calcular costos indirectos basados en costos variables de la receta
+        # Primero hacemos un cálculo sin indirectos para obtener el costo base
+        resultado_base = calculadora.calcular_costo_receta(receta_id)
+        costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
+        costo_indirecto, _ = svc_indirectos.calcular_total_para_costo_base(costo_base)
+
+        # Recalcular con indirectos
+        resultado = calculadora.calcular_costo_receta(receta_id, costo_indirecto=costo_indirecto)
         return RecetaCostoResponse(**resultado)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

@@ -54,12 +54,14 @@ if hasattr(settings, "SENTRY_DSN") and settings.SENTRY_DSN:
 from .middleware.tenant_context import TenantContextMiddleware
 from .middleware.user_context import UserContextMiddleware
 from .rutas import (
+    analisis_precios,
     auth,
     calificaciones,
     cartera,
     compras,
     configuracion_contable,
     contabilidad,
+    costos_indirectos,
     cotizaciones,
     crm,
     cuentas_contables,
@@ -73,6 +75,7 @@ from .rutas import (
     productos,
     recetas,
     reportes,
+    socia,
     sse,
     tenants,
     terceros,
@@ -480,6 +483,11 @@ app.include_router(reportes.router, prefix=f"{prefix}/reportes", tags=["Reportes
 
 # Recetas
 app.include_router(recetas.router, prefix=f"{prefix}/recetas", tags=["Recetas"])
+
+# Socia — Costos Indirectos, Análisis de Precios y Gamificación
+app.include_router(costos_indirectos.router, prefix=f"{prefix}/costos-indirectos", tags=["Socia / Costos Indirectos"])
+app.include_router(analisis_precios.router, prefix=f"{prefix}/analisis-precios", tags=["Socia / Análisis de Precios"])
+app.include_router(socia.router, prefix=f"{prefix}/socia", tags=["Socia / Gamificación"])
 
 # SSE - Server-Sent Events para tiempo real
 app.include_router(sse.router, prefix=f"{prefix}/sse", tags=["Tiempo Real (SSE)"])

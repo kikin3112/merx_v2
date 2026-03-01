@@ -17,6 +17,7 @@ import TercerosPage from './pages/TercerosPage';
 import VentasPage from './pages/VentasPage';
 import InventarioPage from './pages/InventarioPage';
 import RecetasPage from './pages/RecetasPage';
+import { RentabilidadPage } from './pages/RentabilidadPage';
 import ContabilidadPage from './pages/ContabilidadPage';
 import FacturasPage from './pages/FacturasPage';
 import CotizacionesPage from './pages/CotizacionesPage';
@@ -109,6 +110,11 @@ export default function App() {
               <Route path="/recetas" element={
                 <RoleGuard allowedRoles={['admin', 'operador']}>
                   <RecetasPage />
+                </RoleGuard>
+              } />
+              <Route path="/recetas/rentabilidad" element={
+                <RoleGuard allowedRoles={['admin', 'operador']}>
+                  <RentabilidadPage />
                 </RoleGuard>
               } />
 

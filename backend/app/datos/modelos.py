@@ -643,6 +643,7 @@ class Recetas(TenantAuditMixin, Base):
     cantidad_resultado = Column(Numeric(10, 2), nullable=False, default=Decimal("1.00"))
     costo_mano_obra = Column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     tiempo_produccion_minutos = Column(Integer, default=0)
+    margen_objetivo = Column(Numeric(5, 2), nullable=True)  # % de margen objetivo (ej: 60.00 para 60%)
     estado = Column(Boolean, default=True, nullable=False)
     notas = Column(Text)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -727,6 +728,63 @@ class RecetasIngredientes(Base):
         ),
         # Un producto solo puede estar una vez por receta
         Index("idx_ingredientes_receta_producto", "receta_id", "producto_id", unique=True),
+    )
+
+
+# ============================================================================
+# MODELOS: Socia — Costos Indirectos y Progreso de Gamificación
+# ============================================================================
+
+
+class TipoCostoIndirecto(str, PyEnum):
+    FIJO = "FIJO"  # monto fijo COP por unidad producida
+    PORCENTAJE = "PORCENTAJE"  # % del costo base (ingredientes + MO)
+
+
+class CostosIndirectos(TenantAuditMixin, Base):
+    """
+    Costos indirectos de producción que se prorratean entre las recetas.
+    Ej: Empaque, Gas, Arrendamiento, Electricidad.
+    """
+
+    __tablename__ = "costos_indirectos"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(150), nullable=False)
+    monto = Column(Numeric(15, 2), nullable=False)
+    tipo = Column(Enum(TipoCostoIndirecto), nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("monto >= 0", name="check_costo_indirecto_monto_positivo"),
+        Index("idx_costos_indirectos_tenant_activo", "tenant_id", "activo"),
+    )
+
+
+class SociaProgress(TenantAuditMixin, Base):
+    """
+    Progreso de gamificación de Socia por tenant+usuario.
+    Persiste logros y nivel entre sesiones y dispositivos.
+    """
+
+    __tablename__ = "socia_progress"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
+    logro_id = Column(String(50), nullable=False)
+    desbloqueado_en = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    nivel_actual = Column(String(20), default="emprendedora", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relaciones
+    usuario = relationship("Usuarios", foreign_keys=[user_id])
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "user_id", "logro_id", name="uq_socia_progress_tenant_user_logro"),
+        Index("idx_socia_progress_tenant_user", "tenant_id", "user_id"),
     )
 
 
