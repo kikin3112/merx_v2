@@ -5,7 +5,8 @@ interface MargenIndicatorProps {
   className?: string;
 }
 
-export function MargenIndicator({ margen, className = '' }: MargenIndicatorProps) {
+export function MargenIndicator({ margen: margenRaw, className = '' }: MargenIndicatorProps) {
+  const margen = Number(margenRaw);
   const color = getMargenColor(margen);
   const label = margen >= 50 ? '🟢 Bueno' : margen >= 30 ? '🟡 Regular' : '🔴 Bajo';
 

@@ -5,7 +5,18 @@ interface Props {
   costo: RecetaCosto;
 }
 
-export function CostoBreakdownChart({ costo }: Props) {
+export function CostoBreakdownChart({ costo: raw }: Props) {
+  const costo = {
+    ...raw,
+    costo_total: Number(raw.costo_total),
+    costo_ingredientes: Number(raw.costo_ingredientes),
+    costo_mano_obra: Number(raw.costo_mano_obra),
+    costo_indirecto: Number(raw.costo_indirecto),
+    costo_unitario: Number(raw.costo_unitario),
+    margen_actual_porcentaje: Number(raw.margen_actual_porcentaje),
+    precio_sugerido: raw.precio_sugerido != null ? Number(raw.precio_sugerido) : null,
+    margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
+  };
   const total = costo.costo_total || 1;
   const pctIng = Math.round((costo.costo_ingredientes / total) * 100);
   const pctMO = Math.round((costo.costo_mano_obra / total) * 100);

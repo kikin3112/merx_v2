@@ -82,7 +82,19 @@ export default function RecetasPage() {
 
   const costoMutation = useMutation({
     mutationFn: (id: string) => recetas.calcularCosto(id),
-    onSuccess: ({ data }) => {
+    onSuccess: ({ data: raw }) => {
+      const data = {
+        ...raw,
+        costo_ingredientes: Number(raw.costo_ingredientes),
+        costo_mano_obra: Number(raw.costo_mano_obra),
+        costo_indirecto: Number(raw.costo_indirecto),
+        costo_total: Number(raw.costo_total),
+        costo_unitario: Number(raw.costo_unitario),
+        precio_venta_actual: Number(raw.precio_venta_actual),
+        margen_actual_porcentaje: Number(raw.margen_actual_porcentaje),
+        margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
+        precio_sugerido: raw.precio_sugerido != null ? Number(raw.precio_sugerido) : null,
+      };
       setCostoInfo(data);
       setSelectedReceta(recetasList?.find((r) => r.id === data.receta_id) ?? null);
     },
