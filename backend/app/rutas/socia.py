@@ -78,7 +78,8 @@ async def registrar_logro(
     db.commit()
     db.refresh(progreso)
 
-    logger.info("Logro desbloqueado", extra={"tenant_id": str(ctx.tenant_id), "logro_id": logro_id})
+    safe_logro_id = logro_id.replace("\n", "").replace("\r", "")
+    logger.info("Logro desbloqueado", extra={"tenant_id": str(ctx.tenant_id), "logro_id": safe_logro_id})
     return progreso
 
 
