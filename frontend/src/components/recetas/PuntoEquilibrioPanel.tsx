@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAnalisisCVU } from '../../hooks/useAnalisisPrecios';
 import { formatCurrency } from '../../utils/format';
 import type { CVUResponse } from '../../types';
@@ -12,6 +12,13 @@ interface Props {
 
 export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
   const [precioVenta, setPrecioVenta] = useState(precioVentaDefault);
+
+  // Sync precio when parent provides a real value (e.g. after costo calculation)
+  useEffect(() => {
+    if (precioVentaDefault > 0) {
+      setPrecioVenta(precioVentaDefault);
+    }
+  }, [precioVentaDefault]);
   const [costosFijos, setCostosFijos] = useState(300000);
   const [volumen, setVolumen] = useState(50);
   const [resultado, setResultado] = useState<CVUResponse | null>(null);

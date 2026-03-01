@@ -41,7 +41,6 @@ async def crear_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Crea una nueva receta con sus ingredientes.
 
@@ -50,6 +49,7 @@ async def crear_receta(
     - Producto resultado debe existir
     - Ingredientes deben existir y ser diferentes al producto resultado
     """
+    tenant_id = ctx.tenant_id
     # Validar nombre unico
     existente = (
         db.query(Recetas)
@@ -163,7 +163,11 @@ async def listar_recetas(
     """
     query = (
         db.query(Recetas)
-        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .options(
+            selectinload(Recetas.created_by_user),
+            selectinload(Recetas.updated_by_user),
+            selectinload(Recetas.ingredientes).selectinload(RecetasIngredientes.producto),
+        )
         .filter(Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
     )
 
@@ -189,7 +193,11 @@ async def obtener_receta(
     """
     receta = (
         db.query(Recetas)
-        .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
+        .options(
+            selectinload(Recetas.created_by_user),
+            selectinload(Recetas.updated_by_user),
+            selectinload(Recetas.ingredientes).selectinload(RecetasIngredientes.producto),
+        )
         .filter(Recetas.id == receta_id, Recetas.tenant_id == tenant_id, Recetas.deleted_at.is_(None))
         .first()
     )
@@ -207,10 +215,10 @@ async def actualizar_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Actualiza una receta existente.
     """
+    tenant_id = ctx.tenant_id
     receta = (
         db.query(Recetas)
         .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
@@ -266,10 +274,10 @@ async def eliminar_receta(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina una receta (soft delete).
     """
+    tenant_id = ctx.tenant_id
     from datetime import datetime
 
     receta = (
@@ -300,10 +308,10 @@ async def agregar_ingrediente(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Agrega un ingrediente a una receta existente.
     """
+    tenant_id = ctx.tenant_id
     receta = (
         db.query(Recetas)
         .options(selectinload(Recetas.created_by_user), selectinload(Recetas.updated_by_user))
@@ -367,10 +375,10 @@ async def eliminar_ingrediente(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
 ):
-    tenant_id = ctx.tenant_id  # Compatibilidad
     """
     Elimina un ingrediente de una receta.
     """
+    tenant_id = ctx.tenant_id
     # Verificar receta
     receta = (
         db.query(Recetas)

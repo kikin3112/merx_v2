@@ -267,7 +267,7 @@ export default function RecetasPage() {
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {r.ingredientes.map((ing) => (
                       <span key={ing.id} className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
-                        {ing.cantidad} {ing.unidad.toLowerCase()}
+                        {ing.producto_nombre ? `${ing.producto_nombre} · ` : ''}{ing.cantidad} {ing.unidad.toLowerCase()}
                       </span>
                     ))}
                   </div>

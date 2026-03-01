@@ -516,7 +516,18 @@ class RecetaIngredienteResponse(RecetaIngredienteBase):
     id: UUID
     receta_id: UUID
     costo_linea: Optional[Decimal] = None
+    producto_nombre: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_orm_with_nombre(cls, obj: object) -> "RecetaIngredienteResponse":
+        """Construye la respuesta incluyendo el nombre del producto si está cargado."""
+        instance = cls.model_validate(obj)
+        producto = getattr(obj, "producto", None)
+        if producto:
+            instance.producto_nombre = getattr(producto, "nombre", None)
+        return instance
 
 
 class RecetaBase(BaseModel):
@@ -560,6 +571,18 @@ class RecetaResponse(RecetaBase):
     updated_by: Optional[UsuarioMini] = Field(None, validation_alias="updated_by_user")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @classmethod
+    def model_validate(cls, obj: object, **kwargs: object) -> "RecetaResponse":  # type: ignore[override]
+        """Hydrata producto_nombre en cada ingrediente al serializar desde ORM."""
+        instance = super().model_validate(obj, **kwargs)
+        orm_ingredientes = getattr(obj, "ingredientes", []) or []
+        for i, ing_orm in enumerate(orm_ingredientes):
+            if i < len(instance.ingredientes):
+                producto = getattr(ing_orm, "producto", None)
+                if producto:
+                    instance.ingredientes[i].producto_nombre = getattr(producto, "nombre", None)
+        return instance
 
 
 # ============================================================================

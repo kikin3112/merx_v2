@@ -416,6 +416,7 @@ export interface RecetaIngrediente {
   unidad: string;
   notas: string | null;
   costo_linea: number | null;
+  producto_nombre: string | null;
 }
 
 export interface Receta {
