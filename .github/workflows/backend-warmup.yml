@@ -1,0 +1,68 @@
+name: Backend Warmup — Post Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-warmup.yml'
+
+env:
+  BACKEND_URL: https://backend-production-14545.up.railway.app
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Railway deploy to complete
+        run: |
+          echo "Waiting for backend to become healthy..."
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          until curl -sf "$BACKEND_URL/health" > /dev/null 2>&1; do
+            ATTEMPT=$((ATTEMPT + 1))
+            if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+              echo "Backend did not become healthy after ${MAX_ATTEMPTS} attempts"
+              exit 1
+            fi
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS — backend not ready, retrying in 10s..."
+            sleep 10
+          done
+          echo "Backend is healthy!"
+
+      - name: Warmup — prime connection pool and CORS cache
+        run: |
+          echo "Sending warmup requests..."
+
+          # Health check (no auth needed)
+          curl -sf "$BACKEND_URL/health" && echo " /health OK"
+
+          # Auth endpoint — primes DB connection + route cache (OPTIONS triggers CORS preflight cache)
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/auth/login" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: POST" && echo " OPTIONS /auth/login OK"
+
+          # Superadmin routes primed
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/tenants/" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: GET" && echo " OPTIONS /tenants/ OK"
+
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/tenants/usuarios/" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: GET" && echo " OPTIONS /tenants/usuarios/ OK"
+
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/tenants/planes/admin/" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: GET" && echo " OPTIONS /tenants/planes/admin/ OK"
+
+          # Common user routes
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/productos/" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: GET" && echo " OPTIONS /productos/ OK"
+
+          curl -sf -o /dev/null -X OPTIONS "$BACKEND_URL/api/v1/recetas/" \
+            -H "Origin: https://chandelierp-erp.vercel.app" \
+            -H "Access-Control-Request-Method: GET" && echo " OPTIONS /recetas/ OK"
+
+          echo "Warmup complete — backend ready for production traffic"
