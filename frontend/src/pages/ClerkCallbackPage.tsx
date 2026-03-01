@@ -63,7 +63,14 @@ export default function ClerkCallbackPage() {
     doExchange();
   }, [isLoaded, isSignedIn, getToken, clerkExchange, navigate, retryCount]);
 
-  if (error) {
+  // Error during logout (race condition: isSignedIn stale in closure) — navigate silently
+  useEffect(() => {
+    if (error && !isSignedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [error, isSignedIn, navigate]);
+
+  if (error && isSignedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center max-w-sm">
