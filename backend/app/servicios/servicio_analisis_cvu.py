@@ -128,17 +128,25 @@ class ServicioAnalisisCVU:
         )
 
         vol = Decimal(volumen_esperado)
-        ms_unidades = (vol - pe_unidades).quantize(_D01, rounding=ROUND_HALF_UP)
-        ms_pct = (ms_unidades / vol * _HUNDRED).quantize(_D01, rounding=ROUND_HALF_UP) if vol > 0 else _ZERO
+        _is_inf = not pe_unidades.is_finite()
+        ms_unidades = (vol - pe_unidades) if not _is_inf else Decimal("-999999.00")
+        if ms_unidades.is_finite():
+            ms_unidades = ms_unidades.quantize(_D01, rounding=ROUND_HALF_UP)
+        ms_pct = (
+            (ms_unidades / vol * _HUNDRED).quantize(_D01, rounding=ROUND_HALF_UP)
+            if (vol > 0 and ms_unidades.is_finite())
+            else _ZERO
+        )
         utilidad = (mc_unitario * vol - costos_fijos_periodo).quantize(_D01, rounding=ROUND_HALF_UP)
 
+        _MAX = Decimal("9999999.00")
         return {
             "receta_nombre": receta.nombre,
             "costo_variable_unitario": cvu,
             "margen_contribucion_unitario": mc_unitario.quantize(_D01, rounding=ROUND_HALF_UP),
             "ratio_margen_contribucion": rmc,
-            "punto_equilibrio_unidades": pe_unidades,
-            "punto_equilibrio_ingresos": pe_ingresos,
+            "punto_equilibrio_unidades": pe_unidades if pe_unidades.is_finite() else _MAX,
+            "punto_equilibrio_ingresos": pe_ingresos if pe_ingresos.is_finite() else _MAX,
             "margen_seguridad_unidades": ms_unidades,
             "margen_seguridad_porcentaje": ms_pct,
             "utilidad_esperada": utilidad,
