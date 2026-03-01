@@ -248,7 +248,7 @@ class ServicioAnalisisCVU:
                     "precio": _ZERO,
                     "margen_porcentaje": _ZERO,
                     "margen_contribucion": _ZERO,
-                    "punto_equilibrio_unidades": Decimal("Infinity"),
+                    "punto_equilibrio_unidades": Decimal("9999999.00"),
                     "viabilidad": "NO_VIABLE",
                 }
 
@@ -265,12 +265,13 @@ class ServicioAnalisisCVU:
             else:
                 viabilidad = "NO_VIABLE"
 
+            _MAX = Decimal("9999999.00")
             return {
                 "nombre": nombre,
                 "precio": precio.quantize(_D01, rounding=ROUND_HALF_UP),
                 "margen_porcentaje": margen_pct,
                 "margen_contribucion": mc.quantize(_D01, rounding=ROUND_HALF_UP),
-                "punto_equilibrio_unidades": pe,
+                "punto_equilibrio_unidades": pe if pe.is_finite() else _MAX,
                 "viabilidad": viabilidad,
             }
 
