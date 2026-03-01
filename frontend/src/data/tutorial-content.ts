@@ -12,8 +12,8 @@ export const TUTORIALES: Record<string, TutorialConcepto> = {
   },
   costoManoObra: {
     titulo: 'Mano de obra',
-    explicacion: 'Lo que te pagas a ti misma por el tiempo que dedicaste a hacer la vela.',
-    ejemplo: 'Si haces 10 velas en 2 horas y te pagas $25.000/hora, son $5.000 por vela.',
+    explicacion: 'Lo que te pagas por hacer TODA esta tanda. Pon el total de la tanda — el sistema divide solo entre la cantidad de velas.',
+    ejemplo: '10 velas en 2 horas, te pagas $25.000/hora → 2 × $25.000 = $50.000. Escribes 50000. El sistema calcula $5.000 por vela.',
   },
   costosIndirectos: {
     titulo: 'Gastos adicionales',
