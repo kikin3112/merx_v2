@@ -1,7 +1,7 @@
 """producto_equivalencias_unidad + receta_costos_historicos
 
 Revision ID: d1e2f3a4b5c6
-Revises: a1b2c3d4e5f6
+Revises: f2a3b4c5d6e7
 Create Date: 2026-03-02
 """
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision = "d1e2f3a4b5c6"
-down_revision = "a1b2c3d4e5f6"
+down_revision = "f2a3b4c5d6e7"
 branch_labels = None
 depends_on = None
 

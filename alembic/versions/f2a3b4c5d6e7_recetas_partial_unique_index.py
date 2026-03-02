@@ -1,13 +1,13 @@
 """recetas: replace unique index with partial (soft-delete safe)
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: f2a3b4c5d6e7
 Revises: b2c3d4e5f6a7
 Create Date: 2026-03-02
 
 """
 from alembic import op
 
-revision = 'a1b2c3d4e5f6'
+revision = 'f2a3b4c5d6e7'
 down_revision = 'b2c3d4e5f6a7'
 branch_labels = None
 depends_on = None
