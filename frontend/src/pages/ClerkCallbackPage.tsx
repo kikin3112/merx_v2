@@ -15,8 +15,14 @@ export default function ClerkCallbackPage() {
   const clerkExchange = useAuthStore((s) => s.clerkExchange);
   const navigate = useNavigate();
   const executed = useRef(false);
+  const isSignedInRef = useRef(isSignedIn);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Keep ref current so async catch blocks read the latest value, not a stale closure.
+  useEffect(() => {
+    isSignedInRef.current = isSignedIn;
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -48,8 +54,8 @@ export default function ClerkCallbackPage() {
           navigate('/select-tenant', { replace: true });
         }
       } catch (err: unknown) {
-        // If session ended mid-flight (e.g. during logout), go to login silently.
-        if (!isSignedIn) {
+        // Use ref (not stale closure) to check current sign-in state mid-flight.
+        if (!isSignedInRef.current) {
           navigate('/login', { replace: true });
           return;
         }
