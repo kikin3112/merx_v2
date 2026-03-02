@@ -22,6 +22,11 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
     margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
     lotes_posibles_con_stock: raw.lotes_posibles_con_stock ?? 0,
     ingrediente_critico: raw.ingrediente_critico ?? null,
+    cif_fijo_mensual: Number(raw.cif_fijo_mensual ?? 0),
+    cif_por_unidad: Number(raw.cif_por_unidad ?? 0),
+    cif_lote: Number(raw.cif_lote ?? 0),
+    produccion_mensual_usada: Number(raw.produccion_mensual_usada ?? 0),
+    fuente_produccion_mensual: raw.fuente_produccion_mensual ?? 'lote',
   };
 
   const total = c.costo_total || 1;
@@ -78,6 +83,23 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
           <span className="text-gray-500">Gastos adicionales (CIF)</span>
           <span className="font-semibold">{formatCurrency(c.costo_indirecto)}</span>
         </div>
+        {c.cif_fijo_mensual > 0 && (
+          <div className="ml-3 text-xs text-gray-400 space-y-0.5">
+            <div className="flex justify-between">
+              <span>CIF fijo mensual</span>
+              <span>{formatCurrency(c.cif_fijo_mensual)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>
+                ÷ {Math.round(c.produccion_mensual_usada)} uds/mes
+                {c.fuente_produccion_mensual === 'historico' && ' (historial)'}
+                {c.fuente_produccion_mensual === 'esperado' && ' (esperado)'}
+                {c.fuente_produccion_mensual === 'lote' && ' (⚠ solo lote)'}
+              </span>
+              <span>= {formatCurrency(c.cif_por_unidad)}/ud</span>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between border-t border-gray-200 pt-1.5 font-bold">
           <span>Costo Total Manufactura</span>
           <span>{formatCurrency(c.costo_total)}</span>

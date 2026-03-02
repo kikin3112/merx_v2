@@ -539,6 +539,9 @@ class RecetaBase(BaseModel):
     costo_mano_obra: Decimal = Field(default=Decimal("0.00"), ge=0)
     tiempo_produccion_minutos: Optional[int] = Field(None, ge=0)
     margen_objetivo: Optional[Decimal] = Field(None, gt=0, lt=100)
+    produccion_mensual_esperada: Optional[Decimal] = Field(
+        None, gt=0, description="Unidades/mes esperadas para distribuir CIF fijo mensual"
+    )
     notas: Optional[str] = None
     estado: bool = True
 
@@ -554,6 +557,7 @@ class RecetaUpdate(BaseModel):
     costo_mano_obra: Optional[Decimal] = None
     tiempo_produccion_minutos: Optional[int] = None
     margen_objetivo: Optional[Decimal] = Field(None, gt=0, lt=100)
+    produccion_mensual_esperada: Optional[Decimal] = Field(None, gt=0)
     notas: Optional[str] = None
     estado: Optional[bool] = None
 
@@ -619,6 +623,12 @@ class RecetaCostoResponse(BaseModel):
     # Backwards-compat aliases
     costo_ingredientes: Decimal = Decimal("0.00")
     costo_mano_obra: Decimal = Decimal("0.00")
+    # CIF distribuido por producción mensual
+    cif_fijo_mensual: Decimal = Decimal("0.00")  # Monto fijo mensual ANTES de distribuir
+    cif_por_unidad: Decimal = Decimal("0.00")  # CIF fijo ÷ produccion_mensual
+    cif_lote: Decimal = Decimal("0.00")  # cif_por_unidad × cantidad_resultado (lo que se suma al costo)
+    produccion_mensual_usada: Decimal = Decimal("0.00")  # Base utilizada (histórico o esperado)
+    fuente_produccion_mensual: str = "lote"  # "historico" | "esperado" | "lote"
     # Cobertura de stock
     lotes_posibles_con_stock: int = 0
     ingrediente_critico: Optional[str] = None

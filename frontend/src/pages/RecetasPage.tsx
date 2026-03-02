@@ -54,6 +54,7 @@ export default function RecetasPage() {
   const [costoManoObra, setCostoManoObra] = useState(0);
   const [tiempoMinutos, setTiempoMinutos] = useState<number | ''>('');
   const [margenObjetivo, setMargenObjetivo] = useState<number | ''>('');
+  const [produccionMensualEsperada, setProduccionMensualEsperada] = useState<number | ''>('');
   const [ingredientes, setIngredientes] = useState<IngredienteForm[]>([]);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [busquedaIngrediente, setBusquedaIngrediente] = useState('');
@@ -85,36 +86,44 @@ export default function RecetasPage() {
   const costoMutation = useMutation({
     mutationFn: (id: string) => recetas.calcularCosto(id),
     onSuccess: ({ data: raw }) => {
-      const data = {
-        ...raw,
-        costo_ingredientes: Number(raw.costo_ingredientes),
-        costo_mano_obra: Number(raw.costo_mano_obra),
+      const data: RecetaCosto = {
+        receta_id: raw.receta_id,
+        receta_nombre: raw.receta_nombre,
+        producto_resultado_id: raw.producto_resultado_id,
+        cantidad_resultado: Number(raw.cantidad_resultado),
+        costo_material_directo: Number(raw.costo_material_directo ?? raw.costo_ingredientes ?? 0),
+        costo_mano_obra_directa: Number(raw.costo_mano_obra_directa ?? raw.costo_mano_obra ?? 0),
+        costo_primo: Number(raw.costo_primo ?? 0),
+        costo_conversion: Number(raw.costo_conversion ?? 0),
         costo_indirecto: Number(raw.costo_indirecto),
         costo_total: Number(raw.costo_total),
         costo_unitario: Number(raw.costo_unitario),
+        costo_ingredientes: Number(raw.costo_ingredientes ?? raw.costo_material_directo ?? 0),
+        costo_mano_obra: Number(raw.costo_mano_obra ?? raw.costo_mano_obra_directa ?? 0),
+        cif_fijo_mensual: Number(raw.cif_fijo_mensual ?? 0),
+        cif_por_unidad: Number(raw.cif_por_unidad ?? 0),
+        cif_lote: Number(raw.cif_lote ?? 0),
+        produccion_mensual_usada: Number(raw.produccion_mensual_usada ?? 0),
+        fuente_produccion_mensual: raw.fuente_produccion_mensual ?? 'lote',
+        lotes_posibles_con_stock: raw.lotes_posibles_con_stock ?? 0,
+        ingrediente_critico: raw.ingrediente_critico ?? null,
         precio_venta_actual: Number(raw.precio_venta_actual),
         margen_actual_porcentaje: Number(raw.margen_actual_porcentaje),
         margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
         precio_sugerido: raw.precio_sugerido != null ? Number(raw.precio_sugerido) : null,
-        detalle_ingredientes: raw.detalle_ingredientes?.map((d: {
-          producto_id: string;
-          producto_nombre: string;
-          cantidad: unknown;
-          unidad: string;
-          porcentaje_merma: unknown;
-          cantidad_bruta: unknown;
-          costo_unitario: unknown;
-          costo_linea: unknown;
-        }) => ({
-          producto_id: d.producto_id,
-          producto_nombre: d.producto_nombre,
-          unidad: d.unidad,
+        detalle_ingredientes: (raw.detalle_ingredientes ?? []).map((d: Record<string, unknown>) => ({
+          producto_id: d.producto_id as string,
+          producto_nombre: d.producto_nombre as string,
+          unidad: d.unidad as string,
+          unidad_inventario: (d.unidad_inventario as string) ?? '',
           cantidad: Number(d.cantidad),
           porcentaje_merma: Number(d.porcentaje_merma),
           cantidad_bruta: Number(d.cantidad_bruta),
           costo_unitario: Number(d.costo_unitario),
           costo_linea: Number(d.costo_linea),
-        })) ?? [],
+          factor_aplicado: Number(d.factor_aplicado ?? 1),
+          porcentaje_del_total: Number(d.porcentaje_del_total ?? 0),
+        })),
       };
       setCostoInfo(data);
       setSelectedReceta(recetasList?.find((r) => r.id === data.receta_id) ?? null);
@@ -172,6 +181,7 @@ export default function RecetasPage() {
     setCostoManoObra(0);
     setTiempoMinutos('');
     setMargenObjetivo('');
+    setProduccionMensualEsperada('');
     setIngredientes([]);
     setBusquedaProducto('');
     setBusquedaIngrediente('');
@@ -187,6 +197,7 @@ export default function RecetasPage() {
       costo_mano_obra: costoManoObra,
       tiempo_produccion_minutos: tiempoMinutos || null,
       margen_objetivo: margenObjetivo || null,
+      produccion_mensual_esperada: produccionMensualEsperada || null,
       ingredientes: ingredientes.map((i) => ({
         producto_id: i.producto_id,
         cantidad: i.cantidad,
@@ -595,6 +606,16 @@ export default function RecetasPage() {
                     value={margenObjetivo}
                     onChange={(e) => setMargenObjetivo(e.target.value ? Number(e.target.value) : '')}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Prod. mensual (uds)
+                  </label>
+                  <input type="number" min={1} step={1} placeholder="200"
+                    value={produccionMensualEsperada}
+                    onChange={(e) => setProduccionMensualEsperada(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                  <p className="text-xs text-gray-400 mt-0.5">Para distribuir CIF fijo mensual</p>
                 </div>
               </div>
 
