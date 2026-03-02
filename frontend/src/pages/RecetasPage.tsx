@@ -24,6 +24,7 @@ interface IngredienteForm {
   nombre: string;
   cantidad: number;
   unidad: string;
+  porcentaje_merma: number;
   notas: string;
 }
 
@@ -162,6 +163,7 @@ export default function RecetasPage() {
         producto_id: i.producto_id,
         cantidad: i.cantidad,
         unidad: i.unidad,
+        porcentaje_merma: i.porcentaje_merma || 0,
         notas: i.notas || null,
       })),
     });
@@ -171,7 +173,7 @@ export default function RecetasPage() {
     if (ingredientes.some((i) => i.producto_id === p.id)) return;
     setIngredientes((prev) => [
       ...prev,
-      { producto_id: p.id, nombre: p.nombre, cantidad: 1, unidad: 'GRAMO', notas: '' },
+      { producto_id: p.id, nombre: p.nombre, cantidad: 1, unidad: 'GRAMO', porcentaje_merma: 0, notas: '' },
     ]);
     setBusquedaIngrediente('');
   }
@@ -237,7 +239,7 @@ export default function RecetasPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-semibold text-gray-900">{r.nombre}</h3>
-                      {r.costo_unitario != null && r.margen_objetivo != null && (
+                      {r.margen_objetivo != null && (
                         <MargenIndicator margen={r.margen_objetivo} />
                       )}
                     </div>
@@ -245,9 +247,6 @@ export default function RecetasPage() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
                       <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
                       <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
-                      {r.costo_unitario != null && (
-                        <span>Costo: <strong>{formatCurrency(r.costo_unitario)}</strong></span>
-                      )}
                       {r.tiempo_produccion_minutos && (
                         <span>Tiempo: {r.tiempo_produccion_minutos} min</span>
                       )}
@@ -280,6 +279,7 @@ export default function RecetasPage() {
                     {r.ingredientes.map((ing) => (
                       <span key={ing.id} className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
                         {ing.producto_nombre ? `${ing.producto_nombre} · ` : ''}{ing.cantidad} {ing.unidad.toLowerCase()}
+                        {ing.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">({ing.porcentaje_merma}% merma)</span>}
                       </span>
                     ))}
                   </div>
@@ -390,7 +390,11 @@ export default function RecetasPage() {
               <div className="mt-4 border-t border-gray-100 pt-3 space-y-1.5">
                 {costoInfo.detalle_ingredientes.map((d, i) => (
                   <div key={i} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{d.producto_nombre} ({d.cantidad} {d.unidad})</span>
+                    <span className="text-gray-600">
+                      {d.producto_nombre}
+                      {' '}({d.cantidad_bruta.toFixed(4)} {d.unidad.toLowerCase()}
+                      {d.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">+{d.porcentaje_merma}% merma</span>})
+                    </span>
                     <span className="font-medium">{formatCurrency(d.costo_linea)}</span>
                   </div>
                 ))}
@@ -583,12 +587,20 @@ export default function RecetasPage() {
                         <span className="flex-1 min-w-[120px] text-sm font-medium text-gray-900 truncate">{ing.nombre}</span>
                         <input type="number" min={0.01} step={0.01} value={ing.cantidad}
                           onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, cantidad: Number(e.target.value) || 0 } : item))}
-                          className="w-20 text-center rounded border border-gray-200 px-2 py-1 text-sm" />
+                          className="w-20 text-center rounded border border-gray-200 px-2 py-1 text-sm"
+                          title="Cantidad neta" />
                         <select value={ing.unidad}
                           onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, unidad: e.target.value } : item))}
                           className="rounded border border-gray-200 px-2 py-1 text-sm">
                           {UNIDADES.map((u) => <option key={u} value={u}>{u.toLowerCase()}</option>)}
                         </select>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min={0} max={99.99} step={0.1} value={ing.porcentaje_merma}
+                            onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, porcentaje_merma: Math.min(99.99, Math.max(0, Number(e.target.value) || 0)) } : item))}
+                            className="w-14 text-center rounded border border-orange-200 px-2 py-1 text-sm bg-orange-50"
+                            title="Merma (%)" />
+                          <span className="text-xs text-orange-500">%</span>
+                        </div>
                         <button onClick={() => setIngredientes((prev) => prev.filter((_, idx) => idx !== i))}
                           className="text-red-400 hover:text-red-600 text-lg">&times;</button>
                       </div>

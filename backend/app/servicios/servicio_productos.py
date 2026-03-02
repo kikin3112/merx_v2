@@ -72,7 +72,10 @@ class CalculadoraMargenes:
             if inv:
                 costo_unitario_ing = inv.costo_promedio_ponderado or Decimal("0.00")
 
-            costo_linea = ing.cantidad * costo_unitario_ing
+            merma = getattr(ing, "porcentaje_merma", None) or Decimal("0.00")
+            factor = Decimal("1") - merma / Decimal("100")
+            cantidad_bruta = (ing.cantidad / factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            costo_linea = (cantidad_bruta * costo_unitario_ing).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             costo_ingredientes += costo_linea
 
             detalle_ingredientes.append(
@@ -81,6 +84,8 @@ class CalculadoraMargenes:
                     "producto_nombre": ing.producto.nombre if ing.producto else "N/A",
                     "cantidad": ing.cantidad,
                     "unidad": ing.unidad,
+                    "porcentaje_merma": merma,
+                    "cantidad_bruta": cantidad_bruta,
                     "costo_unitario": costo_unitario_ing,
                     "costo_linea": costo_linea,
                 }
