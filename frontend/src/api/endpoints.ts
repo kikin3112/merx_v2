@@ -77,6 +77,8 @@ import type {
   RentabilidadItem,
   EconomiaEscalaResponse,
   SociaProgreso,
+  EquivalenciaUnidad,
+  CostoEstandar,
 } from '../types';
 
 // Auth
@@ -187,6 +189,22 @@ export const recetas = {
     client.post<ProduccionResponse>(`/recetas/${id}/producir`, data),
   validarStock: (id: string, cantidad: number) =>
     client.get(`/recetas/${id}/validar-stock`, { params: { cantidad } }),
+  consultarEquivalencia: (productoId: string, unidad: string) =>
+    client.get<EquivalenciaUnidad | null>('/recetas/equivalencia', { params: { producto_id: productoId, unidad } }),
+  fijarCosto: (id: string, data: { notas?: string; vigente_desde?: string }) =>
+    client.post<CostoEstandar>(`/recetas/${id}/fijar-costo`, data),
+  costoEstandar: (id: string) =>
+    client.get<CostoEstandar | null>(`/recetas/${id}/costo-estandar`),
+};
+
+// Equivalencias de unidad por producto
+export const equivalencias = {
+  list: (productoId: string) =>
+    client.get<EquivalenciaUnidad[]>(`/productos/${productoId}/equivalencias`),
+  crear: (productoId: string, data: { unidad_receta: string; factor: number; notas?: string }) =>
+    client.post<EquivalenciaUnidad>(`/productos/${productoId}/equivalencias`, data),
+  eliminar: (productoId: string, equivalenciaId: string) =>
+    client.delete(`/productos/${productoId}/equivalencias/${equivalenciaId}`),
 };
 
 // Facturas

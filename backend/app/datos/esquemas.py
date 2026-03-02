@@ -597,6 +597,10 @@ class IngredienteCostoDetalle(BaseModel):
     cantidad_bruta: Decimal
     costo_unitario: Decimal
     costo_linea: Decimal
+    # Nuevos campos: conversión de unidades
+    factor_aplicado: Decimal = Decimal("1.000000")
+    unidad_inventario: str = ""
+    porcentaje_del_total: Decimal = Decimal("0.00")
 
 
 class RecetaCostoResponse(BaseModel):
@@ -604,16 +608,79 @@ class RecetaCostoResponse(BaseModel):
     receta_nombre: str
     producto_resultado_id: str
     cantidad_resultado: Decimal
-    costo_ingredientes: Decimal
-    costo_mano_obra: Decimal
-    costo_indirecto: Decimal = Decimal("0.00")
+    # Estructura profesional de costos de manufactura
+    costo_material_directo: Decimal = Decimal("0.00")  # = costo_ingredientes
+    costo_mano_obra_directa: Decimal = Decimal("0.00")  # = costo_mano_obra (alias claro)
+    costo_primo: Decimal = Decimal("0.00")  # = material_directo + MOD
+    costo_indirecto: Decimal = Decimal("0.00")  # CIF
+    costo_conversion: Decimal = Decimal("0.00")  # = MOD + CIF
     costo_total: Decimal
     costo_unitario: Decimal
+    # Backwards-compat aliases
+    costo_ingredientes: Decimal = Decimal("0.00")
+    costo_mano_obra: Decimal = Decimal("0.00")
+    # Cobertura de stock
+    lotes_posibles_con_stock: int = 0
+    ingrediente_critico: Optional[str] = None
+    # Precio/margen
     precio_venta_actual: Decimal
     margen_actual_porcentaje: Decimal
     margen_objetivo: Optional[Decimal] = None
     precio_sugerido: Optional[Decimal] = None
     detalle_ingredientes: List[IngredienteCostoDetalle]
+
+
+# ============================================================================
+# RECETAS - EQUIVALENCIAS DE UNIDAD
+# ============================================================================
+
+
+class EquivalenciaUnidadCreate(BaseModel):
+    unidad_receta: str = Field(..., description="Unidad usada en la receta (ej: GRAMO)")
+    factor: Decimal = Field(
+        ..., gt=0, description="Factor de conversión: cuántas unidades de inventario por 1 unidad_receta"
+    )
+    notas: Optional[str] = Field(None, max_length=200)
+
+    @field_validator("unidad_receta")
+    @classmethod
+    def unidad_valida(cls, v: str) -> str:
+        validas = {"UNIDAD", "GRAMO", "KILOGRAMO", "MILILITRO", "LITRO", "METRO", "CENTIMETRO"}
+        if v not in validas:
+            raise ValueError(f"unidad_receta debe ser una de: {validas}")
+        return v
+
+
+class EquivalenciaUnidadResponse(BaseModel):
+    id: UUID
+    producto_id: UUID
+    unidad_receta: str
+    factor: Decimal
+    notas: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# RECETAS - COSTO ESTÁNDAR (FIJAR)
+# ============================================================================
+
+
+class FijarCostoRequest(BaseModel):
+    notas: Optional[str] = Field(None, max_length=500)
+    vigente_desde: Optional[date] = None
+
+
+class CostoEstandarResponse(BaseModel):
+    id: UUID
+    receta_id: UUID
+    costo_unitario: Decimal
+    precio_sugerido: Optional[Decimal] = None
+    confirmado_por_nombre: Optional[str] = None
+    confirmado_en: datetime
+    vigente_desde: Optional[date] = None
+    notas_confirmacion: Optional[str] = None
 
 
 # ============================================================================

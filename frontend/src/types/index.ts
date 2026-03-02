@@ -443,11 +443,21 @@ export interface RecetaCosto {
   receta_nombre: string;
   producto_resultado_id: string;
   cantidad_resultado: number;
-  costo_ingredientes: number;
-  costo_mano_obra: number;
+  // Estructura profesional
+  costo_material_directo: number;
+  costo_mano_obra_directa: number;
+  costo_primo: number;
+  costo_conversion: number;
   costo_indirecto: number;
   costo_total: number;
   costo_unitario: number;
+  // Backwards-compat
+  costo_ingredientes: number;
+  costo_mano_obra: number;
+  // Cobertura stock
+  lotes_posibles_con_stock: number;
+  ingrediente_critico: string | null;
+  // Precio/margen
   precio_venta_actual: number;
   margen_actual_porcentaje: number;
   margen_objetivo: number | null;
@@ -461,7 +471,30 @@ export interface RecetaCosto {
     cantidad_bruta: number;
     costo_unitario: number;
     costo_linea: number;
+    factor_aplicado: number;
+    unidad_inventario: string;
+    porcentaje_del_total: number;
   }[];
+}
+
+export interface EquivalenciaUnidad {
+  id: string;
+  producto_id: string;
+  unidad_receta: string;
+  factor: number;
+  notas: string | null;
+  created_at: string;
+}
+
+export interface CostoEstandar {
+  id: string;
+  receta_id: string;
+  costo_unitario: number;
+  precio_sugerido: number | null;
+  confirmado_por_nombre: string | null;
+  confirmado_en: string;
+  vigente_desde: string | null;
+  notas_confirmacion: string | null;
 }
 
 // ---- Socia: Costos Indirectos ----

@@ -1236,6 +1236,76 @@ class Secuencias(TenantMixin, Base):
 
 
 # ============================================================================
+# MODELO: ProductoEquivalenciaUnidad
+# ============================================================================
+
+
+class ProductoEquivalenciaUnidad(TenantMixin, Base):
+    """
+    Factor de conversión entre la unidad usada en una receta y la unidad de inventario del producto.
+    Configurada UNA VEZ por producto — aplica a todas las recetas automáticamente.
+    Ej: CERA DE SOYA en GRAMO → factor 0.001 (unidad inventario = KILOGRAMO)
+    """
+
+    __tablename__ = "producto_equivalencias_unidad"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producto_id = Column(UUID(as_uuid=True), ForeignKey("productos.id", ondelete="CASCADE"), nullable=False, index=True)
+    unidad_receta = Column(String(20), nullable=False)
+    factor = Column(Numeric(15, 6), nullable=False)
+    notas = Column(String(200), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relaciones
+    producto = relationship("Productos")
+
+    __table_args__ = (
+        CheckConstraint("factor > 0", name="check_equivalencia_factor_positivo"),
+        CheckConstraint(
+            "unidad_receta IN ('UNIDAD', 'GRAMO', 'KILOGRAMO', 'MILILITRO', 'LITRO', 'METRO', 'CENTIMETRO')",
+            name="check_equivalencia_unidad_valida",
+        ),
+        Index("idx_equiv_tenant_producto_unidad", "tenant_id", "producto_id", "unidad_receta", unique=True),
+    )
+
+
+# ============================================================================
+# MODELO: RecetaCostoHistorico
+# ============================================================================
+
+
+class RecetaCostoHistorico(TenantMixin, Base):
+    """
+    Historial de costos estándar fijados formalmente por el responsable.
+    Permite auditoría y alertas cuando el costo actual difiere del estándar.
+    """
+
+    __tablename__ = "receta_costos_historicos"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    receta_id = Column(UUID(as_uuid=True), ForeignKey("recetas.id", ondelete="CASCADE"), nullable=False, index=True)
+    costo_unitario = Column(Numeric(15, 2), nullable=False)
+    precio_sugerido = Column(Numeric(15, 2), nullable=True)
+    confirmado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    confirmado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    snapshot_detalle = Column(Text, nullable=True)  # JSON serializado
+    vigente_desde = Column(Date, nullable=True)
+    vigente_hasta = Column(Date, nullable=True)
+    notas_confirmacion = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relaciones
+    receta = relationship("Recetas")
+    usuario_confirma = relationship("Usuarios", foreign_keys=[confirmado_por])
+
+    __table_args__ = (
+        Index("idx_costos_hist_tenant_receta", "tenant_id", "receta_id"),
+        Index("idx_costos_hist_tenant_receta_fecha", "tenant_id", "receta_id", "vigente_desde"),
+    )
+
+
+# ============================================================================
 # IMPORTACIÓN DE MODELOS TENANT (después de Usuarios para evitar circular imports)
 # ============================================================================
 
