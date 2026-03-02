@@ -95,8 +95,19 @@ export default function RecetasPage() {
         margen_actual_porcentaje: Number(raw.margen_actual_porcentaje),
         margen_objetivo: raw.margen_objetivo != null ? Number(raw.margen_objetivo) : null,
         precio_sugerido: raw.precio_sugerido != null ? Number(raw.precio_sugerido) : null,
-        detalle_ingredientes: raw.detalle_ingredientes?.map((d: Record<string, unknown>) => ({
-          ...d,
+        detalle_ingredientes: raw.detalle_ingredientes?.map((d: {
+          producto_id: string;
+          producto_nombre: string;
+          cantidad: unknown;
+          unidad: string;
+          porcentaje_merma: unknown;
+          cantidad_bruta: unknown;
+          costo_unitario: unknown;
+          costo_linea: unknown;
+        }) => ({
+          producto_id: d.producto_id,
+          producto_nombre: d.producto_nombre,
+          unidad: d.unidad,
           cantidad: Number(d.cantidad),
           porcentaje_merma: Number(d.porcentaje_merma),
           cantidad_bruta: Number(d.cantidad_bruta),
