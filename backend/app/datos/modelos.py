@@ -17,6 +17,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -656,8 +657,14 @@ class Recetas(TenantAuditMixin, Base):
     __table_args__ = (
         CheckConstraint("cantidad_resultado > 0", name="check_receta_cantidad_positiva"),
         CheckConstraint("costo_mano_obra >= 0", name="check_receta_mano_obra_positiva"),
-        # Nombre unico por tenant
-        Index("idx_recetas_tenant_nombre", "tenant_id", "nombre", unique=True),
+        # Nombre unico por tenant (solo registros activos — ignora soft-deleted)
+        Index(
+            "idx_recetas_tenant_nombre_active",
+            "tenant_id",
+            "nombre",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
         Index("idx_recetas_tenant_producto", "tenant_id", "producto_resultado_id"),
     )
 
