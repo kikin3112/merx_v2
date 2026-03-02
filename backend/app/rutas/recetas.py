@@ -157,6 +157,46 @@ async def crear_receta(
         )
 
 
+@router.get("/equivalencia", response_model=Optional[EquivalenciaUnidadResponse])
+async def consultar_equivalencia_top(
+    producto_id: UUID = Query(...),
+    unidad: str = Query(...),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """
+    Consulta si existe un factor de conversión para un producto+unidad.
+    Incluye detección automática de pares estándar (GRAMO↔KILOGRAMO, etc.).
+    Retorna null si no existe (el frontend mostrará el mini-modal de configuración).
+    """
+    from ..servicios.servicio_productos import CalculadoraMargenes
+
+    producto = (
+        db.query(Productos)
+        .filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None))
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+
+    calc = CalculadoraMargenes(db, ctx.tenant_id)
+    factor = calc.resolver_factor_conversion(unidad, producto)
+
+    if factor is None:
+        return None  # FastAPI serializa como null → frontend muestra modal
+
+    import uuid as _uuid
+
+    return EquivalenciaUnidadResponse(
+        id=_uuid.UUID("00000000-0000-0000-0000-000000000000"),
+        producto_id=producto_id,
+        unidad_receta=unidad,
+        factor=factor,
+        notas="Auto-detectado" if unidad != producto.unidad_medida else "Misma unidad",
+        created_at=__import__("datetime").datetime.utcnow(),
+    )
+
+
 @router.get("/", response_model=List[RecetaResponse])
 async def listar_recetas(
     skip: int = Query(0, ge=0),
@@ -523,52 +563,6 @@ async def validar_stock_receta(
         "stock_suficiente": len(faltantes) == 0,
         "ingredientes_faltantes": faltantes,
     }
-
-
-# ============================================================================
-# EQUIVALENCIAS DE UNIDAD
-# ============================================================================
-
-
-@router.get("/equivalencia", response_model=Optional[EquivalenciaUnidadResponse])
-async def consultar_equivalencia(
-    producto_id: UUID = Query(...),
-    unidad: str = Query(...),
-    db: Session = Depends(get_db),
-    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
-):
-    """
-    Consulta si existe un factor de conversión para un producto+unidad.
-    Incluye detección automática de pares estándar (GRAMO↔KILOGRAMO, etc.).
-    Retorna null si no existe (el frontend mostrará el mini-modal de configuración).
-    """
-    from ..servicios.servicio_productos import CalculadoraMargenes
-
-    producto = (
-        db.query(Productos)
-        .filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None))
-        .first()
-    )
-    if not producto:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-
-    calc = CalculadoraMargenes(db, ctx.tenant_id)
-    factor = calc.resolver_factor_conversion(unidad, producto)
-
-    if factor is None:
-        return None  # FastAPI serializa como null → frontend muestra modal
-
-    # Devolver como EquivalenciaUnidadResponse sintética
-    import uuid as _uuid
-
-    return EquivalenciaUnidadResponse(
-        id=_uuid.UUID("00000000-0000-0000-0000-000000000000"),
-        producto_id=producto_id,
-        unidad_receta=unidad,
-        factor=factor,
-        notas="Auto-detectado" if unidad != producto.unidad_medida else "Misma unidad",
-        created_at=__import__("datetime").datetime.utcnow(),
-    )
 
 
 # ============================================================================
