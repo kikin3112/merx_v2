@@ -482,10 +482,10 @@ async def calcular_costo_receta(
         # Primero hacemos un cálculo sin indirectos para obtener el costo base
         resultado_base = calculadora.calcular_costo_receta(receta_id)
         costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
-        costo_indirecto, _ = svc_indirectos.calcular_total_para_costo_base(costo_base)
+        cif_fijo, cif_porc = svc_indirectos.calcular_fijo_y_porcentaje(costo_base)
 
-        # Recalcular con indirectos
-        resultado = calculadora.calcular_costo_receta(receta_id, costo_indirecto=costo_indirecto)
+        # Recalcular con desglose CIF para distribución mensual correcta
+        resultado = calculadora.calcular_costo_receta(receta_id, cif_fijo_mensual=cif_fijo, cif_porcentaje=cif_porc)
         return RecetaCostoResponse(**resultado)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -601,8 +601,8 @@ async def fijar_costo_estandar(
     try:
         resultado_base = calc.calcular_costo_receta(receta_id)
         costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
-        costo_ind, _ = svc_ind.calcular_total_para_costo_base(costo_base)
-        resultado = calc.calcular_costo_receta(receta_id, costo_indirecto=costo_ind)
+        cif_fijo, cif_porc = svc_ind.calcular_fijo_y_porcentaje(costo_base)
+        resultado = calc.calcular_costo_receta(receta_id, cif_fijo_mensual=cif_fijo, cif_porcentaje=cif_porc)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

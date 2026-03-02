@@ -429,6 +429,7 @@ export interface Receta {
   costo_mano_obra: number;
   tiempo_produccion_minutos: number | null;
   margen_objetivo: number | null;
+  produccion_mensual_esperada: number | null;
   notas: string | null;
   estado: boolean;
   ingredientes: RecetaIngrediente[];
@@ -454,6 +455,12 @@ export interface RecetaCosto {
   // Backwards-compat
   costo_ingredientes: number;
   costo_mano_obra: number;
+  // CIF distribuido por producción mensual
+  cif_fijo_mensual: number;
+  cif_por_unidad: number;
+  cif_lote: number;
+  produccion_mensual_usada: number;
+  fuente_produccion_mensual: 'historico' | 'esperado' | 'lote';
   // Cobertura stock
   lotes_posibles_con_stock: number;
   ingrediente_critico: string | null;

@@ -3,14 +3,23 @@ Servicio de Productos.
 Incluye CalculadoraMargenes para analisis de costos y rentabilidad.
 """
 
+from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..datos.modelos import Inventarios, ProductoEquivalenciaUnidad, Productos, Recetas, RecetasIngredientes
+from ..datos.modelos import (
+    EstadoOrdenProduccion,
+    Inventarios,
+    OrdenesProduccion,
+    ProductoEquivalenciaUnidad,
+    Productos,
+    Recetas,
+    RecetasIngredientes,
+)
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -80,7 +89,32 @@ class CalculadoraMargenes:
         # 4. No encontrado
         return None
 
-    def calcular_costo_receta(self, receta_id: UUID, costo_indirecto: Optional[Decimal] = None) -> dict:
+    def _produccion_mensual_real(self, producto_id: UUID) -> Optional[Decimal]:
+        """
+        Suma las unidades producidas (COMPLETADA) en los últimos 30 días para este producto.
+        Retorna None si no hay órdenes completadas en el período.
+        """
+        hace_30_dias = datetime.now(timezone.utc) - timedelta(days=30)
+        total = (
+            self.db.query(func.sum(OrdenesProduccion.cantidad_producir))
+            .filter(
+                OrdenesProduccion.tenant_id == self.tenant_id,
+                OrdenesProduccion.producto_id == producto_id,
+                OrdenesProduccion.estado == EstadoOrdenProduccion.COMPLETADA,
+                OrdenesProduccion.deleted_at.is_(None),
+                OrdenesProduccion.fecha_inicio >= hace_30_dias.date(),
+            )
+            .scalar()
+        )
+        return Decimal(str(total)) if total else None
+
+    def calcular_costo_receta(
+        self,
+        receta_id: UUID,
+        costo_indirecto: Optional[Decimal] = None,
+        cif_fijo_mensual: Optional[Decimal] = None,
+        cif_porcentaje: Optional[Decimal] = None,
+    ) -> dict:
         """
         Calcula el costo total de una receta con estructura profesional de manufactura.
 
@@ -88,10 +122,13 @@ class CalculadoraMargenes:
         - Conversión de unidades automática (GRAMO → KILOGRAMO, etc.)
         - Estructura: Costo Primo, CIF, Costo de Conversión
         - Cobertura de stock: lotes_posibles_con_stock
+        - Distribución del CIF fijo mensual entre producción real
 
         Args:
             receta_id: UUID de la receta
-            costo_indirecto: Costo indirecto total ya calculado (opcional, lo provee el servicio de indirectos)
+            costo_indirecto: CIF total (legacy — si se provee sin desglose, se trata todo como fijo mensual)
+            cif_fijo_mensual: Monto fijo mensual a distribuir entre produccion_mensual
+            cif_porcentaje: CIF ya proporcional al lote (% sobre costo base), se suma directo
 
         Returns:
             dict con desglose de costos (todos los valores son Decimal)
@@ -190,7 +227,39 @@ class CalculadoraMargenes:
         # ── Estructura profesional de costos ──
         costo_mano_obra_directa = receta.costo_mano_obra
         costo_primo = costo_material_directo + costo_mano_obra_directa
-        costo_indirecto_total = costo_indirecto if costo_indirecto is not None else Decimal("0.00")
+
+        # ── Distribución CIF mensual fijo entre producción real ──
+        # Determinar componentes CIF
+        if cif_fijo_mensual is not None or cif_porcentaje is not None:
+            _cif_fijo = cif_fijo_mensual or Decimal("0.00")
+            _cif_porc = cif_porcentaje or Decimal("0.00")
+        elif costo_indirecto is not None:
+            # Modo legacy: todo el CIF se trata como fijo mensual a distribuir
+            _cif_fijo = costo_indirecto
+            _cif_porc = Decimal("0.00")
+        else:
+            _cif_fijo = Decimal("0.00")
+            _cif_porc = Decimal("0.00")
+
+        # Producción mensual: historial > esperado > lote (fallback)
+        produccion_mensual_usada: Decimal
+        fuente_produccion_mensual: str
+        produccion_historico = self._produccion_mensual_real(receta.producto_resultado_id)
+        if produccion_historico and produccion_historico > 0:
+            produccion_mensual_usada = produccion_historico
+            fuente_produccion_mensual = "historico"
+        elif receta.produccion_mensual_esperada and receta.produccion_mensual_esperada > 0:
+            produccion_mensual_usada = receta.produccion_mensual_esperada
+            fuente_produccion_mensual = "esperado"
+        else:
+            produccion_mensual_usada = receta.cantidad_resultado
+            fuente_produccion_mensual = "lote"
+
+        # CIF fijo distribuido para este lote
+        cif_por_unidad = (_cif_fijo / produccion_mensual_usada).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        cif_lote = (cif_por_unidad * receta.cantidad_resultado).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        costo_indirecto_total = cif_lote + _cif_porc
+
         costo_conversion = costo_mano_obra_directa + costo_indirecto_total
         costo_total = costo_primo + costo_indirecto_total
 
@@ -233,6 +302,12 @@ class CalculadoraMargenes:
             # Backwards-compat aliases
             "costo_ingredientes": costo_material_directo,
             "costo_mano_obra": costo_mano_obra_directa,
+            # CIF distribuido por producción mensual
+            "cif_fijo_mensual": _cif_fijo,
+            "cif_por_unidad": cif_por_unidad,
+            "cif_lote": cif_lote,
+            "produccion_mensual_usada": produccion_mensual_usada,
+            "fuente_produccion_mensual": fuente_produccion_mensual,
             # Cobertura de stock
             "lotes_posibles_con_stock": lotes_posibles if lotes_posibles is not None else 0,
             "ingrediente_critico": ingrediente_critico,

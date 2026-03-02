@@ -645,6 +645,9 @@ class Recetas(TenantAuditMixin, Base):
     costo_mano_obra = Column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     tiempo_produccion_minutos = Column(Integer, default=0)
     margen_objetivo = Column(Numeric(5, 2), nullable=True)  # % de margen objetivo (ej: 60.00 para 60%)
+    produccion_mensual_esperada = Column(
+        Numeric(10, 2), nullable=True
+    )  # Unidades/mes esperadas para distribuir CIF fijo
     estado = Column(Boolean, default=True, nullable=False)
     notas = Column(Text)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

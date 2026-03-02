@@ -135,3 +135,26 @@ class ServicioCostosIndirectos:
             )
 
         return total, detalle
+
+    def calcular_fijo_y_porcentaje(self, costo_base: Decimal) -> tuple[Decimal, Decimal]:
+        """
+        Separa el CIF en dos componentes:
+        - fijo_total: suma de todos los costos FIJO (monto mensual fijo, ej. arriendo)
+        - porcentaje_total: suma de % aplicados sobre costo_base (variable con el lote)
+
+        Usado para distribuir el CIF fijo entre la producción mensual real.
+
+        Returns:
+            (fijo_total, porcentaje_total)
+        """
+        costos = self.listar(solo_activos=True)
+        fijo_total = Decimal("0.00")
+        porcentaje_total = Decimal("0.00")
+
+        for c in costos:
+            if c.tipo == TipoCostoIndirecto.FIJO:
+                fijo_total += c.monto
+            else:  # PORCENTAJE
+                porcentaje_total += (costo_base * c.monto / 100).quantize(Decimal("0.01"))
+
+        return fijo_total, porcentaje_total
