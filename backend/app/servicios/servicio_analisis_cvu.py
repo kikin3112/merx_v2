@@ -10,7 +10,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, joinedload
 
-from ..datos.modelos import Inventarios, Recetas, RecetasIngredientes
+from ..datos.modelos import Recetas, RecetasIngredientes
 from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
 from ..servicios.servicio_productos import CalculadoraMargenes
 from ..utils.logger import setup_logger
@@ -57,35 +57,16 @@ class ServicioAnalisisCVU:
 
     def _calcular_cvu(self, receta_id: UUID) -> Decimal:
         """
-        Costo variable unitario = (ingredientes + mano_obra + indirectos) / cantidad_resultado.
-        Los costos indirectos activos del tenant se incluyen automáticamente.
+        Costo variable unitario = costo_primo / cantidad_resultado.
+        Usa CalculadoraMargenes para aplicar conversión de unidades correctamente.
+        El CIF fijo se excluye aquí porque el llamador lo provee como costos_fijos_periodo.
         """
+        resultado = self._calculadora.calcular_costo_receta(receta_id)
         receta = self._get_receta(receta_id)
-
-        # Costo ingredientes
-        product_ids = [ing.producto_id for ing in receta.ingredientes]
-        inventarios_map = {}
-        if product_ids:
-            invs = (
-                self.db.query(Inventarios)
-                .filter(Inventarios.tenant_id == self.tenant_id, Inventarios.producto_id.in_(product_ids))
-                .all()
-            )
-            inventarios_map = {inv.producto_id: inv for inv in invs}
-
-        costo_ing = _ZERO
-        for ing in receta.ingredientes:
-            inv = inventarios_map.get(ing.producto_id)
-            cu = inv.costo_promedio_ponderado if inv else _ZERO
-            costo_ing += ing.cantidad * (cu or _ZERO)
-
-        costo_base = costo_ing + receta.costo_mano_obra
-        costo_indirecto, _ = self._indirectos.calcular_total_para_costo_base(costo_base)
-        costo_total = costo_base + costo_indirecto
-
         if receta.cantidad_resultado <= 0:
             return _ZERO
-        return (costo_total / receta.cantidad_resultado).quantize(_D01, rounding=ROUND_HALF_UP)
+        costo_primo = Decimal(str(resultado["costo_primo"]))
+        return (costo_primo / receta.cantidad_resultado).quantize(_D01, rounding=ROUND_HALF_UP)
 
     def _pe(self, costos_fijos: Decimal, mc_unitario: Decimal) -> Decimal:
         """Punto de equilibrio en unidades. Retorna Decimal('Infinity') si MC=0."""
