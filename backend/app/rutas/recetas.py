@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
 from ..datos.esquemas import (
+    CostoEstandarResponse,
+    EquivalenciaUnidadResponse,
+    FijarCostoRequest,
     ProduccionRequest,
     ProduccionResponse,
     RecetaCostoResponse,
@@ -19,7 +22,13 @@ from ..datos.esquemas import (
     RecetaResponse,
     RecetaUpdate,
 )
-from ..datos.modelos import Productos, Recetas, RecetasIngredientes, Usuarios
+from ..datos.modelos import (
+    Productos,
+    RecetaCostoHistorico,
+    Recetas,
+    RecetasIngredientes,
+    Usuarios,
+)
 from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
@@ -514,3 +523,166 @@ async def validar_stock_receta(
         "stock_suficiente": len(faltantes) == 0,
         "ingredientes_faltantes": faltantes,
     }
+
+
+# ============================================================================
+# EQUIVALENCIAS DE UNIDAD
+# ============================================================================
+
+
+@router.get("/equivalencia", response_model=Optional[EquivalenciaUnidadResponse])
+async def consultar_equivalencia(
+    producto_id: UUID = Query(...),
+    unidad: str = Query(...),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """
+    Consulta si existe un factor de conversión para un producto+unidad.
+    Incluye detección automática de pares estándar (GRAMO↔KILOGRAMO, etc.).
+    Retorna null si no existe (el frontend mostrará el mini-modal de configuración).
+    """
+    from ..servicios.servicio_productos import CalculadoraMargenes
+
+    producto = (
+        db.query(Productos)
+        .filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None))
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+
+    calc = CalculadoraMargenes(db, ctx.tenant_id)
+    factor = calc.resolver_factor_conversion(unidad, producto)
+
+    if factor is None:
+        return None  # FastAPI serializa como null → frontend muestra modal
+
+    # Devolver como EquivalenciaUnidadResponse sintética
+    import uuid as _uuid
+
+    return EquivalenciaUnidadResponse(
+        id=_uuid.UUID("00000000-0000-0000-0000-000000000000"),
+        producto_id=producto_id,
+        unidad_receta=unidad,
+        factor=factor,
+        notas="Auto-detectado" if unidad != producto.unidad_medida else "Misma unidad",
+        created_at=__import__("datetime").datetime.utcnow(),
+    )
+
+
+# ============================================================================
+# FIJAR COSTO ESTÁNDAR
+# ============================================================================
+
+
+@router.post("/{receta_id}/fijar-costo", response_model=CostoEstandarResponse, status_code=status.HTTP_201_CREATED)
+async def fijar_costo_estandar(
+    receta_id: UUID,
+    request: FijarCostoRequest,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """
+    Fija el costo calculado como costo estándar vigente para la receta.
+    Guarda snapshot del cálculo para auditoría futura.
+    """
+    import datetime
+    import json
+
+    from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
+    from ..servicios.servicio_productos import CalculadoraMargenes
+
+    receta = (
+        db.query(Recetas)
+        .filter(Recetas.id == receta_id, Recetas.tenant_id == ctx.tenant_id, Recetas.deleted_at.is_(None))
+        .first()
+    )
+    if not receta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
+
+    calc = CalculadoraMargenes(db, ctx.tenant_id)
+    svc_ind = ServicioCostosIndirectos(db=db, tenant_id=ctx.tenant_id)
+
+    try:
+        resultado_base = calc.calcular_costo_receta(receta_id)
+        costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
+        costo_ind, _ = svc_ind.calcular_total_para_costo_base(costo_base)
+        resultado = calc.calcular_costo_receta(receta_id, costo_indirecto=costo_ind)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Serializar snapshot (convertir Decimal a str para JSON)
+    def _decimal_default(obj: object) -> str:
+        from decimal import Decimal
+
+        if isinstance(obj, Decimal):
+            return str(obj)
+        raise TypeError
+
+    snapshot_json = json.dumps(resultado, default=_decimal_default)
+
+    historico = RecetaCostoHistorico(
+        tenant_id=ctx.tenant_id,
+        receta_id=receta_id,
+        costo_unitario=resultado["costo_unitario"],
+        precio_sugerido=resultado.get("precio_sugerido"),
+        confirmado_por=ctx.user.id,
+        confirmado_en=datetime.datetime.utcnow(),
+        snapshot_detalle=snapshot_json,
+        vigente_desde=request.vigente_desde,
+        notas_confirmacion=request.notas,
+    )
+    db.add(historico)
+    db.commit()
+    db.refresh(historico)
+
+    nombre_usuario = ctx.user.nombre if hasattr(ctx.user, "nombre") else None
+
+    return CostoEstandarResponse(
+        id=historico.id,
+        receta_id=historico.receta_id,
+        costo_unitario=historico.costo_unitario,
+        precio_sugerido=historico.precio_sugerido,
+        confirmado_por_nombre=nombre_usuario,
+        confirmado_en=historico.confirmado_en,
+        vigente_desde=historico.vigente_desde,
+        notas_confirmacion=historico.notas_confirmacion,
+    )
+
+
+@router.get("/{receta_id}/costo-estandar", response_model=Optional[CostoEstandarResponse])
+async def obtener_costo_estandar(
+    receta_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """
+    Obtiene el último costo estándar fijado para la receta (o null si nunca se ha fijado).
+    """
+    from sqlalchemy.orm import joinedload
+
+    historico = (
+        db.query(RecetaCostoHistorico)
+        .options(joinedload(RecetaCostoHistorico.usuario_confirma))
+        .filter(RecetaCostoHistorico.tenant_id == tenant_id, RecetaCostoHistorico.receta_id == receta_id)
+        .order_by(RecetaCostoHistorico.confirmado_en.desc())
+        .first()
+    )
+
+    if not historico:
+        return None
+
+    nombre_usuario = historico.usuario_confirma.nombre if historico.usuario_confirma else None
+
+    return CostoEstandarResponse(
+        id=historico.id,
+        receta_id=historico.receta_id,
+        costo_unitario=historico.costo_unitario,
+        precio_sugerido=historico.precio_sugerido,
+        confirmado_por_nombre=nombre_usuario,
+        confirmado_en=historico.confirmado_en,
+        vigente_desde=historico.vigente_desde,
+        notas_confirmacion=historico.notas_confirmacion,
+    )

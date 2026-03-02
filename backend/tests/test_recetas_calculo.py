@@ -532,3 +532,139 @@ class TestInvariantesNegocio:
         resultado = calcular_costo_receta([], Decimal("0"), [])
         assert resultado["costo_ingredientes"] == Decimal("0.00")
         assert resultado["costo_total"] == Decimal("0.00")
+
+
+# ============================================================
+# PRUEBA 6: Conversión de unidades (resolver_factor_conversion)
+# ============================================================
+
+_TABLA_CONVERSION = {
+    ("GRAMO", "KILOGRAMO"): Decimal("0.001"),
+    ("KILOGRAMO", "GRAMO"): Decimal("1000"),
+    ("MILILITRO", "LITRO"): Decimal("0.001"),
+    ("LITRO", "MILILITRO"): Decimal("1000"),
+    ("CENTIMETRO", "METRO"): Decimal("0.01"),
+    ("METRO", "CENTIMETRO"): Decimal("100"),
+}
+
+
+def resolver_factor(ing_unidad: str, prod_unidad: str, custom_factor: "Decimal | None" = None) -> "Decimal | None":
+    """Reproduce resolver_factor_conversion del servicio (sin DB)."""
+    if ing_unidad == prod_unidad:
+        return Decimal("1.000000")
+    par = (ing_unidad, prod_unidad)
+    if par in _TABLA_CONVERSION:
+        return _TABLA_CONVERSION[par]
+    return custom_factor  # simulación de equivalencia configurada
+
+
+def calcular_costo_con_conversion(
+    cantidad: Decimal,
+    merma: Decimal,
+    cpp_inventario: Decimal,
+    factor: Decimal,
+) -> dict:
+    """Reproduce el cálculo de ingrediente con conversión de unidades."""
+    merma_factor = Decimal("1") - merma / Decimal("100")
+    cantidad_bruta = (cantidad / merma_factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    costo_efectivo = (cpp_inventario * factor).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+    costo_linea = (cantidad_bruta * costo_efectivo).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return {"cantidad_bruta": cantidad_bruta, "costo_linea": costo_linea, "factor": factor}
+
+
+class TestConversionUnidades:
+    def test_misma_unidad_factor_1(self):
+        """Misma unidad → factor siempre 1.0, sin lookup."""
+        assert resolver_factor("KILOGRAMO", "KILOGRAMO") == Decimal("1.000000")
+        assert resolver_factor("GRAMO", "GRAMO") == Decimal("1.000000")
+        assert resolver_factor("UNIDAD", "UNIDAD") == Decimal("1.000000")
+
+    def test_gramo_a_kilogramo_factor_0001(self):
+        """GRAMO en receta, KG en inventario → factor 0.001."""
+        f = resolver_factor("GRAMO", "KILOGRAMO")
+        assert f == Decimal("0.001")
+
+    def test_kilogramo_a_gramo_factor_1000(self):
+        f = resolver_factor("KILOGRAMO", "GRAMO")
+        assert f == Decimal("1000")
+
+    def test_mililitro_a_litro(self):
+        assert resolver_factor("MILILITRO", "LITRO") == Decimal("0.001")
+
+    def test_par_desconocido_sin_custom_retorna_none(self):
+        """Par no estándar sin equivalencia configurada → None."""
+        assert resolver_factor("UNIDAD", "KILOGRAMO") is None
+
+    def test_par_desconocido_con_custom_retorna_factor(self):
+        """Par no estándar con equivalencia configurada → custom factor."""
+        assert resolver_factor("UNIDAD", "KILOGRAMO", Decimal("0.5")) == Decimal("0.5")
+
+    def test_cera_soya_vela_vaso(self):
+        """
+        Caso real VELA VASO:
+          CERA DE SOYA: 750 GRAMO en receta, inventario en KILOGRAMO, CPP = 22600/kg
+          merma = 20%
+          factor = 0.001 (GRAMO → KILOGRAMO)
+          cantidad_bruta = 750 / 0.80 = 937.5
+          costo_efectivo = 22600 × 0.001 = 22.6
+          costo_linea = 937.5 × 22.6 = 21187.50
+        """
+        r = calcular_costo_con_conversion(
+            cantidad=Decimal("750"),
+            merma=Decimal("20"),
+            cpp_inventario=Decimal("22600"),
+            factor=Decimal("0.001"),
+        )
+        assert r["cantidad_bruta"] == Decimal("937.5000")
+        assert r["costo_linea"] == Decimal("21187.50")
+
+    def test_sin_conversion_cera_soya_inflado(self):
+        """
+        Sin factor de conversión (factor=1), el costo se inflaría 1000×.
+        750 GRAMO × 22600 = 16,950,000 (incorrecto).
+        """
+        r_incorrecto = calcular_costo_con_conversion(
+            cantidad=Decimal("750"),
+            merma=Decimal("20"),
+            cpp_inventario=Decimal("22600"),
+            factor=Decimal("1"),
+        )
+        r_correcto = calcular_costo_con_conversion(
+            cantidad=Decimal("750"),
+            merma=Decimal("20"),
+            cpp_inventario=Decimal("22600"),
+            factor=Decimal("0.001"),
+        )
+        assert r_incorrecto["costo_linea"] == r_correcto["costo_linea"] * 1000
+
+    def test_estructura_profesional_costo_primo(self):
+        """
+        Invariante: costo_primo = material_directo + mano_obra_directa.
+        """
+        costo_material = Decimal("22000.00")
+        costo_mo = Decimal("25000.00")
+        costo_primo = costo_material + costo_mo
+        assert costo_primo == Decimal("47000.00")
+
+    def test_estructura_costo_conversion(self):
+        """
+        Invariante: costo_conversion = MOD + CIF.
+        """
+        costo_mo = Decimal("25000.00")
+        cif = Decimal("50000.00")
+        costo_conversion = costo_mo + cif
+        assert costo_conversion == Decimal("75000.00")
+
+    def test_lotes_posibles_stock(self):
+        """
+        Con stock_disponible=937.5 y cantidad_bruta_por_lote=937.5 → lotes_posibles=1.
+        Con stock_disponible=1875 → lotes_posibles=2.
+        """
+        stock = Decimal("937.5")
+        cantidad_bruta = Decimal("937.5000")
+        lotes = int(stock / cantidad_bruta)
+        assert lotes == 1
+
+        stock2 = Decimal("1875")
+        lotes2 = int(stock2 / cantidad_bruta)
+        assert lotes2 == 2

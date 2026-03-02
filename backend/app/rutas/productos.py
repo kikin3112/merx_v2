@@ -8,8 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
-from ..datos.esquemas import ProductoCreate, ProductoResponse, ProductoUpdate
-from ..datos.modelos import Productos, Usuarios
+from ..datos.esquemas import (
+    EquivalenciaUnidadCreate,
+    EquivalenciaUnidadResponse,
+    ProductoCreate,
+    ProductoResponse,
+    ProductoUpdate,
+)
+from ..datos.modelos import ProductoEquivalenciaUnidad, Productos, Usuarios
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
 
@@ -364,3 +370,118 @@ async def eliminar_producto(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar el producto"
         )
+
+
+# ============================================================================
+# EQUIVALENCIAS DE UNIDAD POR PRODUCTO
+# ============================================================================
+
+
+@router.get("/{producto_id}/equivalencias", response_model=List[EquivalenciaUnidadResponse])
+async def listar_equivalencias(
+    producto_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """Lista todas las equivalencias de unidad configuradas para un producto."""
+    producto = (
+        db.query(Productos)
+        .filter(Productos.id == producto_id, Productos.tenant_id == tenant_id, Productos.deleted_at.is_(None))
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+
+    equivalencias = (
+        db.query(ProductoEquivalenciaUnidad)
+        .filter(
+            ProductoEquivalenciaUnidad.tenant_id == tenant_id,
+            ProductoEquivalenciaUnidad.producto_id == producto_id,
+        )
+        .all()
+    )
+    return [EquivalenciaUnidadResponse.model_validate(e) for e in equivalencias]
+
+
+@router.post(
+    "/{producto_id}/equivalencias",
+    response_model=EquivalenciaUnidadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def crear_equivalencia(
+    producto_id: UUID,
+    data: EquivalenciaUnidadCreate,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """
+    Crea o actualiza (upsert) la equivalencia unidad_receta → unidad_inventario para un producto.
+    Si ya existe para esa unidad, actualiza el factor.
+    """
+    producto = (
+        db.query(Productos)
+        .filter(Productos.id == producto_id, Productos.tenant_id == ctx.tenant_id, Productos.deleted_at.is_(None))
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+
+    if data.unidad_receta == producto.unidad_medida:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"unidad_receta '{data.unidad_receta}' es la misma que la unidad de inventario — factor sería 1.0 automático",
+        )
+
+    # Upsert
+    existente = (
+        db.query(ProductoEquivalenciaUnidad)
+        .filter(
+            ProductoEquivalenciaUnidad.tenant_id == ctx.tenant_id,
+            ProductoEquivalenciaUnidad.producto_id == producto_id,
+            ProductoEquivalenciaUnidad.unidad_receta == data.unidad_receta,
+        )
+        .first()
+    )
+
+    if existente:
+        existente.factor = data.factor
+        existente.notas = data.notas
+        db.commit()
+        db.refresh(existente)
+        return EquivalenciaUnidadResponse.model_validate(existente)
+
+    nueva = ProductoEquivalenciaUnidad(
+        tenant_id=ctx.tenant_id,
+        producto_id=producto_id,
+        unidad_receta=data.unidad_receta,
+        factor=data.factor,
+        notas=data.notas,
+    )
+    db.add(nueva)
+    db.commit()
+    db.refresh(nueva)
+    return EquivalenciaUnidadResponse.model_validate(nueva)
+
+
+@router.delete("/{producto_id}/equivalencias/{equivalencia_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def eliminar_equivalencia(
+    producto_id: UUID,
+    equivalencia_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """Elimina una equivalencia de unidad."""
+    eq = (
+        db.query(ProductoEquivalenciaUnidad)
+        .filter(
+            ProductoEquivalenciaUnidad.id == equivalencia_id,
+            ProductoEquivalenciaUnidad.tenant_id == ctx.tenant_id,
+            ProductoEquivalenciaUnidad.producto_id == producto_id,
+        )
+        .first()
+    )
+    if not eq:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equivalencia no encontrada")
+    db.delete(eq)
+    db.commit()

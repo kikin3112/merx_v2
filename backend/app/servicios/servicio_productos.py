@@ -10,10 +10,27 @@ from uuid import UUID
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..datos.modelos import Inventarios, Productos, Recetas, RecetasIngredientes
+from ..datos.modelos import Inventarios, ProductoEquivalenciaUnidad, Productos, Recetas, RecetasIngredientes
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+_TABLA_CONVERSION_ESTANDAR: dict = {
+    ("GRAMO", "KILOGRAMO"): Decimal("0.001"),
+    ("KILOGRAMO", "GRAMO"): Decimal("1000"),
+    ("MILILITRO", "LITRO"): Decimal("0.001"),
+    ("LITRO", "MILILITRO"): Decimal("1000"),
+    ("CENTIMETRO", "METRO"): Decimal("0.01"),
+    ("METRO", "CENTIMETRO"): Decimal("100"),
+    ("GRAMO", "GRAMO"): Decimal("1"),
+    ("KILOGRAMO", "KILOGRAMO"): Decimal("1"),
+    ("MILILITRO", "MILILITRO"): Decimal("1"),
+    ("LITRO", "LITRO"): Decimal("1"),
+    ("METRO", "METRO"): Decimal("1"),
+    ("CENTIMETRO", "CENTIMETRO"): Decimal("1"),
+    ("UNIDAD", "UNIDAD"): Decimal("1"),
+}
 
 
 class CalculadoraMargenes:
@@ -26,10 +43,51 @@ class CalculadoraMargenes:
         self.db = db
         self.tenant_id = tenant_id
 
+    def resolver_factor_conversion(self, ing_unidad: str, producto: Productos) -> Optional[Decimal]:
+        """
+        Resuelve el factor de conversión entre unidad_receta y unidad_inventario.
+
+        Orden de resolución:
+        1. Misma unidad → 1.0 automático
+        2. Par estándar conocido → automático sin configuración
+        3. Equivalencia configurada por el tenant
+        4. None → no encontrado (la ruta debe notificarlo)
+        """
+        prod_unidad = producto.unidad_medida
+
+        # 1. Misma unidad → factor 1
+        if ing_unidad == prod_unidad:
+            return Decimal("1.000000")
+
+        # 2. Par estándar
+        par = (ing_unidad, prod_unidad)
+        if par in _TABLA_CONVERSION_ESTANDAR:
+            return _TABLA_CONVERSION_ESTANDAR[par]
+
+        # 3. Equivalencia configurada
+        eq = (
+            self.db.query(ProductoEquivalenciaUnidad)
+            .filter(
+                ProductoEquivalenciaUnidad.tenant_id == self.tenant_id,
+                ProductoEquivalenciaUnidad.producto_id == producto.id,
+                ProductoEquivalenciaUnidad.unidad_receta == ing_unidad,
+            )
+            .first()
+        )
+        if eq:
+            return eq.factor
+
+        # 4. No encontrado
+        return None
+
     def calcular_costo_receta(self, receta_id: UUID, costo_indirecto: Optional[Decimal] = None) -> dict:
         """
-        Calcula el costo total de una receta.
-        Usa joinedload para eliminar N+1 queries.
+        Calcula el costo total de una receta con estructura profesional de manufactura.
+
+        Incluye:
+        - Conversión de unidades automática (GRAMO → KILOGRAMO, etc.)
+        - Estructura: Costo Primo, CIF, Costo de Conversión
+        - Cobertura de stock: lotes_posibles_con_stock
 
         Args:
             receta_id: UUID de la receta
@@ -62,21 +120,49 @@ class CalculadoraMargenes:
             )
             inventarios_map = {inv.producto_id: inv for inv in inventarios}
 
-        # Calcular costo de ingredientes
-        costo_ingredientes = Decimal("0.00")
+        # ── Calcular costo de ingredientes con conversión de unidades ──
+        costo_material_directo = Decimal("0.00")
         detalle_ingredientes = []
+        # Para cobertura de stock
+        lotes_posibles = None
+        ingrediente_critico: Optional[str] = None
 
         for ing in receta.ingredientes:
             inv = inventarios_map.get(ing.producto_id)
-            costo_unitario_ing = Decimal("0.00")
+            cpp = Decimal("0.00")
+            unidad_inventario = ""
             if inv:
-                costo_unitario_ing = inv.costo_promedio_ponderado or Decimal("0.00")
+                cpp = inv.costo_promedio_ponderado or Decimal("0.00")
+            if ing.producto:
+                unidad_inventario = ing.producto.unidad_medida
+
+            # Resolución del factor de conversión de unidades
+            factor_conv = Decimal("1.000000")
+            if ing.producto:
+                resolved = self.resolver_factor_conversion(ing.unidad, ing.producto)
+                if resolved is not None:
+                    factor_conv = resolved
+                # Si resolved es None, usamos 1.0 y el costo puede estar inflado
+                # (la ruta de equivalencias debe haber informado al frontend)
 
             merma = getattr(ing, "porcentaje_merma", None) or Decimal("0.00")
-            factor = Decimal("1") - merma / Decimal("100")
-            cantidad_bruta = (ing.cantidad / factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
-            costo_linea = (cantidad_bruta * costo_unitario_ing).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            costo_ingredientes += costo_linea
+            merma_factor = Decimal("1") - merma / Decimal("100")
+            cantidad_bruta = (ing.cantidad / merma_factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            # costo_unitario_ing ya está en unidades de inventario; ajustar por factor
+            costo_unitario_efectivo = (cpp * factor_conv).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+            costo_linea = (cantidad_bruta * costo_unitario_efectivo).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            costo_material_directo += costo_linea
+
+            # Cobertura de stock: cuántos lotes completos podemos producir
+            if inv and ing.cantidad > 0:
+                cantidad_necesaria_por_lote = cantidad_bruta  # ya incluye merma
+                if cantidad_necesaria_por_lote > 0:
+                    stock_disponible = inv.cantidad_disponible or Decimal("0")
+                    lotes_ing = int(stock_disponible / cantidad_necesaria_por_lote)
+                    if lotes_posibles is None or lotes_ing < lotes_posibles:
+                        lotes_posibles = lotes_ing
+                        if lotes_ing == 0:
+                            ingrediente_critico = ing.producto.nombre if ing.producto else str(ing.producto_id)
 
             detalle_ingredientes.append(
                 {
@@ -86,23 +172,34 @@ class CalculadoraMargenes:
                     "unidad": ing.unidad,
                     "porcentaje_merma": merma,
                     "cantidad_bruta": cantidad_bruta,
-                    "costo_unitario": costo_unitario_ing,
+                    "costo_unitario": costo_unitario_efectivo,
                     "costo_linea": costo_linea,
+                    "factor_aplicado": factor_conv,
+                    "unidad_inventario": unidad_inventario,
+                    "porcentaje_del_total": Decimal("0.00"),  # Calculado después
                 }
             )
 
-        # Costos indirectos (si no se proveen externamente, default 0)
-        costo_indirecto_total = costo_indirecto if costo_indirecto is not None else Decimal("0.00")
+        # Calcular %_del_total por ingrediente
+        for d in detalle_ingredientes:
+            if costo_material_directo > 0:
+                d["porcentaje_del_total"] = (d["costo_linea"] / costo_material_directo * 100).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
 
-        # Costo total (ingredientes + mano obra + indirectos)
-        costo_total = costo_ingredientes + receta.costo_mano_obra + costo_indirecto_total
+        # ── Estructura profesional de costos ──
+        costo_mano_obra_directa = receta.costo_mano_obra
+        costo_primo = costo_material_directo + costo_mano_obra_directa
+        costo_indirecto_total = costo_indirecto if costo_indirecto is not None else Decimal("0.00")
+        costo_conversion = costo_mano_obra_directa + costo_indirecto_total
+        costo_total = costo_primo + costo_indirecto_total
 
         # Costo por unidad producida
         costo_unitario = Decimal("0.00")
         if receta.cantidad_resultado > 0:
             costo_unitario = (costo_total / receta.cantidad_resultado).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-        # Obtener precio de venta del producto resultado
+        # Precio de venta y margen
         precio_venta = Decimal("0.00")
         margen_actual = Decimal("0.00")
         if receta.producto_resultado:
@@ -112,7 +209,7 @@ class CalculadoraMargenes:
                     Decimal("0.01"), rounding=ROUND_HALF_UP
                 )
 
-        # Precio sugerido si hay margen objetivo
+        # Precio sugerido
         precio_sugerido = None
         margen_objetivo = getattr(receta, "margen_objetivo", None)
         if margen_objetivo and margen_objetivo > 0 and costo_unitario > 0:
@@ -125,11 +222,21 @@ class CalculadoraMargenes:
             "receta_nombre": receta.nombre,
             "producto_resultado_id": str(receta.producto_resultado_id),
             "cantidad_resultado": receta.cantidad_resultado,
-            "costo_ingredientes": costo_ingredientes,
-            "costo_mano_obra": receta.costo_mano_obra,
+            # Estructura profesional
+            "costo_material_directo": costo_material_directo,
+            "costo_mano_obra_directa": costo_mano_obra_directa,
+            "costo_primo": costo_primo,
+            "costo_conversion": costo_conversion,
             "costo_indirecto": costo_indirecto_total,
             "costo_total": costo_total,
             "costo_unitario": costo_unitario,
+            # Backwards-compat aliases
+            "costo_ingredientes": costo_material_directo,
+            "costo_mano_obra": costo_mano_obra_directa,
+            # Cobertura de stock
+            "lotes_posibles_con_stock": lotes_posibles if lotes_posibles is not None else 0,
+            "ingrediente_critico": ingrediente_critico,
+            # Precio/margen
             "precio_venta_actual": precio_venta,
             "margen_actual_porcentaje": margen_actual,
             "margen_objetivo": margen_objetivo,

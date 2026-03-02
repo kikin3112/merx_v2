@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recetas, productos } from '../api/endpoints';
 import { formatCurrency } from '../utils/format';
-import type { Receta, Producto, RecetaCosto } from '../types';
+import type { Receta, Producto, RecetaCosto, CostoEstandar } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useTutorial } from '../hooks/useTutorial';
 import { CostoIndirectoManager } from '../components/recetas/CostoIndirectoManager';
@@ -41,6 +41,7 @@ export default function RecetasPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedReceta, setSelectedReceta] = useState<Receta | null>(null);
   const [costoInfo, setCostoInfo] = useState<RecetaCosto | null>(null);
+  const [costoEstandar, setCostoEstandar] = useState<CostoEstandar | null>(null);
   const [showProducir, setShowProducir] = useState(false);
   const [cantidadProducir, setCantidadProducir] = useState(1);
   const [obsProducir, setObsProducir] = useState('');
@@ -117,6 +118,14 @@ export default function RecetasPage() {
       };
       setCostoInfo(data);
       setSelectedReceta(recetasList?.find((r) => r.id === data.receta_id) ?? null);
+    },
+  });
+
+  const fijarCostoMutation = useMutation({
+    mutationFn: (id: string) =>
+      recetas.fijarCosto(id, { vigente_desde: new Date().toISOString().slice(0, 10) }),
+    onSuccess: ({ data }) => {
+      setCostoEstandar(data);
     },
   });
 
@@ -344,7 +353,12 @@ export default function RecetasPage() {
                         <h3 className="text-sm font-semibold text-gray-900">Desglose de costos</h3>
                         <TutorialTooltip concepto="costoIngredientes" />
                       </div>
-                      <CostoBreakdownChart costo={costoInfo} />
+                      <CostoBreakdownChart
+                        costo={costoInfo}
+                        costoEstandar={costoEstandar}
+                        onFijarCosto={() => fijarCostoMutation.mutate(costoInfo.receta_id)}
+                        fijarLoading={fijarCostoMutation.isPending}
+                      />
                     </div>
                   )}
                   {!costoInfo && (
@@ -405,7 +419,12 @@ export default function RecetasPage() {
               <button onClick={() => setCostoInfo(null)} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <div className="p-4 md:p-6 overflow-y-auto flex-1">
-              <CostoBreakdownChart costo={costoInfo} />
+              <CostoBreakdownChart
+                        costo={costoInfo}
+                        costoEstandar={costoEstandar}
+                        onFijarCosto={() => fijarCostoMutation.mutate(costoInfo.receta_id)}
+                        fijarLoading={fijarCostoMutation.isPending}
+                      />
               <div className="mt-4 border-t border-gray-100 pt-3 space-y-1.5">
                 {costoInfo.detalle_ingredientes.map((d, i) => (
                   <div key={i} className="flex justify-between text-sm">
