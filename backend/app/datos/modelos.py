@@ -653,30 +653,6 @@ class Recetas(TenantAuditMixin, Base):
     producto_resultado = relationship("Productos", foreign_keys=[producto_resultado_id])
     ingredientes = relationship("RecetasIngredientes", back_populates="receta", cascade="all, delete-orphan")
 
-    @hybrid_property
-    def costo_ingredientes(self) -> Decimal:
-        """Suma del costo de todos los ingredientes"""
-        if not self.ingredientes:
-            return Decimal("0.00")
-        total = Decimal("0.00")
-        for ing in self.ingredientes:
-            if ing.producto and ing.producto.inventarios:
-                costo_unitario = ing.producto.inventarios.costo_promedio_ponderado or Decimal("0.00")
-                total += ing.cantidad * costo_unitario
-        return total
-
-    @hybrid_property
-    def costo_total(self) -> Decimal:
-        """Costo ingredientes + mano de obra"""
-        return self.costo_ingredientes + self.costo_mano_obra
-
-    @hybrid_property
-    def costo_unitario(self) -> Decimal:
-        """Costo total dividido entre cantidad resultado"""
-        if self.cantidad_resultado == 0:
-            return Decimal("0.00")
-        return self.costo_total / self.cantidad_resultado
-
     __table_args__ = (
         CheckConstraint("cantidad_resultado > 0", name="check_receta_cantidad_positiva"),
         CheckConstraint("costo_mano_obra >= 0", name="check_receta_mano_obra_positiva"),
@@ -706,6 +682,7 @@ class RecetasIngredientes(Base):
     )
     cantidad = Column(Numeric(10, 4), nullable=False)
     unidad = Column(String(20), nullable=False, default="UNIDAD")
+    porcentaje_merma = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     notas = Column(String(200))
 
     # Relaciones
@@ -714,10 +691,15 @@ class RecetasIngredientes(Base):
 
     @hybrid_property
     def costo_linea(self) -> Decimal:
-        """Costo del ingrediente (cantidad * costo promedio)"""
+        """Costo del ingrediente aplicando merma: cantidad_bruta * costo_promedio"""
         if self.producto and self.producto.inventarios:
             costo_unitario = self.producto.inventarios.costo_promedio_ponderado or Decimal("0.00")
-            return self.cantidad * costo_unitario
+            merma = self.porcentaje_merma or Decimal("0.00")
+            if merma >= 100:
+                return Decimal("0.00")
+            factor = Decimal("1.00") - merma / Decimal("100")
+            cantidad_bruta = self.cantidad / factor
+            return cantidad_bruta * costo_unitario
         return Decimal("0.00")
 
     __table_args__ = (
@@ -725,6 +707,10 @@ class RecetasIngredientes(Base):
         CheckConstraint(
             "unidad IN ('UNIDAD', 'GRAMO', 'KILOGRAMO', 'MILILITRO', 'LITRO', 'METRO', 'CENTIMETRO')",
             name="check_ingrediente_unidad_valida",
+        ),
+        CheckConstraint(
+            "porcentaje_merma >= 0 AND porcentaje_merma < 100",
+            name="check_ingrediente_merma_valida",
         ),
         # Un producto solo puede estar una vez por receta
         Index("idx_ingredientes_receta_producto", "receta_id", "producto_id", unique=True),

@@ -505,6 +505,7 @@ class RecetaIngredienteBase(BaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     unidad: str = Field(default="UNIDAD", pattern="^(UNIDAD|GRAMO|KILOGRAMO|MILILITRO|LITRO|METRO|CENTIMETRO)$")
+    porcentaje_merma: Decimal = Field(default=Decimal("0.00"), ge=0, lt=100)
     notas: Optional[str] = Field(None, max_length=200)
 
 
@@ -561,9 +562,6 @@ class RecetaResponse(RecetaBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
-    costo_ingredientes: Optional[Decimal] = None
-    costo_total: Optional[Decimal] = None
-    costo_unitario: Optional[Decimal] = None
     ingredientes: List[RecetaIngredienteResponse] = []
 
     # Auditoría
@@ -595,6 +593,8 @@ class IngredienteCostoDetalle(BaseModel):
     producto_nombre: str
     cantidad: Decimal
     unidad: str
+    porcentaje_merma: Decimal
+    cantidad_bruta: Decimal
     costo_unitario: Decimal
     costo_linea: Decimal
 
@@ -630,11 +630,12 @@ class ProduccionResponse(BaseModel):
     receta_id: str
     receta_nombre: str
     producto_resultado_id: str
-    cantidad_producida: float
-    costo_ingredientes: float
-    costo_mano_obra: float
-    costo_total: float
-    costo_unitario: float
+    cantidad_producida: Decimal
+    costo_ingredientes: Decimal
+    costo_mano_obra: Decimal
+    costo_indirecto: Decimal
+    costo_total: Decimal
+    costo_unitario: Decimal
     documento_referencia: str
     movimiento_id: str
 

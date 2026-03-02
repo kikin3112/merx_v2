@@ -4,7 +4,7 @@ Maneja movimientos de stock, produccion desde recetas y costo promedio ponderado
 """
 
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Optional
 from uuid import UUID
 
@@ -251,7 +251,10 @@ class ServicioInventario:
         faltantes = []
 
         for ingrediente in receta.ingredientes:
-            cantidad_requerida = ingrediente.cantidad * cantidad_producir
+            merma = getattr(ingrediente, "porcentaje_merma", None) or Decimal("0.00")
+            factor = Decimal("1") - merma / Decimal("100")
+            cantidad_bruta = (ingrediente.cantidad / factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            cantidad_requerida = cantidad_bruta * cantidad_producir
             stock_disponible = self.obtener_stock_disponible(ingrediente.producto_id)
 
             if stock_disponible < cantidad_requerida:
@@ -332,11 +335,18 @@ class ServicioInventario:
         costo_total_ingredientes = Decimal("0.00")
         documento_ref = f"PROD-{receta_id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
-        # Descontar ingredientes
+        # Descontar ingredientes usando cantidad_bruta (incluye merma)
         for ingrediente in receta.ingredientes:
-            cantidad_requerida = ingrediente.cantidad * cantidad_producir
-            costo_unitario = self.obtener_costo_promedio(ingrediente.producto_id)
-            costo_total_ingredientes += cantidad_requerida * costo_unitario
+            merma = getattr(ingrediente, "porcentaje_merma", None) or Decimal("0.00")
+            factor = Decimal("1") - merma / Decimal("100")
+            cantidad_bruta_unitaria = (ingrediente.cantidad / factor).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+            cantidad_requerida = cantidad_bruta_unitaria * cantidad_producir
+            costo_unitario_ing = self.obtener_costo_promedio(ingrediente.producto_id)
+            costo_total_ingredientes += (cantidad_requerida * costo_unitario_ing).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
 
             self.crear_movimiento(
                 producto_id=ingrediente.producto_id,
@@ -348,11 +358,25 @@ class ServicioInventario:
 
         # Agregar costo mano de obra proporcional
         costo_mano_obra_total = receta.costo_mano_obra * cantidad_producir
-        costo_total_produccion = costo_total_ingredientes + costo_mano_obra_total
+
+        # Costos indirectos (sobre costo_base POR LOTE — así FIJO escala correctamente)
+        # Si se calcula sobre la base total (×N lotes), FIJO no multiplicaría por N → bug
+        costo_base_por_lote = (costo_total_ingredientes + costo_mano_obra_total) / cantidad_producir
+        from .servicio_costos_indirectos import ServicioCostosIndirectos
+
+        svc_indirectos = ServicioCostosIndirectos(self.db, self.tenant_id)
+        costo_indirecto_por_lote, _ = svc_indirectos.calcular_total_para_costo_base(costo_base_por_lote)
+        costo_indirecto_total = (costo_indirecto_por_lote * cantidad_producir).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+
+        costo_total_produccion = (costo_total_ingredientes + costo_mano_obra_total) + costo_indirecto_total
 
         # Calcular cantidad de producto terminado a producir
         cantidad_terminada = receta.cantidad_resultado * cantidad_producir
-        costo_unitario_producido = costo_total_produccion / cantidad_terminada
+        costo_unitario_producido = (costo_total_produccion / cantidad_terminada).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
 
         # Crear entrada de producto terminado
         movimiento_produccion = self.crear_movimiento(
@@ -380,11 +404,12 @@ class ServicioInventario:
             "receta_id": str(receta_id),
             "receta_nombre": receta.nombre,
             "producto_resultado_id": str(receta.producto_resultado_id),
-            "cantidad_producida": float(cantidad_terminada),
-            "costo_ingredientes": float(costo_total_ingredientes),
-            "costo_mano_obra": float(costo_mano_obra_total),
-            "costo_total": float(costo_total_produccion),
-            "costo_unitario": float(costo_unitario_producido),
+            "cantidad_producida": cantidad_terminada,
+            "costo_ingredientes": costo_total_ingredientes,
+            "costo_mano_obra": costo_mano_obra_total,
+            "costo_indirecto": costo_indirecto_total,
+            "costo_total": costo_total_produccion,
+            "costo_unitario": costo_unitario_producido,
             "documento_referencia": documento_ref,
             "movimiento_id": str(movimiento_produccion.id),
         }

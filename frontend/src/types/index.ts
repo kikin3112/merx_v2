@@ -414,6 +414,7 @@ export interface RecetaIngrediente {
   producto_id: string;
   cantidad: number;
   unidad: string;
+  porcentaje_merma: number;
   notas: string | null;
   costo_linea: number | null;
   producto_nombre: string | null;
@@ -430,9 +431,6 @@ export interface Receta {
   margen_objetivo: number | null;
   notas: string | null;
   estado: boolean;
-  costo_ingredientes: number | null;
-  costo_total: number | null;
-  costo_unitario: number | null;
   ingredientes: RecetaIngrediente[];
   created_at: string;
   updated_at: string;
@@ -459,6 +457,8 @@ export interface RecetaCosto {
     producto_nombre: string;
     cantidad: number;
     unidad: string;
+    porcentaje_merma: number;
+    cantidad_bruta: number;
     costo_unitario: number;
     costo_linea: number;
   }[];
