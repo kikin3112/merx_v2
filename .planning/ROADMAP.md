@@ -26,7 +26,7 @@ freemium patterns) y bloquear todas las decisiones técnicas antes de implementa
 - `.planning/phases/01-auditoria/DECISIONS.md` — 6 decisiones técnicas bloqueadas (Phases 2–7)
 - `.planning/ROADMAP.md` — actualizado con estimaciones post-auditoría
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 - [x] 01-01-PLAN.md — AUDIT.md: gap analysis completo (R1–R7, 16 brechas)
 - [x] 01-02-PLAN.md — DECISIONS.md: 6 decisiones técnicas bloqueadas
 - [x] 01-03-PLAN.md — ROADMAP.md: actualización post-auditoría
@@ -171,7 +171,7 @@ recordatorios de declaración, explicaciones de IVA/retenciones en contexto.
 
 | Phase | Goal | Requirements | Effort | Impact | Notes |
 |-------|------|-------------|--------|--------|-------|
-| 1 | Auditoría + Decisiones | R1–R7 (análisis) | S | Unlock todo | COMPLETO |
+| 1 | 1/3 | In Progress|  | Unlock todo | COMPLETO |
 | 2 | IA Costeo | R1.1 | M | Alto diferenciador | Requiere: ANTHROPIC_API_KEY en Railway |
 | 3 | PDF Branded | R4.1, R4.2 | M | Imagen profesional | Requiere: verificar S3 bucket AWS |
 | 4 | Pagos Locales | R3.1–R3.3 | L | Conversión crítica | Requiere: cuenta Wompi producción |
