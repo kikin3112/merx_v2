@@ -1,8 +1,8 @@
 # GSD Execution State
 
 **Project:** Merx v2 — Propuesta de Valor 2026
-**Last Updated:** 2026-03-04T23:15:00Z
-**Stopped At:** Completed 01-02-PLAN.md
+**Last Updated:** 2026-03-04T23:20:00Z
+**Stopped At:** Completed 01-01-PLAN.md (SUMMARY created retroactively)
 
 ---
 
@@ -29,6 +29,9 @@ Phase 1 Auditoria: [==--------] 2/3 plans
 
 | Phase | Plan | Decision |
 |-------|------|----------|
+| 01 | 01 | R4.1 confirmed PARCIAL: ReportLab operational, url_logo exists in modelos_tenant.py, brand_config JSONB missing |
+| 01 | 01 | No plan enforcement middleware: only tenant_context.py and user_context.py in middleware/ |
+| 01 | 01 | Wompi gateway recommended: Nequi direct risks 2-4 week certification trap |
 | 01 | 02 | claude-haiku-4-5 via Anthropic API for Phase 2 IA Costeo (vendor consolidation, $0.83/month at 150K req) |
 | 01 | 02 | ReportLab extend (already operational) + S3 activate for Phase 3 PDF — WeasyPrint rejected (Railway libgobject risk) |
 | 01 | 02 | Wompi as unified Colombian payment gateway for Phase 4 — covers Nequi+Daviplata+PSE in one SDK |
@@ -42,11 +45,12 @@ Phase 1 Auditoria: [==--------] 2/3 plans
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
+| 01 | 01 | 480s | 2 | 1 |
 | 01 | 02 | 194s | 1 | 1 |
 
 ---
 
 ## Session Info
 
-**Last session:** 2026-03-04T23:15:00Z
-**Stopped At:** Completed 01-02-PLAN.md (DECISIONS.md created, 353 lines, 6 locked decisions)
+**Last session:** 2026-03-04T23:20:00Z
+**Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)
