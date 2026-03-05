@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-04T23:59:28.591Z"
+stopped_at: Completed 02-01-PLAN.md (anthropic SDK installed, ANTHROPIC_API_KEY in config, 4 TDD stubs in RED state)
+last_updated: "2026-03-05T00:30:45.939Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 8
+  completed_plans: 4
 ---
 
 # GSD Execution State
 
 **Project:** Merx v2 — Propuesta de Valor 2026
 **Last Updated:** 2026-03-04T23:22:27Z
-**Stopped At:** Phase 2 context gathered
+**Stopped At:** Completed 02-01-PLAN.md (anthropic SDK installed, ANTHROPIC_API_KEY in config, 4 TDD stubs in RED state)
 
 ---
 
@@ -54,6 +54,8 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 | 01 | 02 | Static Markdown + LLM contextual (claude-haiku-4-5) for Phase 7 DIAN Asistente |
 
 ---
+- [Phase 02]: anthropic>=0.40.0 resolved to 0.84.0 by uv; no upper bound to allow patch updates
+- [Phase 02]: ANTHROPIC_API_KEY declared Optional[str] default=None — validated at call time, not startup (consistent with SENTRY_DSN pattern)
 
 ## Performance Metrics
 
@@ -64,8 +66,9 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 | 01 | 03 | 208s | 1 | 1 |
 
 ---
+| Phase 02 P01 | 133 | 2 tasks | 3 files |
 
 ## Session Info
 
-**Last session:** 2026-03-04T23:59:28.579Z
+**Last session:** 2026-03-05T00:30:45.936Z
 **Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)
