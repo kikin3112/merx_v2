@@ -190,6 +190,16 @@ class Settings(BaseSettings):
     )
 
     # ============================================================================
+    # IA / LLM
+    # ============================================================================
+
+    ANTHROPIC_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Anthropic API key para Socia (asistente IA de costeo). "
+        "Requerido en producción. Agregar a Railway env vars antes de Phase 2 deploy.",
+    )
+
+    # ============================================================================
     # TIMEOUTS
     # ============================================================================
 

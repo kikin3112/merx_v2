@@ -26,6 +26,7 @@ dependencies = [
     "pyjwt>=2.8.0",
     "svix>=1.14.0",
     "cryptography>=42.0.0",
+    "anthropic>=0.40.0",
 ]
 
 [project.optional-dependencies]
