@@ -108,16 +108,13 @@ export default function OnboardingWizard({
     },
   });
 
-  const inputClass =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none';
-
   if (currentStep > totalSteps) {
     return (
-      <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+      <div className="cv-card cv-alert-positive mb-6 p-6 text-center">
         <div className="text-3xl mb-2">🎉</div>
-        <h2 className="text-lg font-bold text-green-800 mb-2">¡Onboarding completado!</h2>
-        <p className="text-sm text-green-700 mb-4">Ya configuraste lo básico de tu ERP. Explora todas las funciones del menú.</p>
-        <button onClick={onDismiss} className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors">
+        <h2 className="text-lg font-bold cv-text mb-2">¡Onboarding completado!</h2>
+        <p className="text-sm cv-muted mb-4">Ya configuraste lo básico de tu ERP. Explora todas las funciones del menú.</p>
+        <button onClick={onDismiss} className="cv-btn cv-btn-primary">
           Cerrar guía
         </button>
       </div>
@@ -125,13 +122,13 @@ export default function OnboardingWizard({
   }
 
   return (
-    <div className="mb-6 bg-primary-50 border border-primary-200 rounded-xl p-5">
+    <div className="cv-card mb-6 p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Primeros pasos</h2>
-          <p className="text-sm text-gray-500">Configura lo básico para empezar a usar ChandeliERP</p>
+          <h2 className="text-lg font-bold cv-text">Primeros pasos</h2>
+          <p className="text-sm cv-muted">Configura lo básico para empezar a usar ChandeliERP</p>
         </div>
-        <button onClick={onDismiss} className="text-xs text-gray-400 hover:text-gray-600 underline">
+        <button onClick={onDismiss} className="text-xs cv-muted hover:text-[var(--cv-text)] underline">
           Saltar
         </button>
       </div>
@@ -141,32 +138,32 @@ export default function OnboardingWizard({
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 mb-4">
+        <div className="cv-alert-error px-3 py-2 text-sm mb-4">
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-lg p-4 border border-gray-200">
+      <div className="cv-card p-4">
         {/* Step 1: Primer producto */}
         {currentStep === 1 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Paso 1: Carga tu primer producto</h3>
-            <p className="text-xs text-gray-500">Agrega un producto terminado (ej: una vela) para empezar.</p>
+            <h3 className="text-sm font-semibold cv-text">Paso 1: Carga tu primer producto</h3>
+            <p className="text-xs cv-muted">Agrega un producto terminado (ej: una vela) para empezar.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input type="text" value={prodNombre} onChange={(e) => setProdNombre(e.target.value)} placeholder="Nombre del producto" className={inputClass} />
-              <input type="number" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio de venta" className={inputClass} />
-              <select value={prodCategoria} onChange={(e) => setProdCategoria(e.target.value)} className={inputClass}>
+              <input type="text" value={prodNombre} onChange={(e) => setProdNombre(e.target.value)} placeholder="Nombre del producto" className="cv-input" />
+              <input type="number" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio de venta" className="cv-input" />
+              <select value={prodCategoria} onChange={(e) => setProdCategoria(e.target.value)} className="cv-input">
                 <option value="Producto_Propio">Producto Terminado</option>
                 <option value="Insumo">Insumo / Materia Prima</option>
                 <option value="Producto_Tercero">Producto Tercero</option>
                 <option value="Servicio">Servicio</option>
               </select>
-              <input type="number" min="0" value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} placeholder="Cantidad en inventario" className={inputClass} />
+              <input type="number" min="0" value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} placeholder="Cantidad en inventario" className="cv-input" />
             </div>
             <button
               onClick={() => crearProducto.mutate()}
               disabled={!prodNombre.trim() || crearProducto.isPending}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+              className="cv-btn cv-btn-primary"
             >
               {crearProducto.isPending ? 'Creando...' : 'Crear producto'}
             </button>
@@ -176,13 +173,13 @@ export default function OnboardingWizard({
         {/* Step 2: Primera receta */}
         {currentStep === 2 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Paso 2: Crea tu primera receta</h3>
-            <p className="text-xs text-gray-500">Una receta define la fórmula de producción (ingredientes + costos). Los ingredientes los puedes agregar después.</p>
-            <input type="text" value={recetaNombre} onChange={(e) => setRecetaNombre(e.target.value)} placeholder="Nombre de la receta (ej: Vela Aromática)" className={inputClass} />
+            <h3 className="text-sm font-semibold cv-text">Paso 2: Crea tu primera receta</h3>
+            <p className="text-xs cv-muted">Una receta define la fórmula de producción (ingredientes + costos). Los ingredientes los puedes agregar después.</p>
+            <input type="text" value={recetaNombre} onChange={(e) => setRecetaNombre(e.target.value)} placeholder="Nombre de la receta (ej: Vela Aromática)" className="cv-input" />
             <button
               onClick={() => crearReceta.mutate()}
               disabled={!recetaNombre.trim() || crearReceta.isPending}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+              className="cv-btn cv-btn-primary"
             >
               {crearReceta.isPending ? 'Creando...' : 'Crear receta'}
             </button>
@@ -192,11 +189,11 @@ export default function OnboardingWizard({
         {/* Step 3: Primera venta */}
         {currentStep === 3 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Paso 3: Registra tu primera venta</h3>
-            <p className="text-xs text-gray-500">Usa el Punto de Venta (POS) para hacer una venta rápida con el producto que creaste.</p>
+            <h3 className="text-sm font-semibold cv-text">Paso 3: Registra tu primera venta</h3>
+            <p className="text-xs cv-muted">Usa el Punto de Venta (POS) para hacer una venta rápida con el producto que creaste.</p>
             <button
               onClick={() => { onCompleteStep(3); navigate('/pos'); }}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+              className="cv-btn cv-btn-primary"
             >
               Ir al POS
             </button>
@@ -206,11 +203,11 @@ export default function OnboardingWizard({
         {/* Step 4: Dashboard */}
         {currentStep === 4 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Paso 4: Revisa tu dashboard</h3>
-            <p className="text-xs text-gray-500">El dashboard muestra tus métricas en tiempo real. Ya lo estás viendo — continúa al siguiente paso.</p>
+            <h3 className="text-sm font-semibold cv-text">Paso 4: Revisa tu dashboard</h3>
+            <p className="text-xs cv-muted">El dashboard muestra tus métricas en tiempo real. Ya lo estás viendo — continúa al siguiente paso.</p>
             <button
               onClick={() => onCompleteStep(4)}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+              className="cv-btn cv-btn-primary"
             >
               Entendido, continuar
             </button>
@@ -220,16 +217,16 @@ export default function OnboardingWizard({
         {/* Step 5: Primer cliente */}
         {currentStep === 5 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Paso 5: Agrega tu primer cliente</h3>
-            <p className="text-xs text-gray-500">Registra un cliente para asociar ventas y dar seguimiento.</p>
+            <h3 className="text-sm font-semibold cv-text">Paso 5: Agrega tu primer cliente</h3>
+            <p className="text-xs cv-muted">Registra un cliente para asociar ventas y dar seguimiento.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} placeholder="Nombre del cliente" className={inputClass} />
-              <input type="text" value={clienteDoc} onChange={(e) => setClienteDoc(e.target.value)} placeholder="No. documento (opcional)" className={inputClass} />
+              <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} placeholder="Nombre del cliente" className="cv-input" />
+              <input type="text" value={clienteDoc} onChange={(e) => setClienteDoc(e.target.value)} placeholder="No. documento (opcional)" className="cv-input" />
             </div>
             <button
               onClick={() => crearCliente.mutate()}
               disabled={!clienteNombre.trim() || crearCliente.isPending}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+              className="cv-btn cv-btn-primary"
             >
               {crearCliente.isPending ? 'Creando...' : 'Crear cliente'}
             </button>

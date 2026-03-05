@@ -221,48 +221,46 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
   const isPendiente = doc.estado === 'PENDIENTE';
   const canEdit = isPendiente && (tipo === 'venta' || tipo === 'factura');
 
+  const inlineInputClass = 'w-full rounded border border-[var(--cv-divider)] px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--cv-primary)] bg-[var(--cv-bg)] text-[var(--cv-text)]';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
-      <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-3xl md:mx-4 flex flex-col">
+      <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-3xl md:mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-[var(--cv-divider)]">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold cv-text">
               {tipo === 'cotizacion' ? 'Cotizacion' : tipo === 'factura' ? 'Factura' : 'Venta'}{' '}
               <span className="font-mono">{numero}</span>
             </h2>
             <div className="flex items-center gap-3 mt-1">
-              <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(doc.estado)}`}
-              >
+              <span className={`cv-badge ${statusColor(doc.estado)}`}>
                 {doc.estado}
               </span>
-              <span className="text-sm text-gray-500">{formatDate(fecha)}</span>
+              <span className="text-sm cv-muted">{formatDate(fecha)}</span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-          >
+          <button onClick={onClose} className="cv-icon-btn text-xl leading-none">
             &times;
           </button>
         </div>
 
         <div className="px-4 py-4 md:px-6 space-y-4 flex-1 overflow-y-auto md:max-h-[70vh]">
           {/* Client info */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-0.5">Cliente</p>
-            <p className="text-sm font-medium text-gray-900">{terceroNombre}</p>
+          <div className="cv-card p-3">
+            <p className="text-xs cv-muted mb-0.5">Cliente</p>
+            <p className="text-sm font-medium cv-text">{terceroNombre}</p>
           </div>
 
           {/* Detail lines */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-700">Detalle</h3>
+              <h3 className="text-sm font-medium cv-text">Detalle</h3>
               {editing && (
                 <button
                   onClick={() => setShowProductSearch(true)}
-                  className="text-xs font-medium text-primary-600 hover:text-primary-700"
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--cv-primary)' }}
                 >
                   + Agregar producto
                 </button>
@@ -277,18 +275,18 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   value={busquedaProducto}
                   onChange={(e) => setBusquedaProducto(e.target.value)}
                   autoFocus
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="cv-input"
                 />
                 {productosFiltrados.length > 0 && (
-                  <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-md">
+                  <div className="mt-1 cv-card max-h-40 overflow-y-auto shadow-md">
                     {productosFiltrados.slice(0, 10).map((p) => (
                       <button
                         key={p.id}
                         onClick={() => agregarProducto(p)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0 flex items-center justify-between"
+                        className="cv-nav-item w-full text-left px-3 py-2 text-sm border-b border-[var(--cv-divider)] last:border-0 flex items-center justify-between"
                       >
-                        <span className="font-medium text-gray-900">{p.nombre}</span>
-                        <span className="text-gray-500 text-xs">{formatCurrency(p.precio_venta)}</span>
+                        <span className="font-medium cv-text">{p.nombre}</span>
+                        <span className="cv-muted text-xs">{formatCurrency(p.precio_venta)}</span>
                       </button>
                     ))}
                   </div>
@@ -298,7 +296,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                     setShowProductSearch(false);
                     setBusquedaProducto('');
                   }}
-                  className="mt-1 text-xs text-gray-500 hover:text-gray-700"
+                  className="mt-1 text-xs cv-muted hover:text-[var(--cv-text)]"
                 >
                   Cancelar
                 </button>
@@ -307,17 +305,17 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
 
             <>
               {/* Desktop table */}
-              <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
+              <div className="hidden md:block border border-[var(--cv-divider)] rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-3 py-2 font-medium text-gray-500">Producto</th>
-                      <th className="text-left px-2 py-2 font-medium text-gray-500 w-28">Categoría</th>
-                      <th className="text-center px-2 py-2 font-medium text-gray-500 w-20">Cant.</th>
-                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-24">Precio</th>
-                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-20">Desc.%</th>
-                      <th className="text-right px-2 py-2 font-medium text-gray-500 w-16">IVA%</th>
-                      <th className="text-right px-3 py-2 font-medium text-gray-500 w-28">Total</th>
+                    <tr className="border-b border-[var(--cv-divider)]" style={{ background: 'var(--cv-surface)' }}>
+                      <th className="text-left px-3 py-2 font-medium cv-muted">Producto</th>
+                      <th className="text-left px-2 py-2 font-medium cv-muted w-28">Categoría</th>
+                      <th className="text-center px-2 py-2 font-medium cv-muted w-20">Cant.</th>
+                      <th className="text-right px-2 py-2 font-medium cv-muted w-24">Precio</th>
+                      <th className="text-right px-2 py-2 font-medium cv-muted w-20">Desc.%</th>
+                      <th className="text-right px-2 py-2 font-medium cv-muted w-16">IVA%</th>
+                      <th className="text-right px-3 py-2 font-medium cv-muted w-28">Total</th>
                       {editing && <th className="w-8"></th>}
                     </tr>
                   </thead>
@@ -325,9 +323,9 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                     {lineas.map((l, i) => {
                       const c = calcLinea(l);
                       return (
-                        <tr key={i} className="border-b border-gray-50">
-                          <td className="px-3 py-2 text-xs font-medium text-gray-900">{l.nombre}</td>
-                          <td className="px-2 py-2 text-xs text-gray-500">{l.categoria ?? '-'}</td>
+                        <tr key={i} className="border-b border-[var(--cv-divider)]">
+                          <td className="px-3 py-2 text-xs font-medium cv-text">{l.nombre}</td>
+                          <td className="px-2 py-2 text-xs cv-muted">{l.categoria ?? '-'}</td>
                           <td className="px-2 py-2 text-center">
                             {editing ? (
                               <input
@@ -341,10 +339,10 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                     )
                                   )
                                 }
-                                className="w-full text-center rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                className={`text-center ${inlineInputClass}`}
                               />
                             ) : (
-                              <span className="text-sm text-gray-700">{l.cantidad}</span>
+                              <span className="text-sm cv-text">{l.cantidad}</span>
                             )}
                           </td>
                           <td className="px-2 py-2 text-right">
@@ -361,10 +359,10 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                     )
                                   )
                                 }
-                                className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                className={`text-right ${inlineInputClass}`}
                               />
                             ) : (
-                              <span className="text-sm text-gray-700">{formatCurrency(l.precio_unitario)}</span>
+                              <span className="text-sm cv-text">{formatCurrency(l.precio_unitario)}</span>
                             )}
                           </td>
                           <td className="px-2 py-2 text-right">
@@ -383,14 +381,14 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                     )
                                   )
                                 }
-                                className="w-full text-right rounded border border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                className={`text-right ${inlineInputClass}`}
                               />
                             ) : (
-                              <span className="text-sm text-gray-700">{l.descuento}%</span>
+                              <span className="text-sm cv-text">{l.descuento}%</span>
                             )}
                           </td>
-                          <td className="px-2 py-2 text-right text-sm text-gray-500">{l.porcentaje_iva}%</td>
-                          <td className="px-3 py-2 text-right font-medium text-gray-900 text-xs">
+                          <td className="px-2 py-2 text-right text-sm cv-muted">{l.porcentaje_iva}%</td>
+                          <td className="px-3 py-2 text-right font-medium cv-text text-xs">
                             {formatCurrency(c.total)}
                           </td>
                           {editing && (
@@ -415,11 +413,11 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                 {lineas.map((l, i) => {
                   const c = calcLinea(l);
                   return (
-                    <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                    <div key={i} className="cv-card p-3 space-y-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{l.nombre}</p>
-                          {l.categoria && <p className="text-xs text-gray-400">{l.categoria}</p>}
+                          <p className="text-sm font-medium cv-text">{l.nombre}</p>
+                          {l.categoria && <p className="text-xs cv-muted">{l.categoria}</p>}
                         </div>
                         {editing && (
                           <button
@@ -433,7 +431,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                       {editing ? (
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="text-[10px] text-gray-400">Cant.</label>
+                            <label className="text-[10px] cv-muted">Cant.</label>
                             <input
                               type="number"
                               inputMode="numeric"
@@ -446,11 +444,11 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-center rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className={`text-center ${inlineInputClass}`}
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-gray-400">Precio</label>
+                            <label className="text-[10px] cv-muted">Precio</label>
                             <input
                               type="number"
                               inputMode="decimal"
@@ -464,11 +462,11 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className={`text-right ${inlineInputClass}`}
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-gray-400">Desc.%</label>
+                            <label className="text-[10px] cv-muted">Desc.%</label>
                             <input
                               type="number"
                               inputMode="numeric"
@@ -484,17 +482,17 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                                   )
                                 )
                               }
-                              className="w-full text-right rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              className={`text-right ${inlineInputClass}`}
                             />
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center justify-between text-sm cv-muted">
                           <span>{l.cantidad} x {formatCurrency(l.precio_unitario)}</span>
                           <span>IVA {l.porcentaje_iva}% {l.descuento > 0 && `/ Desc ${l.descuento}%`}</span>
                         </div>
                       )}
-                      <div className="text-right text-sm font-semibold text-gray-900">
+                      <div className="text-right text-sm font-semibold cv-text">
                         {formatCurrency(c.total)}
                       </div>
                     </div>
@@ -505,19 +503,19 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
           </div>
 
           {/* Totals */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-1.5">
-            <div className="flex justify-between text-sm text-gray-600">
+          <div className="cv-card p-4 space-y-1.5">
+            <div className="flex justify-between text-sm cv-muted">
               <span>Subtotal</span>
               <span>{formatCurrency(totales.subtotal)}</span>
             </div>
             {totales.descLineas > 0 && (
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm cv-muted">
                 <span>Desc. lineas</span>
-                <span className="text-red-600">-{formatCurrency(totales.descLineas)}</span>
+                <span className="text-red-500">-{formatCurrency(totales.descLineas)}</span>
               </div>
             )}
             {editing ? (
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm cv-muted">
                 <div className="flex items-center gap-2">
                   <span>Desc. global</span>
                   <input
@@ -529,27 +527,27 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                     onChange={(e) =>
                       setDescuentoGlobal(Math.min(100, Math.max(0, Number(e.target.value))))
                     }
-                    className="w-16 text-right rounded border border-gray-200 px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-16 text-right rounded border border-[var(--cv-divider)] px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--cv-primary)] bg-[var(--cv-bg)] text-[var(--cv-text)]"
                   />
-                  <span className="text-xs text-gray-400">%</span>
+                  <span className="text-xs cv-muted">%</span>
                 </div>
                 {totales.montoDescGlobal > 0 && (
-                  <span className="text-red-600">-{formatCurrency(totales.montoDescGlobal)}</span>
+                  <span className="text-red-500">-{formatCurrency(totales.montoDescGlobal)}</span>
                 )}
               </div>
             ) : (
               descuentoGlobal > 0 && (
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm cv-muted">
                   <span>Desc. global ({descuentoGlobal}%)</span>
-                  <span className="text-red-600">-{formatCurrency(totales.montoDescGlobal)}</span>
+                  <span className="text-red-500">-{formatCurrency(totales.montoDescGlobal)}</span>
                 </div>
               )
             )}
-            <div className="flex justify-between text-sm text-gray-600">
+            <div className="flex justify-between text-sm cv-muted">
               <span>IVA</span>
               <span>{formatCurrency(totales.totalIva)}</span>
             </div>
-            <div className="flex justify-between text-base font-bold text-gray-900 pt-1.5 border-t border-gray-200">
+            <div className="flex justify-between text-base font-bold cv-text pt-1.5 border-t border-[var(--cv-divider)]">
               <span>Total</span>
               <span>{formatCurrency(totales.total)}</span>
             </div>
@@ -558,32 +556,33 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
           {/* Observaciones */}
           {editing ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+              <label className="block text-sm font-medium cv-text mb-1">Observaciones</label>
               <textarea
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
                 rows={2}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="cv-input resize-none"
               />
             </div>
           ) : (
             doc.observaciones && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-0.5">Observaciones</p>
-                <p className="text-sm text-gray-700">{doc.observaciones}</p>
+              <div className="cv-card p-3">
+                <p className="text-xs cv-muted mb-0.5">Observaciones</p>
+                <p className="text-sm cv-text">{doc.observaciones}</p>
               </div>
             )
           )}
         </div>
 
         {/* Footer - Actions */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 py-3 md:px-6 md:py-4 border-t border-gray-100 bg-white">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 py-3 md:px-6 md:py-4 border-t border-[var(--cv-divider)]">
           <div className="flex flex-wrap gap-2">
             {/* Edit / Save */}
             {canEdit && !editing && (
               <button
                 onClick={() => setEditing(true)}
-                className="rounded-lg px-4 py-2 text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                className="cv-btn cv-btn-ghost"
+                style={{ color: 'var(--cv-primary)' }}
               >
                 Editar
               </button>
@@ -593,14 +592,13 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                 <button
                   onClick={() => saveMutation.mutate()}
                   disabled={saveMutation.isPending || lineas.length === 0}
-                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors disabled:opacity-50"
+                  className="cv-btn cv-btn-primary"
                 >
                   {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
                 </button>
                 <button
                   onClick={() => {
                     setEditing(false);
-                    // Reset to original
                     if (doc) {
                       setLineas(
                         (doc.detalles || []).map((d) => ({
@@ -616,7 +614,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                       setObservaciones(doc.observaciones || '');
                     }
                   }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="cv-btn cv-btn-ghost"
                 >
                   Cancelar
                 </button>
@@ -630,7 +628,8 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   <button
                     onClick={() => confirmarMut.mutate(doc.id)}
                     disabled={confirmarMut.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="cv-btn cv-btn-ghost"
+                    style={{ color: 'var(--cv-primary)' }}
                   >
                     Confirmar
                   </button>
@@ -639,7 +638,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   <button
                     onClick={() => facturarMut.mutate(doc.id)}
                     disabled={facturarMut.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                    className="cv-btn cv-btn-secondary"
                   >
                     {facturarMut.isPending ? 'Facturando...' : 'Facturar'}
                   </button>
@@ -648,7 +647,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                   <button
                     onClick={() => emitirMut.mutate(doc.id)}
                     disabled={emitirMut.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                    className="cv-btn cv-btn-secondary"
                   >
                     Emitir
                   </button>
@@ -659,7 +658,8 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                       if (confirm('Convertir a factura?')) convertirMut.mutate(doc.id);
                     }}
                     disabled={convertirMut.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="cv-btn cv-btn-ghost"
+                    style={{ color: 'var(--cv-primary)' }}
                   >
                     Convertir a Factura
                   </button>
@@ -670,7 +670,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
                       if (confirm('Anular este documento?')) anularMut.mutate(doc.id);
                     }}
                     disabled={anularMut.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                    className="cv-btn cv-btn-danger"
                   >
                     Anular
                   </button>
@@ -684,15 +684,12 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
             {!editing && (tipo === 'factura' || tipo === 'cotizacion') && (
               <button
                 onClick={() => descargarPdf(doc.id, numero)}
-                className="rounded-lg px-4 py-2 text-sm font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                className="cv-btn cv-btn-ghost"
               >
                 PDF
               </button>
             )}
-            <button
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-            >
+            <button onClick={onClose} className="cv-btn cv-btn-ghost">
               Cerrar
             </button>
           </div>

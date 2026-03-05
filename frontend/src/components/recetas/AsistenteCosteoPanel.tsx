@@ -87,8 +87,8 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
       {/* Cargando */}
       {fase === 'cargando' && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-          <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">Socia esta analizando tu receta...</p>
+          <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--cv-primary)', borderTopColor: 'transparent' }} />
+          <p className="text-sm cv-muted">Socia esta analizando tu receta...</p>
         </div>
       )}
 
@@ -96,10 +96,10 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
       {fase === 'error' && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
           <p className="text-2xl">Hmm...</p>
-          <p className="text-sm text-gray-600">{errorMsg}</p>
+          <p className="text-sm cv-muted">{errorMsg}</p>
           <button
             onClick={() => { setFase('cargando'); fase1Mutation.mutate(); }}
-            className="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+            className="cv-btn cv-btn-primary"
           >
             Intentar de nuevo
           </button>
@@ -110,62 +110,62 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
       {fase === 'analisis' && analisis && (
         <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
           {/* Precio sugerido — destacado */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-4">
-            <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">Precio sugerido por Socia</p>
-            <p className="text-2xl font-bold text-amber-800">
+          <div className="cv-card p-4" style={{ background: 'var(--cv-primary-dim)', borderColor: 'var(--cv-primary)' }}>
+            <p className="cv-section-label mb-1">Precio sugerido por Socia</p>
+            <p className="text-2xl font-bold cv-text">
               {formatCurrency(Number(analisis.precio_sugerido))}
             </p>
-            <p className="text-sm text-amber-700 mt-1">
-              Margen esperado: <strong>{Number(analisis.margen_esperado).toFixed(1)}%</strong>
+            <p className="text-sm cv-muted mt-1">
+              Margen esperado: <strong style={{ color: 'var(--cv-primary)' }}>{Number(analisis.margen_esperado).toFixed(1)}%</strong>
             </p>
           </div>
 
           {/* Escenario recomendado */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-            <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Escenario recomendado</p>
-            <p className="text-sm font-semibold text-green-800">{analisis.escenario_recomendado}</p>
+          <div className="cv-card p-3 cv-alert-positive">
+            <p className="cv-section-label mb-1">Escenario recomendado</p>
+            <p className="text-sm font-semibold cv-text">{analisis.escenario_recomendado}</p>
           </div>
 
           {/* Justificacion */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lo que te dice Socia</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{analisis.justificacion}</p>
+            <p className="cv-section-label mb-1">Lo que te dice Socia</p>
+            <p className="text-sm cv-text leading-relaxed">{analisis.justificacion}</p>
           </div>
 
           {/* Alertas */}
           {analisis.alertas.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ojo con esto</p>
+              <p className="cv-section-label">Ojo con esto</p>
               {analisis.alertas.map((alerta, i) => (
-                <div key={i} className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
-                  <span className="text-orange-500 mt-0.5 flex-shrink-0">!</span>
-                  <p className="text-sm text-orange-700">{alerta}</p>
+                <div key={i} className="cv-alert-accent flex items-start gap-2 px-3 py-2">
+                  <span className="mt-0.5 flex-shrink-0" style={{ color: 'var(--cv-accent)' }}>!</span>
+                  <p className="text-sm cv-text">{alerta}</p>
                 </div>
               ))}
             </div>
           )}
 
           {/* Mensaje cierre */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-            <p className="text-sm text-gray-700 italic">"{analisis.mensaje_cierre}"</p>
-            <p className="text-xs text-gray-400 mt-1 text-right">- Socia</p>
+          <div className="cv-card p-3">
+            <p className="text-sm cv-text italic">"{analisis.mensaje_cierre}"</p>
+            <p className="text-xs cv-muted mt-1 text-right">- Socia</p>
           </div>
 
           {/* Pregunta de continuacion */}
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-sm font-medium text-gray-700 text-center mb-3">
+          <div className="border-t border-[var(--cv-divider)] pt-4">
+            <p className="text-sm font-medium cv-text text-center mb-3">
               Tienes mas preguntas para Socia?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setFase('chat')}
-                className="flex-1 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                className="cv-btn cv-btn-primary flex-1"
               >
                 Si, preguntarle
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="cv-btn cv-btn-ghost flex-1"
               >
                 No, gracias
               </button>
@@ -180,18 +180,18 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {/* Contexto breve del analisis inicial */}
             {analisis && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-700">
-                Precio sugerido: <strong>{formatCurrency(Number(analisis.precio_sugerido))}</strong>
-                {' · '}Margen: <strong>{Number(analisis.margen_esperado).toFixed(1)}%</strong>
+              <div className="cv-card px-3 py-2 text-xs cv-muted" style={{ background: 'var(--cv-primary-dim)', borderColor: 'var(--cv-primary)' }}>
+                Precio sugerido: <strong style={{ color: 'var(--cv-primary)' }}>{formatCurrency(Number(analisis.precio_sugerido))}</strong>
+                {' · '}Margen: <strong style={{ color: 'var(--cv-primary)' }}>{Number(analisis.margen_esperado).toFixed(1)}%</strong>
               </div>
             )}
 
             {/* Mensaje inicial de Socia en el chat */}
             {chatHistory.length === 0 && (
               <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs flex-shrink-0">S</div>
-                <div className="bg-gray-100 rounded-2xl rounded-tl-none px-3 py-2 max-w-xs">
-                  <p className="text-sm text-gray-700">Claro que si, hagamosle! Que mas quieres saber sobre el precio de tu receta?</p>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0" style={{ background: 'var(--cv-primary)' }}>S</div>
+                <div className="rounded-2xl rounded-tl-none px-3 py-2 max-w-xs" style={{ background: 'var(--cv-surface)' }}>
+                  <p className="text-sm cv-text">Claro que si, hagamosle! Que mas quieres saber sobre el precio de tu receta?</p>
                 </div>
               </div>
             )}
@@ -200,14 +200,11 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
             {chatHistory.map((msg, i) => (
               <div key={i} className={`flex items-start gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs flex-shrink-0">S</div>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0" style={{ background: 'var(--cv-primary)' }}>S</div>
                 )}
                 <div
-                  className={`rounded-2xl px-3 py-2 max-w-xs text-sm ${
-                    msg.role === 'user'
-                      ? 'bg-amber-500 text-white rounded-tr-none ml-auto'
-                      : 'bg-gray-100 text-gray-700 rounded-tl-none'
-                  }`}
+                  className={`rounded-2xl px-3 py-2 max-w-xs text-sm ${msg.role === 'user' ? 'rounded-tr-none ml-auto text-white' : 'rounded-tl-none cv-text'}`}
+                  style={msg.role === 'user' ? { background: 'var(--cv-primary)' } : { background: 'var(--cv-surface)' }}
                 >
                   {msg.content}
                 </div>
@@ -217,9 +214,9 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
             {/* Indicador de escritura */}
             {fase2Mutation.isPending && (
               <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs flex-shrink-0">S</div>
-                <div className="bg-gray-100 rounded-2xl rounded-tl-none px-3 py-2">
-                  <span className="text-gray-400 text-sm">Socia esta escribiendo...</span>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0" style={{ background: 'var(--cv-primary)' }}>S</div>
+                <div className="rounded-2xl rounded-tl-none px-3 py-2" style={{ background: 'var(--cv-surface)' }}>
+                  <span className="cv-muted text-sm">Socia esta escribiendo...</span>
                 </div>
               </div>
             )}
@@ -227,19 +224,19 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
           </div>
 
           {/* Input de chat */}
-          <div className="border-t border-gray-100 p-3 flex gap-2">
+          <div className="border-t border-[var(--cv-divider)] p-3 flex gap-2">
             <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Escribele a Socia..."
               rows={1}
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 resize-none"
+              className="cv-input flex-1 resize-none"
             />
             <button
               onClick={handleEnviarMensaje}
               disabled={!userInput.trim() || fase2Mutation.isPending}
-              className="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors text-sm font-medium"
+              className="cv-btn cv-btn-primary"
             >
               Enviar
             </button>
