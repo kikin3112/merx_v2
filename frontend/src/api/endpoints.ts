@@ -79,6 +79,9 @@ import type {
   SociaProgreso,
   EquivalenciaUnidad,
   CostoEstandar,
+  ChatMessage,
+  SociaAnalisisResponse,
+  SociaChatResponse,
 } from '../types';
 
 // Auth
@@ -195,6 +198,14 @@ export const recetas = {
     client.post<CostoEstandar>(`/recetas/${id}/fijar-costo`, data),
   costoEstandar: (id: string) =>
     client.get<CostoEstandar | null>(`/recetas/${id}/costo-estandar`),
+  consultarSocia: (
+    id: string,
+    data: { precio_referencia?: number; messages?: ChatMessage[] }
+  ) =>
+    client.post<SociaAnalisisResponse | SociaChatResponse>(
+      `/recetas/${id}/asistente-ia`,
+      data
+    ),
 };
 
 // Equivalencias de unidad por producto

@@ -504,6 +504,24 @@ export interface CostoEstandar {
   notas_confirmacion: string | null;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface SociaAnalisisResponse {
+  precio_sugerido: string;       // Decimal serialized as string by FastAPI
+  margen_esperado: string;       // Decimal serialized as string by FastAPI
+  escenario_recomendado: string;
+  justificacion: string;
+  alertas: string[];
+  mensaje_cierre: string;
+}
+
+export interface SociaChatResponse {
+  respuesta: string;
+}
+
 // ---- Socia: Costos Indirectos ----
 
 export interface CostoIndirecto {
