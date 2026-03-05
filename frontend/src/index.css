@@ -39,10 +39,46 @@
   --font-sans: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
 }
 
+/* === CARBON VIVO — semantic tokens (dark-first) === */
+:root {
+  --cv-bg: #1C1C1E;
+  --cv-surface: #252528;
+  --cv-elevated: #2C2C2F;
+  --cv-border: rgba(255,255,255,0.08);
+  --cv-amber: #F5A623;
+  --cv-ember: #E8643C;
+  --cv-text: #F5F5F7;
+  --cv-muted: #8E8E93;
+  --cv-amber-dark: #D4891F;
+}
+
+:root.light {
+  --cv-bg: #F5F5F7;
+  --cv-surface: #FFFFFF;
+  --cv-elevated: #EBEBED;
+  --cv-border: rgba(0,0,0,0.08);
+  --cv-amber: #D4891F;
+  --cv-ember: #C9542D;
+  --cv-text: #1C1C1E;
+  --cv-muted: #6B6B70;
+  --cv-amber-dark: #B8760F;
+}
+
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
   margin: 0;
 }
+
+/* Carbon Vivo utilities */
+.cv-bg { background-color: var(--cv-bg); }
+.cv-surface { background-color: var(--cv-surface); }
+.cv-elevated { background-color: var(--cv-elevated); }
+.cv-text { color: var(--cv-text); }
+.cv-muted { color: var(--cv-muted); }
+.cv-border { border-color: var(--cv-border); }
+.cv-amber { color: var(--cv-amber); }
+.cv-amber-bg { background-color: var(--cv-amber); }
+.cv-ember { color: var(--cv-ember); }
 
 /* Touch target minimum for mobile accessibility */
 @media (max-width: 767px) {

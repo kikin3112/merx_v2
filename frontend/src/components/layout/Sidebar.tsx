@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { StarIcon } from '@heroicons/react/24/outline';
+import { StarIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
+import { useThemeStore } from '../../stores/themeStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import CalificacionModal from '../CalificacionModal';
 import LogoutButton from './LogoutButton';
@@ -16,7 +17,8 @@ function buildLogoUrl(urlLogo: string | null | undefined): string {
 
 export default function Sidebar() {
   const { tenantName, tenantLogo } = useAuthStore();
-  const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
+  const { navGroups, superadminItems, isSuperadminOnly, user } = useNavigation();
+  const { theme, toggleTheme } = useThemeStore();
   const [showCalificacion, setShowCalificacion] = useState(false);
 
   const logoSrc = buildLogoUrl(tenantLogo);
@@ -33,37 +35,57 @@ export default function Sidebar() {
           className="h-8 w-8 rounded-full object-cover shrink-0"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
         />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-gray-900 truncate">{tenantName || 'Chandelier'}</p>
           <p className="text-xs text-gray-500 truncate">
             {isSuperadminOnly ? 'Panel SuperAdmin' : tenantName || 'Sin tenant'}
           </p>
         </div>
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors shrink-0"
+          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+        >
+          {theme === 'dark'
+            ? <SunIcon className="h-4 w-4" />
+            : <MoonIcon className="h-4 w-4" />
+          }
+        </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {mainItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            <item.icon className="h-5 w-5 shrink-0" />
-            {item.label}
-          </NavLink>
+      {/* Nav — grouped */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+        {navGroups.map((group) => (
+          <div key={group.id}>
+            {group.label && (
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
         ))}
 
         {superadminItems.length > 0 && (
-          <>
-            {mainItems.length > 0 && <div className="my-2 mx-3 border-t border-gray-200" />}
+          <div>
+            {navGroups.length > 0 && <div className="mb-2 mx-1 border-t border-gray-100" />}
             <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               SuperAdmin
             </p>
@@ -83,7 +105,7 @@ export default function Sidebar() {
                 {item.label}
               </NavLink>
             ))}
-          </>
+          </div>
         )}
       </nav>
 

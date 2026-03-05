@@ -239,8 +239,15 @@ export const cotizaciones = {
   get: (id: string) => client.get<Cotizacion>(`/cotizaciones/${id}`),
   create: (data: unknown) => client.post<Cotizacion>('/cotizaciones/', data),
   convertir: (id: string) => client.post(`/cotizaciones/${id}/convertir`),
+  rechazar: (id: string) => client.patch(`/cotizaciones/${id}/rechazar`),
+  renovar: (id: string, dias = 15) =>
+    client.patch(`/cotizaciones/${id}/renovar`, null, { params: { dias } }),
   descargarPdf: (id: string) =>
     client.get(`/cotizaciones/${id}/pdf`, { responseType: 'blob' }),
+};
+
+export const comercial = {
+  pipeline: () => client.get('/comercial/pipeline'),
 };
 
 // Contabilidad

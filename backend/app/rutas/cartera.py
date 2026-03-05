@@ -97,8 +97,8 @@ async def resumen_cartera(
     )
 
     return {
-        "total_por_cobrar": float(total_pendiente),
-        "total_vencido": float(total_vencido),
+        "total_por_cobrar": str(total_pendiente),
+        "total_vencido": str(total_vencido),
         "cantidad_pendientes": cantidad_pendientes,
         "cantidad_vencidas": cantidad_vencidas,
     }

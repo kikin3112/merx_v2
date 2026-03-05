@@ -11,6 +11,7 @@ import { useDashboardStore } from '../stores/dashboardStore';
 import type { FacturaEvento } from '../stores/dashboardStore';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
+import NextActionsPanel from '../components/dashboard/NextActionsPanel';
 import {
   ResponsiveContainer,
   LineChart,
@@ -256,13 +257,15 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
           <SSEIndicator connected={sseConnected} />
         </div>
         <PeriodSelector value={period} onChange={setPeriod} />
       </div>
+
+      <NextActionsPanel />
 
       {/* KPI Cards - Row 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

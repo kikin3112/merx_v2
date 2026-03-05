@@ -1,4 +1,5 @@
 import io
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -51,10 +52,10 @@ def _generar_pdf_cotizacion(db: Session, cot: Cotizaciones, tenant_id: UUID) -> 
         detalles_pdf.append(
             {
                 "producto_nombre": producto.nombre if producto else "Producto",
-                "cantidad": float(det.cantidad),
-                "precio_unitario": float(det.precio_unitario),
-                "descuento": float(det.descuento),
-                "porcentaje_iva": float(det.porcentaje_iva),
+                "cantidad": det.cantidad,
+                "precio_unitario": det.precio_unitario,
+                "descuento": det.descuento,
+                "porcentaje_iva": det.porcentaje_iva,
             }
         )
 
@@ -277,4 +278,50 @@ async def convertir_a_factura(
         "factura_id": str(factura.id),
         "factura_numero": factura.numero_venta,
         "message": f"Cotización convertida a factura {numero_factura} (borrador)",
+    }
+
+
+@router.patch("/{cotizacion_id}/rechazar")
+async def rechazar_cotizacion(
+    cotizacion_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """Marca una cotización como RECHAZADA. No impacta inventario ni contabilidad."""
+    cot = db.query(Cotizaciones).filter(Cotizaciones.id == cotizacion_id, Cotizaciones.tenant_id == tenant_id).first()
+    if not cot:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+    if cot.estado in ("RECHAZADA", "ANULADA"):
+        raise HTTPException(status_code=400, detail=f"La cotización ya está en estado {cot.estado}")
+    cot.estado = "RECHAZADA"
+    db.commit()
+    logger.info(f"Cotización {cot.numero_cotizacion} rechazada")
+    return {"id": str(cotizacion_id), "estado": "RECHAZADA", "numero_cotizacion": cot.numero_cotizacion}
+
+
+@router.patch("/{cotizacion_id}/renovar")
+async def renovar_cotizacion(
+    cotizacion_id: UUID,
+    dias: int = Query(default=15, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """Extiende la fecha de vencimiento de una cotización por N días (default: 15)."""
+    cot = db.query(Cotizaciones).filter(Cotizaciones.id == cotizacion_id, Cotizaciones.tenant_id == tenant_id).first()
+    if not cot:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+    if cot.estado in ("RECHAZADA", "ANULADA", "ACEPTADA"):
+        raise HTTPException(status_code=400, detail=f"No se puede renovar una cotización en estado {cot.estado}")
+    nueva_fecha = date.today() + timedelta(days=dias)
+    cot.fecha_vencimiento = nueva_fecha
+    cot.estado = "VIGENTE"
+    db.commit()
+    logger.info(f"Cotización {cot.numero_cotizacion} renovada hasta {nueva_fecha}")
+    return {
+        "id": str(cotizacion_id),
+        "estado": cot.estado,
+        "numero_cotizacion": cot.numero_cotizacion,
+        "fecha_vencimiento": str(nueva_fecha),
     }

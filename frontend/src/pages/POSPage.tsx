@@ -4,6 +4,7 @@ import { productos, terceros, facturas } from '../api/endpoints';
 import { formatCurrency } from '../utils/format';
 import type { Producto, Tercero, Factura } from '../types';
 import { usePOSStore } from '../stores/posStore';
+import { useAuthStore } from '../stores/authStore';
 import { useBreakpoint } from '../hooks/useMediaQuery';
 import { trackPOSSale, trackInvoiceCreated } from '../hooks/useAnalytics';
 
@@ -29,19 +30,33 @@ const emptyClientForm: QuickClientForm = {
 export default function POSPage() {
   const queryClient = useQueryClient();
   const { isDesktop } = useBreakpoint();
+  const tenantId = useAuthStore((s) => s.tenantId);
 
   // POS Store persistente
   const {
     cart,
     clienteId,
+    cartTenantId,
     descuentoGlobal,
     addToCart: addToCartStore,
     removeFromCart,
     updateQuantity,
     setCliente,
     setDescuento,
-    clearCart
+    clearCart,
+    reset: resetCart,
+    setCartTenant,
   } = usePOSStore();
+
+  // Cross-tenant guard: reset cart if tenant changed
+  useEffect(() => {
+    if (tenantId && cartTenantId && cartTenantId !== tenantId) {
+      resetCart();
+    }
+    if (tenantId && cartTenantId !== tenantId) {
+      setCartTenant(tenantId);
+    }
+  }, [tenantId, cartTenantId, resetCart, setCartTenant]);
 
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
