@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-03-PLAN.md (POST /recetas/{id}/asistente-ia wired, 4 integration tests GREEN)
-last_updated: "2026-03-05T00:48:09.945Z"
+stopped_at: Completed 02-04-PLAN.md tasks 1-2, awaiting human-verify checkpoint (Task 3)
+last_updated: "2026-03-05T00:52:19.393Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # GSD Execution State
 
 **Project:** Merx v2 — Propuesta de Valor 2026
 **Last Updated:** 2026-03-04T23:22:27Z
-**Stopped At:** Completed 02-03-PLAN.md (POST /recetas/{id}/asistente-ia wired, 4 integration tests GREEN)
+**Stopped At:** Completed 02-04-PLAN.md tasks 1-2, awaiting human-verify checkpoint (Task 3)
 
 ---
 
@@ -60,6 +60,8 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 - [Phase 02]: SociaAnalisisResponse Pydantic field_validator(mode=before) with Decimal(str(v)) enforces Decimal on LLM float output — consistent with project NEVER use float rule
 - [Phase 02]: No response_model on asistente-ia endpoint — return type varies Fase1/Fase2; FastAPI dict serialization handles Decimal correctly via service layer
 - [Phase 02]: test_asistente_ia_invalid_body uses valid JWT + get_db override to bypass auth so Pydantic body validation is the terminal check
+- [Phase 02]: key={selectedReceta.id} on AsistenteCosteoPanel forces remount for clean state reset on close/reopen
+- [Phase 02]: Chat history in React local state only, destroyed on modal close (confirmed from 02-03 locked decision)
 
 ## Performance Metrics
 
@@ -73,8 +75,9 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 | Phase 02 P01 | 133 | 2 tasks | 3 files |
 | Phase 02 P02 | 233s | 1 tasks | 1 files |
 | Phase 02 P03 | 469 | 2 tasks | 2 files |
+| Phase 02 P04 | 240 | 2 tasks | 4 files |
 
 ## Session Info
 
-**Last session:** 2026-03-05T00:48:09.942Z
+**Last session:** 2026-03-05T00:52:19.390Z
 **Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)
