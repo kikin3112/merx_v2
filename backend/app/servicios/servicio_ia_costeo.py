@@ -1,14 +1,15 @@
 """
 Servicio de IA para costeo — Socia, la asistente inteligente de Merx.
-Orquesta llamadas a claude-haiku-4-5 via Anthropic SDK para sugerencias
-de precio y análisis de márgenes dentro del módulo de recetas.
+Usa OpenRouter (API compatible con OpenAI) para orquestar el modelo LLM.
 """
 
+import json
+import re
 from decimal import Decimal
 from typing import Any, Optional
 from uuid import UUID
 
-import anthropic
+import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session, joinedload
@@ -21,74 +22,7 @@ from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-
-# ── Thin async wrapper for Anthropic messages ────────────────────────────────
-# Required so unittest.mock.patch.object auto-detects create() as async
-# (inspect.iscoroutinefunction returns False on the raw SDK method).
-
-
-class _AnthropicMessages:
-    """Async wrapper around anthropic.AsyncAnthropic.messages with a true async def create."""
-
-    def __init__(self, raw_client: anthropic.AsyncAnthropic) -> None:
-        self._raw = raw_client
-
-    async def create(self, **kwargs: Any) -> Any:
-        return await self._raw.messages.create(**kwargs)
-
-
-class _AnthropicClientWrapper:
-    """Wraps AsyncAnthropic so that _client.messages.create is a real async method."""
-
-    def __init__(self, api_key: Optional[str]) -> None:
-        self._raw = anthropic.AsyncAnthropic(api_key=api_key)
-        self.messages = _AnthropicMessages(self._raw)
-
-
-# ── Tool definition (Socia Fase 1 structured output) ─────────────────────────
-
-SOCIA_TOOL = {
-    "name": "analisis_costeo",
-    "description": "Análisis estructurado de precio y margen para la receta artesanal",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "precio_sugerido": {
-                "type": "number",
-                "description": "Precio sugerido en COP",
-            },
-            "margen_esperado": {
-                "type": "number",
-                "description": "Margen esperado en porcentaje (0-100)",
-            },
-            "escenario_recomendado": {
-                "type": "string",
-                "description": "Nombre del escenario recomendado de los 5 disponibles",
-            },
-            "justificacion": {
-                "type": "string",
-                "description": "Explicación en lenguaje accesible, tono de Socia",
-            },
-            "alertas": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Lista de alertas técnicas y estratégicas",
-            },
-            "mensaje_cierre": {
-                "type": "string",
-                "description": "Frase cálida de cierre al estilo caleño",
-            },
-        },
-        "required": [
-            "precio_sugerido",
-            "margen_esperado",
-            "escenario_recomendado",
-            "justificacion",
-            "alertas",
-            "mensaje_cierre",
-        ],
-    },
-}
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 # ── Pydantic model for Decimal safety ────────────────────────────────────────
@@ -114,19 +48,19 @@ class SociaAnalisisResponse(BaseModel):
 class ServicioIACosteo:
     """
     Orquestador de IA para el módulo Socia.
-    Fase 1: analisis_inicial() — structured output via tool_use (claude-haiku-4-5)
+    Fase 1: analisis_inicial() — structured JSON output via system prompt
     Fase 2: chat_libre() — free text conversation
     """
 
     def __init__(self, db: Session, tenant_id: UUID) -> None:
         self.db = db
         self.tenant_id = tenant_id
-        self._client = _AnthropicClientWrapper(api_key=settings.ANTHROPIC_API_KEY)
+        self._api_key = settings.OPENROUTER_API_KEY
+        self._model = settings.OPENROUTER_MODEL
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _get_receta(self, receta_id: UUID) -> Recetas:
-        """Fetch receta validating tenant isolation. Raises 404 if not found."""
         receta = (
             self.db.query(Recetas)
             .options(
@@ -149,30 +83,20 @@ class ServicioIACosteo:
         receta_id: UUID,
         precio_referencia: Optional[Decimal] = None,
     ) -> dict:
-        """
-        Reuse existing services to build CVU context.
-        Does NOT duplicate any calculation logic.
-        """
         receta = self._get_receta(receta_id)
         volumen = receta.produccion_mensual_esperada or 1
 
-        costos_info = ServicioCostosIndirectos(self.db, self.tenant_id).calcular_total_para_costo_base(receta_id)
-        costos_fijos = costos_info.get("total_cif", Decimal("0"))
+        fijo_total, _ = ServicioCostosIndirectos(self.db, self.tenant_id).calcular_fijo_y_porcentaje(Decimal("0"))
+        costos_fijos = fijo_total
 
-        context = ServicioAnalisisCVU(self.db, self.tenant_id).generar_escenarios_precio(
+        return ServicioAnalisisCVU(self.db, self.tenant_id).generar_escenarios_precio(
             receta_id=receta_id,
             costos_fijos=costos_fijos,
             volumen=volumen,
             precio_mercado_referencia=precio_referencia,
         )
-        return context
 
-    def _build_system_prompt(self, context: dict) -> str:
-        """
-        Build Socia system prompt with caleña personality and embedded CVU context.
-        Target ~500 tokens for prompt caching efficiency.
-        All Decimal values converted to float/str before embedding in f-strings.
-        """
+    def _build_system_prompt(self, context: dict, fase1: bool = True) -> str:
         receta_nombre = context.get("receta_nombre", "tu receta")
         cvu = context.get("costo_variable_unitario", Decimal("0"))
         cvu_fmt = f"${float(cvu):,.0f} COP"
@@ -185,7 +109,7 @@ class ServicioIACosteo:
             nombre = e.get("nombre", "")
             escenarios_text += f"  • {nombre}: ${precio:,.0f} COP — {viabilidad}\n"
 
-        return f"""Eres Socia, la asistente de costeo y pricing de Merx. Eres femenina, cálida y caleña — la mejor socia que sabe mucho de negocios y conoce el mercado del Valle del Cauca (velas de Palmira, confites artesanales).
+        base = f"""Eres Socia, la asistente de costeo y pricing de Merx. Eres femenina, cálida y caleña — la mejor socia que sabe mucho de negocios y conoce el mercado del Valle del Cauca (velas de Palmira, confites artesanales).
 
 Tu tono es natural y accesible: usas palabras como "bacano", "chévere", "hagámosle", "eso es" — pero sin exagerar. Explicas los números en lenguaje simple: "Para no perder plata, cobra mínimo $X" en vez de "El precio de equilibrio es $X".
 
@@ -194,14 +118,75 @@ Nombre: {receta_nombre}
 Costo variable unitario (CVU): {cvu_fmt}
 
 ESCENARIOS DE PRECIO DISPONIBLES:
-{escenarios_text.rstrip()}
+{escenarios_text.rstrip()}"""
+
+        if fase1:
+            base += """
 
 INSTRUCCIONES:
-- Analiza los 5 escenarios y recomienda el más adecuado para una PyME artesanal del Valle del Cauca
-- Explica tu recomendación en términos que entienda cualquier emprendedora
-- Identifica alertas técnicas (margen bajo, punto de equilibrio alto) y estratégicas (competencia, estacionalidad)
-- Cierra siempre con una frase cálida y motivadora al estilo caleño
-- Usa SIEMPRE la herramienta analisis_costeo para estructurar tu respuesta"""
+Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto antes ni después):
+{
+  "precio_sugerido": <número en COP>,
+  "margen_esperado": <porcentaje 0-100>,
+  "escenario_recomendado": "<nombre del escenario>",
+  "justificacion": "<explicación cálida en 2-3 oraciones>",
+  "alertas": ["<alerta1>", "<alerta2>"],
+  "mensaje_cierre": "<frase motivadora caleña>"
+}"""
+        return base
+
+    async def _call_openrouter(self, messages: list[dict], system: str) -> str:
+        """Call OpenRouter API and return the text content of the first choice."""
+        if not self._api_key:
+            raise HTTPException(
+                status_code=503,
+                detail="Socia no pudo responder en este momento. Intenta de nuevo.",
+            )
+
+        payload = {
+            "model": self._model,
+            "messages": [{"role": "system", "content": system}] + messages,
+            "max_tokens": 1024,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    OPENROUTER_URL,
+                    headers={
+                        "Authorization": f"Bearer {self._api_key}",
+                        "HTTP-Referer": "https://merx.app",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                )
+                resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error(f"OpenRouter HTTP error: {exc.response.status_code} — {exc.response.text}")
+            raise HTTPException(
+                status_code=503,
+                detail="Socia no pudo responder en este momento. Intenta de nuevo.",
+            ) from exc
+        except httpx.RequestError as exc:
+            logger.error(f"OpenRouter request error: {exc}")
+            raise HTTPException(
+                status_code=503,
+                detail="Socia no pudo responder en este momento. Intenta de nuevo.",
+            ) from exc
+
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
+    @staticmethod
+    def _extract_json(text: str) -> dict:
+        """Extract the first JSON object from model output (handles markdown fences)."""
+        # Strip markdown code fences if present
+        cleaned = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
+        # Find first {...}
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if not match:
+            raise ValueError(f"No JSON object found in model output: {text[:200]}")
+        return json.loads(match.group())
 
     # ── Public async API ──────────────────────────────────────────────────────
 
@@ -211,43 +196,27 @@ INSTRUCCIONES:
         precio_referencia: Optional[Decimal] = None,
     ) -> dict:
         """
-        Fase 1: Structured analysis via tool_use.
+        Fase 1: Structured analysis via JSON-in-prompt.
         Returns dict with 6 keys: precio_sugerido, margen_esperado,
         escenario_recomendado, justificacion, alertas, mensaje_cierre.
-        precio_sugerido and margen_esperado are always Decimal instances.
         """
         context = self._build_context(receta_id, precio_referencia)
-        system_prompt = self._build_system_prompt(context)
+        system_prompt = self._build_system_prompt(context, fase1=True)
+
+        user_msg = f"Analiza el precio óptimo para la receta '{context.get('receta_nombre', 'esta receta')}'."
 
         try:
-            response = await self._client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=1024,
-                tools=[SOCIA_TOOL],
-                tool_choice={"type": "tool", "name": "analisis_costeo"},
-                system=[
-                    {
-                        "type": "text",
-                        "text": system_prompt,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"Analiza el precio óptimo para la receta '{context.get('receta_nombre', 'esta receta')}'.",
-                    }
-                ],
+            raw_text = await self._call_openrouter(
+                messages=[{"role": "user", "content": user_msg}],
+                system=system_prompt,
             )
-        except anthropic.APIError as exc:
-            logger.error(f"Anthropic API error en analisis_inicial: {exc}", exc_info=True)
+            raw = self._extract_json(raw_text)
+        except (ValueError, KeyError, json.JSONDecodeError) as exc:
+            logger.error(f"Error parsing OpenRouter response: {exc}")
             raise HTTPException(
                 status_code=503,
-                detail="Socia no pudo responder en este momento",
+                detail="Socia no pudo responder en este momento. Intenta de nuevo.",
             ) from exc
-
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        raw = tool_block.input  # dict with raw values (floats from JSON)
 
         validated = SociaAnalisisResponse(**raw)
         return validated.model_dump()
@@ -258,32 +227,12 @@ INSTRUCCIONES:
         messages: list[dict],
     ) -> dict:
         """
-        Fase 2: Free-form conversation without tool_use.
-        messages: conversation history in Anthropic format.
+        Fase 2: Free-form conversation.
+        messages: list of {"role": "user"|"assistant", "content": str}
         Returns {"respuesta": str}.
         """
         context = self._build_context(receta_id)
-        system_prompt = self._build_system_prompt(context)
+        system_prompt = self._build_system_prompt(context, fase1=False)
 
-        try:
-            response = await self._client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=1024,
-                system=[
-                    {
-                        "type": "text",
-                        "text": system_prompt,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=messages,
-            )
-        except anthropic.APIError as exc:
-            logger.error(f"Anthropic API error en chat_libre: {exc}", exc_info=True)
-            raise HTTPException(
-                status_code=503,
-                detail="Socia no pudo responder en este momento",
-            ) from exc
-
-        text_content = next(b for b in response.content if b.type == "text").text
-        return {"respuesta": text_content}
+        raw_text = await self._call_openrouter(messages=messages, system=system_prompt)
+        return {"respuesta": raw_text}

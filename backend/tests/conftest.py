@@ -17,7 +17,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 # Use Postgres from env (CI sets DB_URL). Falls back to local dev Postgres.
-TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/chandelier_test")
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:kikin3112@localhost:5432/chandelier_test")
 
 
 @pytest.fixture(scope="function")

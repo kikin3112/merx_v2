@@ -79,17 +79,19 @@ class ServicioComercial:
         )
 
     def _total_facturado_mes(self, db: Session, tenant_id: UUID) -> Decimal:
-        from sqlalchemy import extract, func
+        from sqlalchemy import extract
 
         hoy = date.today()
-        result = (
-            db.query(func.coalesce(func.sum(Ventas.total_venta), Decimal("0")))
+        # total_venta is a hybrid property computed from detalles — cannot use in SQL aggregate.
+        # Load instances and sum in Python instead.
+        ventas = (
+            db.query(Ventas)
             .filter(
                 Ventas.tenant_id == tenant_id,
                 Ventas.estado == "FACTURADA",
                 extract("year", Ventas.created_at) == hoy.year,
                 extract("month", Ventas.created_at) == hoy.month,
             )
-            .scalar()
+            .all()
         )
-        return result or Decimal("0")
+        return sum((v.total_venta for v in ventas), Decimal("0"))

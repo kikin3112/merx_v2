@@ -12,7 +12,7 @@ from app.datos.modelos import Inventarios, Productos
 from app.servicios.servicio_inventario import ServicioInventario, TipoMovimiento
 
 
-def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_token):
+def test_concurrent_stock_deductions_prevent_negative(engine, db_session, tenant_admin_token):
     """
     Concurrent sales should not cause negative stock due to pessimistic locking.
 
@@ -22,6 +22,8 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
     - Expected: Only 1 succeeds, 2 fail with "Stock insuficiente"
     - Final stock: 2 (10 - 8)
     """
+    from sqlalchemy.orm import sessionmaker
+
     tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     # Create product with stock=10
@@ -49,22 +51,30 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
     db_session.add(inventario)
     db_session.commit()
 
-    # Try 3 concurrent sales of 8 units each (total 24, but only 10 available)
+    producto_id = producto.id
+    inventario_id = inventario.id
+
+    # Each thread gets its own session (SQLAlchemy sessions are not thread-safe)
+    ThreadSession = sessionmaker(bind=engine, expire_on_commit=False)
+
     def deduct_stock():
-        """Attempt to deduct 8 units from stock."""
-        servicio = ServicioInventario(db_session, tenant_id)
+        """Attempt to deduct 8 units from stock in an isolated session."""
+        session = ThreadSession()
         try:
-            servicio.crear_movimiento(producto_id=producto.id, tipo=TipoMovimiento.SALIDA, cantidad=Decimal("8"))
-            db_session.commit()
+            servicio = ServicioInventario(session, tenant_id)
+            servicio.crear_movimiento(producto_id=producto_id, tipo=TipoMovimiento.SALIDA, cantidad=Decimal("8"))
+            session.commit()
             return "success"
         except ValueError as e:
-            db_session.rollback()
+            session.rollback()
             if "Stock insuficiente" in str(e):
                 return "insufficient_stock"
             return f"error: {str(e)}"
         except Exception as e:
-            db_session.rollback()
+            session.rollback()
             return f"error: {str(e)}"
+        finally:
+            session.close()
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(deduct_stock) for _ in range(3)]
@@ -77,12 +87,16 @@ def test_concurrent_stock_deductions_prevent_negative(db_session, tenant_admin_t
     assert success_count == 1, f"Expected 1 success, got {success_count}. Results: {results}"
     assert insufficient_count == 2, f"Expected 2 insufficient_stock, got {insufficient_count}. Results: {results}"
 
-    # Verify final stock
-    db_session.refresh(inventario)
-    assert inventario.cantidad_disponible == Decimal("2"), f"Expected stock=2, got {inventario.cantidad_disponible}"
+    # Verify final stock via fresh session
+    verify_session = ThreadSession()
+    try:
+        inv = verify_session.query(Inventarios).filter_by(id=inventario_id).first()
+        assert inv.cantidad_disponible == Decimal("2"), f"Expected stock=2, got {inv.cantidad_disponible}"
+    finally:
+        verify_session.close()
 
 
-def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_token):
+def test_concurrent_entries_update_avg_cost_correctly(engine, db_session, tenant_admin_token):
     """
     Concurrent inventory entries should correctly update weighted average cost.
 
@@ -91,6 +105,8 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
     - 2 concurrent entries: +5 @ $6000 and +5 @ $7000
     - Expected final: stock=20, avg_cost calculated correctly
     """
+    from sqlalchemy.orm import sessionmaker
+
     tenant_id = UUID(tenant_admin_token["tenant_id"])
 
     producto = Productos(
@@ -117,18 +133,27 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
     db_session.add(inventario)
     db_session.commit()
 
+    producto_id = producto.id
+    inventario_id = inventario.id
+
+    # Each thread gets its own session (SQLAlchemy sessions are not thread-safe)
+    ThreadSession = sessionmaker(bind=engine, expire_on_commit=False)
+
     def add_stock(cantidad: Decimal, costo: Decimal):
-        """Add stock with specific cost."""
-        servicio = ServicioInventario(db_session, tenant_id)
+        """Add stock with specific cost in an isolated session."""
+        session = ThreadSession()
         try:
+            servicio = ServicioInventario(session, tenant_id)
             servicio.crear_movimiento(
-                producto_id=producto.id, tipo=TipoMovimiento.ENTRADA, cantidad=cantidad, costo_unitario=costo
+                producto_id=producto_id, tipo=TipoMovimiento.ENTRADA, cantidad=cantidad, costo_unitario=costo
             )
-            db_session.commit()
+            session.commit()
             return "success"
         except Exception as e:
-            db_session.rollback()
+            session.rollback()
             return f"error: {str(e)}"
+        finally:
+            session.close()
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         future1 = executor.submit(add_stock, Decimal("5"), Decimal("6000"))
@@ -138,15 +163,19 @@ def test_concurrent_entries_update_avg_cost_correctly(db_session, tenant_admin_t
     # Both should succeed
     assert results.count("success") == 2, f"Expected 2 successes, got {results}"
 
-    # Verify final state
-    db_session.refresh(inventario)
-    assert inventario.cantidad_disponible == Decimal("20"), f"Expected stock=20, got {inventario.cantidad_disponible}"
+    # Verify final state via fresh session
+    verify_session = ThreadSession()
+    try:
+        inv = verify_session.query(Inventarios).filter_by(id=inventario_id).first()
+        assert inv.cantidad_disponible == Decimal("20"), f"Expected stock=20, got {inv.cantidad_disponible}"
 
-    # Expected average cost: (10*5000 + 5*6000 + 5*7000) / 20 = 115000/20 = 5750
-    expected_avg = Decimal("5750")
-    assert (
-        inventario.costo_promedio_ponderado == expected_avg
-    ), f"Expected avg_cost={expected_avg}, got {inventario.costo_promedio_ponderado}"
+        # Expected average cost: (10*5000 + 5*6000 + 5*7000) / 20 = 115000/20 = 5750
+        expected_avg = Decimal("5750")
+        assert (
+            inv.costo_promedio_ponderado == expected_avg
+        ), f"Expected avg_cost={expected_avg}, got {inv.costo_promedio_ponderado}"
+    finally:
+        verify_session.close()
 
 
 def test_production_with_concurrent_ingredient_usage(db_session, tenant_admin_token):
