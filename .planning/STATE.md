@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md (anthropic SDK installed, ANTHROPIC_API_KEY in config, 4 TDD stubs in RED state)
-last_updated: "2026-03-05T00:30:45.939Z"
+stopped_at: Completed 02-02-PLAN.md (ServicioIACosteo implemented, all 4 Wave 0 tests GREEN)
+last_updated: "2026-03-05T00:38:10.482Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # GSD Execution State
 
 **Project:** Merx v2 — Propuesta de Valor 2026
 **Last Updated:** 2026-03-04T23:22:27Z
-**Stopped At:** Completed 02-01-PLAN.md (anthropic SDK installed, ANTHROPIC_API_KEY in config, 4 TDD stubs in RED state)
+**Stopped At:** Completed 02-02-PLAN.md (ServicioIACosteo implemented, all 4 Wave 0 tests GREEN)
 
 ---
 
@@ -56,6 +56,8 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 ---
 - [Phase 02]: anthropic>=0.40.0 resolved to 0.84.0 by uv; no upper bound to allow patch updates
 - [Phase 02]: ANTHROPIC_API_KEY declared Optional[str] default=None — validated at call time, not startup (consistent with SENTRY_DSN pattern)
+- [Phase 02]: _AnthropicClientWrapper wraps AsyncAnthropic so _client.messages.create is true async def — inspect.iscoroutinefunction returns False on raw SDK method causing MagicMock instead of AsyncMock in tests
+- [Phase 02]: SociaAnalisisResponse Pydantic field_validator(mode=before) with Decimal(str(v)) enforces Decimal on LLM float output — consistent with project NEVER use float rule
 
 ## Performance Metrics
 
@@ -67,8 +69,9 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 
 ---
 | Phase 02 P01 | 133 | 2 tasks | 3 files |
+| Phase 02 P02 | 233s | 1 tasks | 1 files |
 
 ## Session Info
 
-**Last session:** 2026-03-05T00:30:45.936Z
+**Last session:** 2026-03-05T00:38:02.721Z
 **Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)
