@@ -14,6 +14,7 @@ import { TutorialTooltip } from '../components/tutorial/TutorialTooltip';
 import { TutorialGuide } from '../components/tutorial/TutorialGuide';
 import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { SociaOnboarding } from '../socia/components/SociaOnboarding';
+import { AsistenteCosteoPanel } from '../components/recetas/AsistenteCosteoPanel';
 
 type Tab = 'recetas' | 'analisis' | 'indirectos';
 
@@ -43,6 +44,7 @@ export default function RecetasPage() {
   const [costoInfo, setCostoInfo] = useState<RecetaCosto | null>(null);
   const [costoEstandar, setCostoEstandar] = useState<CostoEstandar | null>(null);
   const [showProducir, setShowProducir] = useState(false);
+  const [showSocia, setShowSocia] = useState(false);
   const [cantidadProducir, setCantidadProducir] = useState(1);
   const [obsProducir, setObsProducir] = useState('');
 
@@ -397,6 +399,14 @@ export default function RecetasPage() {
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
                     <EscenariosPrecios recetaId={selectedReceta.id} />
                   </div>
+
+                  {/* Socia — asistente IA de costeo */}
+                  <button
+                    onClick={() => setShowSocia(true)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold rounded-xl hover:from-amber-500 hover:to-amber-600 transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    Consultar a Socia
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
@@ -705,6 +715,28 @@ export default function RecetasPage() {
           onOmitir={() => { tutorial.omitir(); setShowTour(false); }}
           onCompletar={() => { tutorial.completar(); setShowTour(false); }}
         />
+      )}
+
+      {/* === Modal: Socia — Asistente IA === */}
+      {showSocia && selectedReceta && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-lg md:mx-4 flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900">Socia</h2>
+              <button
+                onClick={() => setShowSocia(false)}
+                className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            <AsistenteCosteoPanel
+              key={selectedReceta.id}
+              recetaId={selectedReceta.id}
+              onClose={() => setShowSocia(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* === Help Panel flotante === */}
