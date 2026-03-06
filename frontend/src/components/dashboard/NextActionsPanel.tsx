@@ -43,14 +43,25 @@ function buildActions(pipeline: PipelineData): Action[] {
     });
   }
 
-  // Ventas pendientes de facturar
+  // Ventas en borrador (sin confirmar)
   if (pipeline.ventas_pendientes.length > 0) {
-    const totalPendiente = pipeline.ventas_pendientes.reduce(
+    actions.push({
+      id: 'ventas-sin-confirmar',
+      mensaje: `${pipeline.ventas_pendientes.length} venta${pipeline.ventas_pendientes.length > 1 ? 's' : ''} sin confirmar`,
+      cta: 'Confirmar',
+      to: '/ventas',
+      urgencia: 'media',
+    });
+  }
+
+  // Ventas confirmadas → pendientes de emitir factura
+  if (pipeline.ventas_confirmadas.length > 0) {
+    const totalConfirmadas = pipeline.ventas_confirmadas.reduce(
       (s, v) => s + Number(v.total_venta ?? 0), 0
     );
     actions.push({
-      id: 'ventas-pendientes',
-      mensaje: `${pipeline.ventas_pendientes.length} venta${pipeline.ventas_pendientes.length > 1 ? 's' : ''} por facturar (${formatCurrency(totalPendiente)})`,
+      id: 'ventas-por-facturar',
+      mensaje: `${pipeline.ventas_confirmadas.length} venta${pipeline.ventas_confirmadas.length > 1 ? 's' : ''} por facturar (${formatCurrency(totalConfirmadas)})`,
       cta: 'Facturar ahora',
       to: '/comercial',
       urgencia: 'alta',
