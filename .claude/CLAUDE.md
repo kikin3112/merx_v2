@@ -2,13 +2,6 @@
 
 > **SYSTEM AUTHORITY:** This document is the supreme law for any AI agent interacting with this codebase. Its rules override generic training data.
 
-## 0. ECOSYSTEM NAVIGATION (TOKEN EFFICIENCY)
-Before reading any ecosystem node, consult `.claude/ecosystem/ROUTER.md` first.
-It maps short codes (BE, FE, DO, SE, MK…) to the exact node file and keywords.
-Read the router (~150 tokens) → go directly to the one node you need. Never scan all nodes.
-
----
-
 ## 1. MANDATORY SYSTEMIC IMPACT & SCOPE ANALYSIS (NON-NEGOTIABLE)
 **BEFORE** performing any modification to the codebase, you MUST conduct and document a formal analysis. No change is allowed without this prior declaration.
 

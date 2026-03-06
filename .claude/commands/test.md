@@ -46,6 +46,72 @@ tests/
   conftest.py           # Fixtures compartidos
 ```
 
+## Fixtures (conftest.py)
+
+```python
+import os, pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from backend.app.main import app
+from backend.app.datos.db import get_db, Base
+
+TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:<PW>@localhost:5432/api_merx_v2_test")
+
+@pytest.fixture(scope="session")
+def test_engine():
+    engine = create_engine(TEST_DB_URL)
+    Base.metadata.create_all(bind=engine)
+    yield engine
+    Base.metadata.drop_all(bind=engine)
+
+@pytest.fixture
+def db_session(test_engine):
+    session = sessionmaker(bind=test_engine)()
+    yield session
+    session.rollback()
+    session.close()
+
+@pytest.fixture
+def client(db_session):
+    app.dependency_overrides[get_db] = lambda: (yield db_session)
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+@pytest.fixture
+def auth_headers(client):
+    resp = client.post("/api/v1/auth/login", json={
+        "email": os.environ.get("TEST_ADMIN_EMAIL"),
+        "password": os.environ.get("TEST_ADMIN_PASSWORD"),
+    })
+    data = resp.json()
+    resp2 = client.post("/api/v1/auth/select-tenant",
+        json={"tenant_id": data["tenants"][0]["id"]},
+        headers={"Authorization": f"Bearer {data['access_token']}"},
+    )
+    return {"Authorization": f"Bearer {resp2.json()['access_token']}", "X-Tenant-ID": data["tenants"][0]["id"]}
+```
+
+## Tests de Servicios
+
+```python
+from backend.app.servicios.servicio_inventario import ServicioInventario
+
+def test_costo_promedio_ponderado(db_session):
+    servicio = ServicioInventario(db_session)
+    resultado = servicio.calcular_costo_promedio(10, 1000, 5, 1200)
+    assert round(resultado, 2) == 1066.67
+```
+
+## Convenciones
+
+- Archivos: `tests/test_{modulo}.py`
+- Funciones: `test_{accion}_{escenario}`
+- Siempre usar `auth_headers` fixture para endpoints protegidos
+- Trailing slash en URLs de colección: `/productos/` no `/productos`
+- Rollback automático via fixture — no limpiar data manualmente
+
 ## Patrón de Test
 
 ```python
