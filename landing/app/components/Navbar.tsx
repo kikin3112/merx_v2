@@ -99,7 +99,7 @@ export function Navbar() {
               ))}
               <a
                 href={`${APP_URL}/registro`}
-                className="mx-0 mt-3 inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                className="mx-0 mt-3 inline-flex items-center justify-center w-full px-5 py-3 rounded-lg text-sm font-semibold transition-all"
                 style={{ background: 'var(--primary)', color: '#1A1A1A' }}
               >
                 Probar Gratis

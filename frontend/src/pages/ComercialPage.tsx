@@ -92,7 +92,7 @@ interface ColumnProps {
 
 function PipelineColumn({ title, count, total, headerClass, children }: ColumnProps) {
   return (
-    <div className="flex-1 min-w-[220px] max-w-xs">
+    <div className="flex-1 min-w-[160px] sm:min-w-[200px] md:min-w-[220px] max-w-xs">
       <div className={`flex items-center justify-between px-3 py-2 rounded-xl mb-3 ${headerClass}`}>
         <span className="text-sm font-semibold cv-text">{title}</span>
         <div className="flex items-center gap-2">

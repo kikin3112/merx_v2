@@ -13,7 +13,7 @@ export function Footer() {
   return (
     <footer style={{ background: '#2E2E2E', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-8">
           {/* Logo + tagline */}
           <div className="text-center md:text-left">
             <span
@@ -28,7 +28,7 @@ export function Footer() {
           </div>
 
           {/* Links */}
-          <div className="flex flex-wrap items-center justify-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {footerLinks.map((link) => {
               const isExternal = link.href.startsWith('http');
               const cls = "text-sm transition-colors";
@@ -66,7 +66,7 @@ export function Footer() {
               href="https://wa.me/573019365537"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+              className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all hover:opacity-80"
               style={{ background: '#1A7A40', color: '#fff' }}
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

@@ -7,14 +7,14 @@ export function Hero() {
     <section className="relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Glow orbs */}
       <div
-        className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none"
+        className="absolute top-0 right-0 w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] lg:w-[600px] lg:h-[600px] rounded-full pointer-events-none"
         style={{
           background: 'radial-gradient(circle, rgba(255,155,101,0.12) 0%, transparent 70%)',
           transform: 'translate(30%, -30%)',
         }}
       />
       <div
-        className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none"
+        className="absolute bottom-0 left-0 w-[150px] h-[150px] sm:w-[280px] sm:h-[280px] lg:w-[400px] lg:h-[400px] rounded-full pointer-events-none"
         style={{
           background: 'radial-gradient(circle, rgba(255,230,128,0.07) 0%, transparent 70%)',
           transform: 'translate(-30%, 30%)',
@@ -89,7 +89,7 @@ export function Hero() {
 
           {/* Stats strip */}
           <div
-            className="mt-20 grid grid-cols-3 gap-px rounded-2xl overflow-hidden animate-fade-up delay-4"
+            className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-px rounded-2xl overflow-hidden animate-fade-up delay-4"
             style={{ background: 'rgba(255,255,255,0.06)' }}
           >
             {[
@@ -99,7 +99,7 @@ export function Hero() {
             ].map(({ val, label }) => (
               <div
                 key={label}
-                className="py-6 px-4"
+                className="py-4 sm:py-6 px-3 sm:px-4"
                 style={{ background: 'var(--surface)' }}
               >
                 <p

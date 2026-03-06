@@ -65,7 +65,7 @@ export function Pricing() {
               <div className="mt-6 flex items-baseline justify-center gap-2">
                 <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Desde</span>
                 <span
-                  className="text-5xl font-bold"
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold"
                   style={{ fontFamily: 'var(--font-brand)', color: 'var(--primary)' }}
                 >
                   $15.000

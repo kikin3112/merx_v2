@@ -200,7 +200,7 @@ export default function ContabilidadPage() {
           ) : (
             <>
               {/* Desktop table */}
-              <div className="hidden md:block">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="cv-table-header">
                     <tr>
@@ -268,7 +268,7 @@ export default function ContabilidadPage() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden md:block">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="cv-table-header">
                     <tr>

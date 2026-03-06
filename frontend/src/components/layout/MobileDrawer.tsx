@@ -44,7 +44,7 @@ export default function MobileDrawer({ open, onClose }: Props) {
 
       {/* Drawer panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[min(18rem,85vw)] flex flex-col transition-transform duration-200 ease-out lg:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ backgroundColor: 'var(--cv-surface)' }}

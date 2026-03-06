@@ -29,7 +29,7 @@ export default function BottomNav({ onMenuOpen }: Props) {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
-            className="flex flex-col items-center gap-[3px] px-3 py-2 rounded-[10px] transition-colors"
+            className="flex flex-col items-center gap-[3px] px-3 py-2.5 rounded-[10px] transition-colors"
             style={({ isActive }) => ({ color: isActive ? 'var(--cv-primary)' : 'var(--cv-muted)' })}
           >
             <item.icon className="h-5 w-5" />
@@ -61,7 +61,7 @@ export default function BottomNav({ onMenuOpen }: Props) {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
-            className="flex flex-col items-center gap-[3px] px-3 py-2 rounded-[10px] transition-colors"
+            className="flex flex-col items-center gap-[3px] px-3 py-2.5 rounded-[10px] transition-colors"
             style={({ isActive }) => ({ color: isActive ? 'var(--cv-primary)' : 'var(--cv-muted)' })}
           >
             <item.icon className="h-5 w-5" />

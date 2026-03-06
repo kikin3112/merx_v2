@@ -412,6 +412,10 @@ body::before {
 }
 .bento-cell:hover { border-color: var(--cv-border-mid); }
 
+@media (max-width: 639px) {
+  .bento-cell { padding: 14px 16px; }
+}
+
 .bento-kpi-label {
   font-size: 11px;
   color: var(--cv-muted);
