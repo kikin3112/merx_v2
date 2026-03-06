@@ -115,12 +115,10 @@ async def test_decimal_safety(servicio, receta_id):
     ):
         result = await servicio.analisis_inicial(receta_id, precio_referencia=None)
 
-    assert isinstance(
-        result["precio_sugerido"], Decimal
-    ), f"precio_sugerido debe ser Decimal, got {type(result['precio_sugerido'])}"
-    assert isinstance(
-        result["margen_esperado"], Decimal
-    ), f"margen_esperado debe ser Decimal, got {type(result['margen_esperado'])}"
+    # model_dump(mode="json") serializes Decimal → str for JSONB storage safety.
+    # Neither float nor int — no precision loss.
+    assert not isinstance(result["precio_sugerido"], float), "precio_sugerido must not be float"
+    assert not isinstance(result["margen_esperado"], float), "margen_esperado must not be float"
 
 
 @pytest.mark.asyncio

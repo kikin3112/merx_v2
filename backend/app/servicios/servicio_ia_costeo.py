@@ -3,6 +3,7 @@ Servicio de IA para costeo — Socia, la asistente inteligente de Merx.
 Usa OpenRouter (API compatible con OpenAI) para orquestar el modelo LLM.
 """
 
+import hashlib
 import json
 import re
 from decimal import Decimal
@@ -188,6 +189,21 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
             raise ValueError(f"No JSON object found in model output: {text[:200]}")
         return json.loads(match.group())
 
+    # ── Cache helpers ─────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _compute_cache_key(context: dict, precio_referencia: Optional[Decimal]) -> str:
+        """SHA-256 of CVU + escenarios + precio_referencia. Changes whenever costs change."""
+        payload = json.dumps(
+            {
+                "cvu": str(context.get("costo_variable_unitario", "0")),
+                "escenarios": str(context.get("escenarios", [])),
+                "precio_ref": str(precio_referencia or ""),
+            },
+            sort_keys=True,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
     # ── Public async API ──────────────────────────────────────────────────────
 
     async def analisis_inicial(
@@ -199,10 +215,20 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
         Fase 1: Structured analysis via JSON-in-prompt.
         Returns dict with 6 keys: precio_sugerido, margen_esperado,
         escenario_recomendado, justificacion, alertas, mensaje_cierre.
+
+        Result is cached in DB (socia_cache) and invalidated automatically when
+        recipe costs change (CVU or escenarios differ from stored cache_key).
         """
         context = self._build_context(receta_id, precio_referencia)
-        system_prompt = self._build_system_prompt(context, fase1=True)
+        cache_key = self._compute_cache_key(context, precio_referencia)
 
+        receta = self._get_receta(receta_id)
+        if receta.socia_cache_key == cache_key and receta.socia_cache:
+            logger.info(f"Socia cache HIT for receta {receta_id}")
+            return receta.socia_cache
+
+        logger.info(f"Socia cache MISS for receta {receta_id} — calling LLM")
+        system_prompt = self._build_system_prompt(context, fase1=True)
         user_msg = f"Analiza el precio óptimo para la receta '{context.get('receta_nombre', 'esta receta')}'."
 
         try:
@@ -219,7 +245,13 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
             ) from exc
 
         validated = SociaAnalisisResponse(**raw)
-        return validated.model_dump()
+        result = validated.model_dump(mode="json")  # Decimals → str for JSONB storage
+
+        receta.socia_cache = result
+        receta.socia_cache_key = cache_key
+        self.db.flush()
+
+        return result
 
     async def chat_libre(
         self,
