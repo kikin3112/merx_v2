@@ -76,19 +76,10 @@ export function Features() {
             return (
               <div
                 key={feature.name}
-                className="group p-7 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5"
+                className="feature-card group p-7 rounded-2xl border"
                 style={{
                   background: 'var(--bg)',
                   borderColor: 'var(--border)',
-                  animationDelay: `${i * 0.05}s`,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,155,101,0.3)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 32px rgba(255,155,101,0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
                 }}
               >
                 {/* Icon */}
@@ -96,7 +87,7 @@ export function Features() {
                   className="inline-flex items-center justify-center w-10 h-10 rounded-lg mb-5"
                   style={{ background: 'var(--primary-dim)' }}
                 >
-                  <Icon className="h-5 w-5" style={{ color: 'var(--primary)' } as React.CSSProperties} />
+                  <Icon className="h-5 w-5" style={{ color: 'var(--primary)' }} />
                 </div>
 
                 {/* Content */}
