@@ -11,7 +11,7 @@ export function MargenIndicator({ margen: margenRaw, className = '' }: MargenInd
   const label = margen >= 50 ? '🟢 Bueno' : margen >= 30 ? '🟡 Regular' : '🔴 Bajo';
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${color} ${className}`}>
+    <span className={`cv-badge ${color} ${className}`}>
       {label} — {margen.toFixed(1)}%
     </span>
   );

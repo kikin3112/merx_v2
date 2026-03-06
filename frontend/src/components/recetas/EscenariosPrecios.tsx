@@ -43,34 +43,34 @@ export function EscenariosPrecios({ recetaId }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">Explora diferentes precios</h3>
-        <p className="text-xs text-gray-500 mt-0.5">¿No sabes si cobrar más o menos? Mira qué pasaría en cada caso</p>
+        <h3 className="text-sm font-semibold cv-text">Explora diferentes precios</h3>
+        <p className="text-xs cv-muted mt-0.5">¿No sabes si cobrar más o menos? Mira qué pasaría en cada caso</p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Gastos fijos/mes</label>
+          <label className="block text-xs font-medium cv-text mb-1">Gastos fijos/mes</label>
           <input
             type="number"
             min={0}
             step={10000}
             value={costosFijos}
             onChange={(e) => setCostosFijos(Number(e.target.value))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            className="cv-input"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Unidades esperadas/mes</label>
+          <label className="block text-xs font-medium cv-text mb-1">Unidades esperadas/mes</label>
           <input
             type="number"
             min={1}
             value={volumen}
             onChange={(e) => setVolumen(Math.max(1, Number(e.target.value)))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            className="cv-input"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Precio de mercado <span className="text-gray-400">(opcional)</span></label>
+          <label className="block text-xs font-medium cv-text mb-1">Precio de mercado <span className="cv-muted">(opcional)</span></label>
           <input
             type="number"
             min={0}
@@ -78,7 +78,7 @@ export function EscenariosPrecios({ recetaId }: Props) {
             placeholder="¿Cuánto cobran otros?"
             value={precioMercado}
             onChange={(e) => setPrecioMercado(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            className="cv-input"
           />
         </div>
       </div>
@@ -86,14 +86,14 @@ export function EscenariosPrecios({ recetaId }: Props) {
       <button
         onClick={handleCalcular}
         disabled={calcular.isPending}
-        className="w-full rounded-lg bg-amber-500 text-white text-sm font-semibold py-2.5 hover:bg-amber-600 disabled:opacity-50 transition-colors"
+        className="cv-btn cv-btn-primary w-full disabled:opacity-50"
       >
         {calcular.isPending ? 'Calculando...' : 'Ver escenarios de precio'}
       </button>
 
       {escenarios && escenarios.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-gray-500">Escenarios para: <strong>{recetaNombre}</strong></p>
+          <p className="text-xs cv-muted">Escenarios para: <strong className="cv-text">{recetaNombre}</strong></p>
           <div className="grid grid-cols-1 gap-2">
             {escenarios.map((e) => (
               <EscenarioCard key={e.nombre} escenario={e} />
@@ -110,24 +110,24 @@ function EscenarioCard({ escenario }: { escenario: EscenarioPrecio }) {
   const isRecomendado = escenario.nombre === 'Objetivo' || escenario.nombre === 'Mercado';
 
   return (
-    <div className={`border rounded-xl p-3 flex items-center justify-between ${
-      isRecomendado ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'
-    }`}>
+    <div className={`cv-card rounded-xl p-3 flex items-center justify-between ${
+      isRecomendado ? 'border-[var(--cv-primary)]' : ''
+    }`} style={isRecomendado ? { background: 'var(--cv-primary-dim)' } : {}}>
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">{escenario.nombre}</span>
-          {isRecomendado && <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">Recomendado</span>}
+          <span className="text-sm font-semibold cv-text">{escenario.nombre}</span>
+          {isRecomendado && <span className="cv-badge cv-badge-primary">Recomendado</span>}
         </div>
         <div className="flex items-center gap-3 mt-1">
-          <span className="text-xs text-gray-500">PE: {Math.ceil(escenario.punto_equilibrio_unidades)} uds.</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorClass}`}>
+          <span className="text-xs cv-muted">PE: {Math.ceil(escenario.punto_equilibrio_unidades)} uds.</span>
+          <span className={`cv-badge ${colorClass}`}>
             {VIABILIDAD_LABEL[escenario.viabilidad]}
           </span>
         </div>
       </div>
       <div className="text-right ml-4">
-        <p className="text-lg font-bold text-gray-900">{formatCurrency(escenario.precio)}</p>
-        <p className="text-xs text-gray-500">{escenario.margen_porcentaje.toFixed(0)}% de ganancia</p>
+        <p className="text-lg font-bold cv-text">{formatCurrency(escenario.precio)}</p>
+        <p className="text-xs cv-muted">{escenario.margen_porcentaje.toFixed(0)}% de ganancia</p>
       </div>
     </div>
   );

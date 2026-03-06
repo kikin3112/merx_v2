@@ -63,7 +63,7 @@ export default function CarteraPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-brand text-2xl font-medium cv-text">Cartera</h1>
+      <h1 className="font-brand text-xl font-medium cv-text">Cartera</h1>
 
       {/* Summary cards */}
       {resumen && (
@@ -82,7 +82,7 @@ export default function CarteraPage() {
             key={t}
             onClick={() => { setTab(t); setSelectedItem(null); }}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              tab === t ? 'border-primary-500 text-primary-600' : 'border-transparent cv-muted'
+              tab === t ? 'border-[var(--cv-primary)] cv-text' : 'border-transparent cv-muted'
             }`}
           >
             Cuentas por {t === 'COBRAR' ? 'Cobrar' : 'Pagar'}
@@ -145,7 +145,7 @@ export default function CarteraPage() {
                       {['PENDIENTE', 'PARCIAL'].includes(item.estado) && (
                         <button
                           onClick={() => { setSelectedItem(item); setShowPagoModal(true); }}
-                          className="text-xs font-medium text-primary-600 hover:text-primary-800"
+                          className="cv-btn cv-btn-ghost text-xs"
                         >
                           Registrar pago
                         </button>
@@ -167,7 +167,7 @@ export default function CarteraPage() {
                 badge={estadoBadge(item)}
                 fields={[
                   { label: 'Total', value: formatCurrency(item.valor_total) },
-                  { label: 'Saldo', value: <span className="font-bold text-primary-600">{formatCurrency(item.saldo_pendiente)}</span> },
+                  { label: 'Saldo', value: <span className="font-bold cv-primary">{formatCurrency(item.saldo_pendiente)}</span> },
                   { label: 'Vencimiento', value: <span className={isVencida(item) ? 'cv-negative font-medium' : ''}>{formatDate(item.fecha_vencimiento)}</span> },
                 ]}
                 onClick={() => setSelectedItem(item)}
@@ -175,7 +175,7 @@ export default function CarteraPage() {
                   ['PENDIENTE', 'PARCIAL'].includes(item.estado) ? (
                     <button
                       onClick={() => { setSelectedItem(item); setShowPagoModal(true); }}
-                      className="text-xs font-medium text-primary-600 hover:text-primary-700"
+                      className="cv-btn cv-btn-ghost text-xs"
                     >
                       Registrar pago
                     </button>
@@ -261,7 +261,7 @@ function DetailPanel({ item, terceroNombre, onClose, onRegistrarPago }: {
             <div><span className="cv-muted">Emision:</span> <span>{formatDate(item.fecha_emision)}</span></div>
             <div><span className="cv-muted">Vencimiento:</span> <span>{formatDate(item.fecha_vencimiento)}</span></div>
             <div><span className="cv-muted">Total:</span> <span className="font-medium">{formatCurrency(item.valor_total)}</span></div>
-            <div><span className="cv-muted">Saldo:</span> <span className="font-bold text-primary-600">{formatCurrency(item.saldo_pendiente)}</span></div>
+            <div><span className="cv-muted">Saldo:</span> <span className="font-bold cv-primary">{formatCurrency(item.saldo_pendiente)}</span></div>
           </div>
 
           {/* Pagos history */}

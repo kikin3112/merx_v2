@@ -297,19 +297,19 @@ export default function RecetasPage() {
                     <button
                       onClick={() => costoMutation.mutate(r.id)}
                       disabled={costoMutation.isPending}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-accent-dim)] text-[var(--cv-accent)] hover:opacity-80 transition-opacity"
+                      className="cv-btn cv-btn-secondary"
                     >
                       {costoMutation.isPending ? '...' : 'Calcular costo'}
                     </button>
                     <button
                       onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-positive-dim)] text-[var(--cv-positive)] hover:opacity-80 transition-opacity"
+                      className="cv-btn cv-btn-secondary"
                     >
                       Producir
                     </button>
                     <button
                       onClick={() => { if (confirm(`Eliminar receta "${r.nombre}"?`)) deleteMutation.mutate(r.id); }}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-negative-dim)] text-[var(--cv-negative)] hover:opacity-80 transition-opacity"
+                      className="cv-btn cv-btn-danger"
                     >
                       Eliminar
                     </button>
@@ -320,7 +320,7 @@ export default function RecetasPage() {
                     {r.ingredientes.map((ing) => (
                       <span key={ing.id} className="cv-badge cv-badge-neutral">
                         {ing.producto_nombre ? `${ing.producto_nombre} · ` : ''}{ing.cantidad} {ing.unidad.toLowerCase()}
-                        {ing.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">({ing.porcentaje_merma}% merma)</span>}
+                        {ing.porcentaje_merma > 0 && <span className="cv-muted ml-1">({ing.porcentaje_merma}% merma)</span>}
                       </span>
                     ))}
                   </div>
@@ -403,7 +403,7 @@ export default function RecetasPage() {
                   {/* Socia — asistente IA de costeo */}
                   <button
                     onClick={() => setShowSocia(true)}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold rounded-xl hover:from-amber-500 hover:to-amber-600 transition-all shadow-sm flex items-center justify-center gap-2"
+                    className="cv-btn cv-btn-primary w-full"
                   >
                     Consultar a Socia
                   </button>
@@ -452,7 +452,7 @@ export default function RecetasPage() {
                     <span className="cv-muted">
                       {d.producto_nombre}
                       {' '}({d.cantidad_bruta.toFixed(4)} {d.unidad.toLowerCase()}
-                      {d.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">+{d.porcentaje_merma}% merma</span>})
+                      {d.porcentaje_merma > 0 && <span className="cv-muted ml-1">+{d.porcentaje_merma}% merma</span>})
                     </span>
                     <span className="font-medium">{formatCurrency(d.costo_linea)}</span>
                   </div>
@@ -630,7 +630,7 @@ export default function RecetasPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                <label className="text-sm font-medium cv-text mb-2 flex items-center gap-1">
                   Ingredientes * <TutorialTooltip concepto="costoIngredientes" />
                 </label>
                 <div className="mb-3">
@@ -666,12 +666,12 @@ export default function RecetasPage() {
                         <div className="flex items-center gap-1">
                           <input type="number" min={0} max={99.99} step={0.1} value={ing.porcentaje_merma}
                             onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, porcentaje_merma: Math.min(99.99, Math.max(0, Number(e.target.value) || 0)) } : item))}
-                            className="w-14 text-center rounded border border-orange-200 px-2 py-1 text-sm bg-orange-50"
+                            className="w-14 text-center cv-input px-2 py-1 text-sm"
                             title="Merma (%)" />
-                          <span className="text-xs text-orange-500">%</span>
+                          <span className="text-xs cv-muted">%</span>
                         </div>
                         <button onClick={() => setIngredientes((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-400 hover:text-red-600 text-lg">&times;</button>
+                          className="cv-muted hover:cv-negative text-lg transition-colors">&times;</button>
                       </div>
                     ))}
                   </div>

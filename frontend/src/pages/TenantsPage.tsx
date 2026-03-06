@@ -1205,10 +1205,10 @@ function KPICard({ title, value, subtitle, negative }: {
   title: string; value: string; subtitle: string; negative?: boolean;
 }) {
   return (
-    <div className="cv-card p-4">
-      <p className="cv-section-label">{title}</p>
-      <p className={`text-2xl font-bold mt-1 ${negative ? 'cv-negative' : 'cv-text'}`}>{value}</p>
-      <p className="text-xs cv-muted mt-1">{subtitle}</p>
+    <div className="bento-cell">
+      <p className="bento-kpi-label">{title}</p>
+      <p className={`bento-kpi-val ${negative ? 'text-[var(--cv-negative)]' : ''}`}>{value}</p>
+      <p className="bento-kpi-delta">{subtitle}</p>
     </div>
   );
 }
@@ -1635,15 +1635,15 @@ function TenantDetailPanel({
               <ProgressBar value={metricas.productos_count} max={metricas.max_productos} label="Productos" />
               <ProgressBar value={metricas.facturas_mes_count} max={metricas.max_facturas_mes} label="Facturas este mes" />
 
-              <div className="border-t border-[var(--cv-divider)] pt-4 mt-4">
+              <div className="border-t cv-divider pt-4 mt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="cv-elevated rounded-lg p-3">
-                    <p className="text-xs cv-muted">Terceros</p>
-                    <p className="text-lg font-bold cv-text">{metricas.terceros_count}</p>
+                  <div className="bento-cell">
+                    <p className="bento-kpi-label">Terceros</p>
+                    <p className="bento-kpi-val">{metricas.terceros_count}</p>
                   </div>
-                  <div className="cv-elevated rounded-lg p-3">
-                    <p className="text-xs cv-muted">Ventas del mes</p>
-                    <p className="text-lg font-bold cv-text">{formatCurrency(metricas.ventas_total_mes)}</p>
+                  <div className="bento-cell">
+                    <p className="bento-kpi-label">Ventas del mes</p>
+                    <p className="bento-kpi-val">{formatCurrency(metricas.ventas_total_mes)}</p>
                   </div>
                 </div>
               </div>
@@ -1732,20 +1732,20 @@ function TenantDetailPanel({
 
               {/* Metricas del score */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="cv-elevated rounded-lg p-3 text-center">
-                  <p className="text-xs cv-muted mb-1">Logins (7d)</p>
-                  <p className="text-2xl font-bold cv-text">{pulse.logins_recientes}</p>
-                  <p className="text-xs cv-muted mt-0.5">usuarios activos</p>
+                <div className="bento-cell text-center">
+                  <p className="bento-kpi-label">Logins (7d)</p>
+                  <p className="bento-kpi-val">{pulse.logins_recientes}</p>
+                  <p className="bento-kpi-delta">usuarios activos</p>
                 </div>
-                <div className="cv-elevated rounded-lg p-3 text-center">
-                  <p className="text-xs cv-muted mb-1">Ventas (30d)</p>
-                  <p className="text-2xl font-bold cv-text">{pulse.ventas_mes}</p>
-                  <p className="text-xs cv-muted mt-0.5">transacciones</p>
+                <div className="bento-cell text-center">
+                  <p className="bento-kpi-label">Ventas (30d)</p>
+                  <p className="bento-kpi-val">{pulse.ventas_mes}</p>
+                  <p className="bento-kpi-delta">transacciones</p>
                 </div>
-                <div className="cv-elevated rounded-lg p-3 text-center">
-                  <p className="text-xs cv-muted mb-1">Antigüedad</p>
-                  <p className="text-2xl font-bold cv-text">{pulse.dias_activo}</p>
-                  <p className="text-xs cv-muted mt-0.5">días</p>
+                <div className="bento-cell text-center">
+                  <p className="bento-kpi-label">Antigüedad</p>
+                  <p className="bento-kpi-val">{pulse.dias_activo}</p>
+                  <p className="bento-kpi-delta">días</p>
                 </div>
               </div>
 

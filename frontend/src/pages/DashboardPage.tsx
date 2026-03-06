@@ -43,9 +43,7 @@ function KPICard({ title, value, subtitle, color }: {
 
 function SSEIndicator({ connected }: { connected: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
-      connected ? 'cv-badge-positive' : 'cv-badge-neutral'
-    }`}>
+    <span className={`cv-badge ${connected ? 'cv-badge-positive' : 'cv-badge-neutral'}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[var(--cv-positive)] animate-pulse' : 'bg-[var(--cv-muted)]'}`} />
       {connected ? 'En vivo' : 'Desconectado'}
     </span>

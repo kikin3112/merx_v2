@@ -123,7 +123,10 @@ export default function ProductInventoryModule() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold cv-text font-brand">Productos</h1>
+        <div>
+          <h1 className="font-brand font-medium text-xl cv-text">Productos</h1>
+          <p className="text-xs cv-muted mt-0.5">Gestión de catálogo e inventario</p>
+        </div>
         <div className="flex items-center gap-3">
           <SuccessBadge show={showSuccess} message="Guardado" />
           <button onClick={openCreate} className="cv-btn cv-btn-primary">

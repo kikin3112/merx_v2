@@ -97,7 +97,7 @@ export default function CatalogoPage() {
               </div>
               <p className="text-sm font-medium cv-text leading-tight line-clamp-2">{p.nombre}</p>
               <p className="text-xs cv-muted">{p.categoria}</p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--cv-primary)' }}>
+              <p className="text-sm font-semibold cv-primary">
                 {formatCurrency(p.precio_venta)}
               </p>
               <div className="flex items-center gap-2">

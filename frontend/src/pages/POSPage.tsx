@@ -313,7 +313,7 @@ export default function POSPage() {
               placeholder="No. documento *"
               value={clientForm.numero_documento}
               onChange={e => setClientForm(f => ({ ...f, numero_documento: e.target.value }))}
-              className="flex-1 rounded border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              className="flex-1 cv-input"
             />
           </div>
           <input
@@ -330,14 +330,14 @@ export default function POSPage() {
             className="cv-input"
           />
           {createClientMutation.isError && (
-            <p className="text-xs text-red-600">
+            <p className="text-xs" style={{ color: 'var(--cv-negative)' }}>
               {(createClientMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error creando cliente'}
             </p>
           )}
           <button
             onClick={() => createClientMutation.mutate(clientForm)}
             disabled={!clientForm.nombre.trim() || !clientForm.numero_documento.trim() || createClientMutation.isPending}
-            className="w-full py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full cv-btn cv-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createClientMutation.isPending ? 'Guardando...' : 'Guardar cliente'}
           </button>
@@ -361,7 +361,7 @@ export default function POSPage() {
                 </div>
                 <button
                   onClick={() => handleRemoveItem(item.producto.id)}
-                  className="cv-muted hover:text-red-500 p-1 transition-colors"
+                  className="cv-muted p-1 transition-colors hover:opacity-70"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -415,7 +415,7 @@ export default function POSPage() {
             <span className="text-xs cv-muted">%</span>
           </div>
           {totals.montoDescGlobal > 0 && (
-            <span className="text-red-600">-{formatCurrency(totals.montoDescGlobal)}</span>
+            <span style={{ color: 'var(--cv-negative)' }}>-{formatCurrency(totals.montoDescGlobal)}</span>
           )}
         </div>
         {totals.totalIva > 0 && (
@@ -432,19 +432,20 @@ export default function POSPage() {
         <button
           onClick={() => posMutation.mutate()}
           disabled={cart.length === 0 || !clienteId || posMutation.isPending}
-          className="w-full py-4 rounded-xl bg-primary-500 text-white text-lg font-bold hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
+          className="w-full cv-btn cv-btn-primary py-4 rounded-xl text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
         >
           {posMutation.isPending ? 'Procesando...' : `COBRAR ${formatCurrency(totals.total)}`}
         </button>
 
         {checkoutOk && lastFactura && (
           <div className="text-center space-y-2">
-            <p className="text-sm font-medium text-green-600">
+            <p className="text-sm font-medium" style={{ color: 'var(--cv-positive)' }}>
               ¡Factura {lastFactura.numero_venta} emitida!
             </p>
             <button
               onClick={() => descargarPdf(lastFactura.id, lastFactura.numero_venta)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+              className="cv-btn cv-btn-secondary inline-flex items-center gap-1.5 text-xs"
+              style={{ color: 'var(--cv-positive)', borderColor: 'var(--cv-positive)' }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -455,7 +456,7 @@ export default function POSPage() {
         )}
 
         {posMutation.isError && (
-          <p className="text-center text-sm text-red-600">
+          <p className="text-center text-sm" style={{ color: 'var(--cv-negative)' }}>
             {(posMutation.error as any)?.response?.data?.detail || 'Error procesando venta'}
           </p>
         )}
@@ -501,7 +502,7 @@ export default function POSPage() {
           >
             Carrito
             {cart.length > 0 && (
-              <span className="absolute top-2 right-1/4 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute top-2 right-1/4 text-xs rounded-full w-5 h-5 flex items-center justify-center cv-badge cv-badge-primary">
                 {cart.length}
               </span>
             )}

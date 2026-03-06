@@ -343,7 +343,7 @@ export default function VentasPage() {
           <button
             key={estado}
             onClick={() => setFiltroEstado(estado)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`whitespace-nowrap cv-badge cursor-pointer transition-colors ${
               filtroEstado === estado
                 ? 'cv-badge-primary'
                 : 'cv-badge-neutral'
@@ -369,10 +369,10 @@ export default function VentasPage() {
                 <tr>
                   <th className="text-left">Numero</th>
                   <th className="text-left">Fecha</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                  <th className="text-right px-4 py-3 font-medium cv-muted">Total</th>
+                  <th className="text-center px-4 py-3 font-medium cv-muted">Estado</th>
                   <th className="text-left">Creado Por</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+                  <th className="text-center px-4 py-3 font-medium cv-muted">Acciones</th>
                 </tr>
               </thead>
               <tbody className="cv-table-body">

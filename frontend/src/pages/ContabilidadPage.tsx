@@ -179,8 +179,8 @@ export default function ContabilidadPage() {
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t.id
-                ? 'border-primary-500 text-primary-700'
-                : 'border-transparent cv-muted hover:cv-text'
+                ? 'border-[var(--cv-primary)] cv-text'
+                : 'border-transparent cv-muted'
             }`}
           >
             {t.label}

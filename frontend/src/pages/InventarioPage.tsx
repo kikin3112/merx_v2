@@ -91,7 +91,7 @@ export default function InventarioPage() {
         <div className="flex gap-2">
           <button
             onClick={() => { setError(''); setEntradaOpen(true); }}
-            className="rounded-lg bg-[var(--cv-positive)] px-4 py-2 text-sm font-semibold text-[#1A1A1A] hover:opacity-85 transition-opacity"
+            className="cv-btn cv-btn-primary"
           >
             + Entrada
           </button>
