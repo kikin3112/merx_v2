@@ -89,6 +89,7 @@ export interface Producto {
   precio_venta: number;
   stock_minimo: number | null;
   stock_maximo: number | null;
+  imagen_s3_key: string | null;
   estado: boolean;
   created_at: string;
   updated_at: string;

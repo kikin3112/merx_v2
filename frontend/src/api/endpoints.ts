@@ -106,6 +106,16 @@ export const productos = {
   delete: (id: string) => client.delete(`/productos/${id}`),
   siguienteCodigo: (categoria: string) =>
     client.get<{ codigo_interno: string }>('/productos/siguiente-codigo', { params: { categoria } }),
+  generarCatalogoPdf: (productoIds: string[]) =>
+    client.post('/productos/catalogo-pdf', { producto_ids: productoIds }, { responseType: 'arraybuffer' }),
+  subirImagen: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return client.post(`/productos/${id}/imagen`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  eliminarImagen: (id: string) => client.delete(`/productos/${id}/imagen`),
 };
 
 // Terceros

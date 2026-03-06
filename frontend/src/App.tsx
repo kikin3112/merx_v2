@@ -29,6 +29,7 @@ import POSPage from './pages/POSPage';
 import CarteraPage from './pages/CarteraPage';
 import CRMPage from './pages/CRMPage';
 import SoportePage from './pages/SoportePage';
+import CatalogoPage from './pages/CatalogoPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,7 @@ export default function App() {
 
               {/* Pipeline Comercial Unificado */}
               <Route path="/comercial" element={<ComercialPage />} />
+              <Route path="/catalogo" element={<CatalogoPage />} />
 
               {/* Legacy routes — kept for backward compat, redirect to /comercial */}
               <Route path="/ventas" element={<VentasPage />} />
