@@ -44,27 +44,25 @@ export default function MobileDrawer({ open, onClose }: Props) {
 
       {/* Drawer panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col transition-transform duration-200 ease-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-out lg:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ backgroundColor: 'var(--cv-surface)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-4 border-b" style={{ borderColor: 'var(--cv-border)' }}>
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C</span>
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--cv-primary-dim)' }}>
+              <span className="font-bold text-sm font-brand" style={{ color: 'var(--cv-primary)' }}>C</span>
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">Chandelier</p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-sm font-semibold truncate font-brand" style={{ color: 'var(--cv-text)' }}>Chandelier</p>
+              <p className="text-xs truncate font-mono" style={{ color: 'var(--cv-muted)' }}>
                 {isSuperadminOnly ? 'Panel SuperAdmin' : tenantName || 'Sin tenant'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={onClose} className="p-1.5 cv-icon-btn">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -78,11 +76,7 @@ export default function MobileDrawer({ open, onClose }: Props) {
               end={item.to === '/'}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`
+                `cv-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium${isActive ? ' active' : ''}`
               }
             >
               <item.icon className="h-5 w-5 shrink-0" />
@@ -92,8 +86,8 @@ export default function MobileDrawer({ open, onClose }: Props) {
 
           {superadminItems.length > 0 && (
             <>
-              {mainItems.length > 0 && <div className="my-2 mx-3 border-t border-gray-200" />}
-              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              {mainItems.length > 0 && <div className="my-2 mx-3 border-t" style={{ borderColor: 'var(--cv-border)' }} />}
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider font-mono" style={{ color: 'var(--cv-muted)' }}>
                 SuperAdmin
               </p>
               {superadminItems.map((item) => (
@@ -102,11 +96,7 @@ export default function MobileDrawer({ open, onClose }: Props) {
                   to={item.to}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-secondary-50 text-secondary-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`
+                    `cv-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium${isActive ? ' active' : ''}`
                   }
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
@@ -118,21 +108,18 @@ export default function MobileDrawer({ open, onClose }: Props) {
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-gray-100 p-3 pb-[env(safe-area-inset-bottom)]">
+        <div className="border-t p-3 pb-[env(safe-area-inset-bottom)]" style={{ borderColor: 'var(--cv-border)' }}>
           <div className="flex items-center gap-2 px-2 py-1.5">
-            <div className="h-8 w-8 rounded-full bg-secondary-100 flex items-center justify-center">
-              <span className="text-secondary-700 text-xs font-semibold">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--cv-elevated)' }}>
+              <span className="text-xs font-semibold font-mono" style={{ color: 'var(--cv-primary)' }}>
                 {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre || 'Usuario'}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.rol}</p>
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--cv-text)' }}>{user?.nombre || 'Usuario'}</p>
+              <p className="text-xs truncate font-mono" style={{ color: 'var(--cv-muted)' }}>{user?.rol}</p>
             </div>
-            <LogoutButton
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              onBeforeLogout={onClose}
-            />
+            <LogoutButton className="p-1.5 cv-icon-btn" onBeforeLogout={onClose} />
           </div>
         </div>
       </aside>

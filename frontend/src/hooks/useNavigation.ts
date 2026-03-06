@@ -1,12 +1,9 @@
 import {
   ChartBarIcon,
-  ShoppingCartIcon,
   CubeIcon,
   BeakerIcon,
   CalculatorIcon,
   CogIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
   UserGroupIcon,
   BuildingOffice2Icon,
   BanknotesIcon,
@@ -16,6 +13,7 @@ import {
   ArchiveBoxIcon,
   LifebuoyIcon,
   QueueListIcon,
+  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/authStore';
 
@@ -36,6 +34,7 @@ export interface NavGroup {
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: ChartBarIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
   { to: '/comercial', label: 'Comercial', icon: QueueListIcon, roles: ['admin', 'vendedor', 'operador'] },
+  { to: '/ventas', label: 'Ventas', icon: ShoppingBagIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
   { to: '/pos', label: 'POS', icon: BanknotesIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/crm', label: 'CRM', icon: BriefcaseIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/terceros', label: 'Terceros', icon: UserGroupIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
@@ -52,7 +51,7 @@ const navItems: NavItem[] = [
 // Group structure — semantic sections of the sidebar
 const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> = [
   { id: 'overview', label: null, paths: ['/'] },
-  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/pos', '/crm', '/terceros'] },
+  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros'] },
   { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/recetas'] },
   { id: 'finanzas', label: 'Finanzas', paths: ['/cartera', '/contabilidad', '/reportes'] },
   { id: 'empresa', label: 'Empresa', paths: ['/config', '/soporte'] },

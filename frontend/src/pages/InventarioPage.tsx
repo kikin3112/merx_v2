@@ -9,10 +9,10 @@ import type { Inventario, MovimientoInventario, Producto } from '../types';
 type Tab = 'valorizado' | 'movimientos' | 'alertas' | 'jerarquia';
 
 const TIPO_MOV_LABELS: Record<string, { label: string; color: string }> = {
-  ENTRADA: { label: 'Entrada', color: 'bg-green-100 text-green-700' },
-  SALIDA: { label: 'Salida', color: 'bg-red-100 text-red-700' },
-  AJUSTE: { label: 'Ajuste', color: 'bg-amber-100 text-amber-700' },
-  PRODUCCION: { label: 'Produccion', color: 'bg-blue-100 text-blue-700' },
+  ENTRADA: { label: 'Entrada', color: 'cv-badge-positive' },
+  SALIDA: { label: 'Salida', color: 'cv-badge-negative' },
+  AJUSTE: { label: 'Ajuste', color: 'cv-badge-accent' },
+  PRODUCCION: { label: 'Produccion', color: 'cv-badge-primary' },
 };
 
 export default function InventarioPage() {
@@ -83,21 +83,21 @@ export default function InventarioPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Inventario</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Valor total: <span className="font-semibold text-gray-900">{formatCurrency(totalValor)}</span>
+          <h1 className="font-brand text-xl font-medium cv-text">Inventario</h1>
+          <p className="text-sm cv-muted mt-0.5">
+            Valor total: <span className="font-semibold cv-text">{formatCurrency(totalValor)}</span>
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => { setError(''); setEntradaOpen(true); }}
-            className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 transition-colors"
+            className="rounded-lg bg-[var(--cv-positive)] px-4 py-2 text-sm font-semibold text-[#1A1A1A] hover:opacity-85 transition-opacity"
           >
             + Entrada
           </button>
           <button
             onClick={() => { setError(''); setAjusteOpen(true); }}
-            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+            className="cv-btn cv-btn-secondary"
           >
             Ajuste
           </button>
@@ -105,7 +105,7 @@ export default function InventarioPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto pb-1">
+      <div className="flex gap-1 mb-4 border-b cv-divider overflow-x-auto pb-1">
         {([
           { key: 'valorizado', label: 'Valorizado' },
           { key: 'movimientos', label: 'Movimientos' },
@@ -117,8 +117,8 @@ export default function InventarioPage() {
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === t.key
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-[var(--cv-primary)] cv-primary'
+                : 'border-transparent cv-muted'
             }`}
           >
             {t.label}
@@ -129,34 +129,34 @@ export default function InventarioPage() {
       {/* Valorizado Tab */}
       {tab === 'valorizado' && (
         loadingVal ? (
-          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 cv-elevated rounded-lg animate-pulse" />)}</div>
         ) : (
           <>
-            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="hidden md:block cv-card overflow-hidden">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Producto</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo promedio</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Valor total</th>
+                <thead className="cv-table-header">
+                  <tr>
+                    <th className="text-left">Codigo</th>
+                    <th className="text-left">Producto</th>
+                    <th className="text-right">Cantidad</th>
+                    <th className="text-right">Costo promedio</th>
+                    <th className="text-right">Valor total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="cv-table-body">
                   {valorizado?.map((inv) => (
-                    <tr key={inv.producto_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{inv.codigo}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{inv.nombre}</td>
-                      <td className="px-4 py-3 text-right text-gray-900">{formatNumber(inv.cantidad)}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(inv.costo_promedio)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(inv.valor_total)}</td>
+                    <tr key={inv.producto_id}>
+                      <td className="font-mono text-xs cv-muted">{inv.codigo}</td>
+                      <td className="font-medium">{inv.nombre}</td>
+                      <td className="text-right">{formatNumber(inv.cantidad)}</td>
+                      <td className="text-right cv-muted">{formatCurrency(inv.costo_promedio)}</td>
+                      <td className="text-right font-semibold">{formatCurrency(inv.valor_total)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {valorizado?.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin inventario</p>
                   <p className="text-sm">Registra entradas para ver el inventario valorizado</p>
                 </div>
@@ -164,7 +164,7 @@ export default function InventarioPage() {
             </div>
             <div className="md:hidden space-y-3">
               {valorizado?.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin inventario</p>
                   <p className="text-sm">Registra entradas para ver el inventario valorizado</p>
                 </div>
@@ -190,44 +190,42 @@ export default function InventarioPage() {
       {/* Movimientos Tab */}
       {tab === 'movimientos' && (
         loadingMov ? (
-          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 cv-elevated rounded-lg animate-pulse" />)}</div>
         ) : (
           <>
-            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="hidden md:block cv-card overflow-hidden">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Cantidad</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Costo unit.</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Observaciones</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Creado por</th>
+                <thead className="cv-table-header">
+                  <tr>
+                    <th className="text-left">Fecha</th>
+                    <th className="text-left">Tipo</th>
+                    <th className="text-right">Cantidad</th>
+                    <th className="text-right">Costo unit.</th>
+                    <th className="text-left">Referencia</th>
+                    <th className="text-left">Observaciones</th>
+                    <th className="text-left">Creado por</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="cv-table-body">
                   {movimientos?.map((m) => {
-                    const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'bg-gray-100 text-gray-700' };
+                    const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'cv-badge-neutral' };
                     return (
-                      <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(m.fecha_movimiento)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${info.color}`}>
-                            {info.label}
-                          </span>
+                      <tr key={m.id}>
+                        <td className="cv-muted text-xs">{formatDate(m.fecha_movimiento)}</td>
+                        <td>
+                          <span className={`cv-badge ${info.color}`}>{info.label}</span>
                         </td>
-                        <td className={`px-4 py-3 text-right font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <td className={`text-right font-medium ${m.cantidad >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                           {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-500">
+                        <td className="text-right cv-muted">
                           {m.costo_unitario != null ? formatCurrency(m.costo_unitario) : '-'}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-500">{m.documento_referencia || '-'}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500 max-w-48 truncate">{m.observaciones || '-'}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm text-gray-900">{m.created_by?.nombre || 'Sistema'}</div>
-                          <div className="text-xs text-gray-400">{formatDateTime(m.created_at)}</div>
+                        <td className="font-mono text-xs cv-muted">{m.documento_referencia || '-'}</td>
+                        <td className="text-xs cv-muted max-w-48 truncate">{m.observaciones || '-'}</td>
+                        <td>
+                          <div className="text-sm">{m.created_by?.nombre || 'Sistema'}</div>
+                          <div className="text-xs cv-muted">{formatDateTime(m.created_at)}</div>
                         </td>
                       </tr>
                     );
@@ -235,7 +233,7 @@ export default function InventarioPage() {
                 </tbody>
               </table>
               {movimientos?.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin movimientos</p>
                   <p className="text-sm">Los movimientos aparecen al registrar entradas, ventas o ajustes</p>
                 </div>
@@ -243,28 +241,24 @@ export default function InventarioPage() {
             </div>
             <div className="md:hidden space-y-3">
               {movimientos?.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin movimientos</p>
                   <p className="text-sm">Los movimientos aparecen al registrar entradas, ventas o ajustes</p>
                 </div>
               ) : (
                 movimientos?.map((m) => {
-                  const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'bg-gray-100 text-gray-700' };
+                  const info = TIPO_MOV_LABELS[m.tipo_movimiento] || { label: m.tipo_movimiento, color: 'cv-badge-neutral' };
                   return (
                     <DataCard
                       key={m.id}
                       title={m.documento_referencia || 'Movimiento'}
                       subtitle={formatDate(m.fecha_movimiento)}
-                      badge={
-                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${info.color}`}>
-                          {info.label}
-                        </span>
-                      }
+                      badge={<span className={`cv-badge ${info.color}`}>{info.label}</span>}
                       fields={[
                         {
                           label: 'Cantidad',
                           value: (
-                            <span className={m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            <span className={m.cantidad >= 0 ? 'cv-positive' : 'cv-negative'}>
                               {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
                             </span>
                           ),
@@ -288,27 +282,27 @@ export default function InventarioPage() {
       {/* Alertas Tab */}
       {tab === 'alertas' && (
         loadingAlertas ? (
-          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 cv-elevated rounded-lg animate-pulse" />)}</div>
         ) : (
           <>
-            <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="hidden md:block cv-card overflow-hidden">
               {alertas && alertas.length > 0 ? (
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y cv-divider">
                   {alertas.map((a) => (
-                    <div key={a.producto_id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                    <div key={a.producto_id} className="flex items-center justify-between px-4 py-3 hover:bg-[var(--cv-elevated)] transition-colors">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{a.nombre}</p>
-                        <p className="text-xs text-gray-500">{a.codigo}</p>
+                        <p className="text-sm font-medium">{a.nombre}</p>
+                        <p className="text-xs cv-muted">{a.codigo}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-red-600">{formatNumber(a.stock_actual)}</p>
-                        <p className="text-xs text-gray-400">min: {formatNumber(a.stock_minimo)}</p>
+                        <p className="text-sm font-semibold cv-negative">{formatNumber(a.stock_actual)}</p>
+                        <p className="text-xs cv-muted">min: {formatNumber(a.stock_minimo)}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin alertas</p>
                   <p className="text-sm">Todos los productos tienen stock por encima del minimo</p>
                 </div>
@@ -321,20 +315,16 @@ export default function InventarioPage() {
                     key={a.producto_id}
                     title={a.nombre}
                     subtitle={a.codigo}
-                    badge={
-                      <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700">
-                        Bajo stock
-                      </span>
-                    }
+                    badge={<span className="cv-badge cv-badge-negative">Bajo stock</span>}
                     fields={[
-                      { label: 'Stock Actual', value: <span className="text-red-600 font-semibold">{formatNumber(a.stock_actual)}</span> },
+                      { label: 'Stock Actual', value: <span className="cv-negative font-semibold">{formatNumber(a.stock_actual)}</span> },
                       { label: 'Stock Minimo', value: formatNumber(a.stock_minimo) },
-                      { label: 'Deficit', value: <span className="text-red-600">-{formatNumber(a.stock_minimo - a.stock_actual)}</span> },
+                      { label: 'Deficit', value: <span className="cv-negative">-{formatNumber(a.stock_minimo - a.stock_actual)}</span> },
                     ]}
                   />
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin alertas</p>
                   <p className="text-sm">Todos los productos tienen stock por encima del minimo</p>
                 </div>
@@ -347,18 +337,18 @@ export default function InventarioPage() {
       {/* Jerarquía Tab */}
       {tab === 'jerarquia' && (
         loadingJerarquia ? (
-          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+          <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 cv-elevated rounded-lg animate-pulse" />)}</div>
         ) : (
           <div>
             {jerarquia && (
               <div className="flex gap-4 mb-4 flex-wrap">
-                <div className="rounded-xl bg-white border border-gray-200 p-4 flex-1 min-w-40">
-                  <p className="text-xs text-gray-500">Total productos</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{jerarquia.total_productos}</p>
+                <div className="cv-card p-4 flex-1 min-w-40">
+                  <p className="text-xs cv-muted">Total productos</p>
+                  <p className="text-2xl font-bold cv-text mt-1">{jerarquia.total_productos}</p>
                 </div>
-                <div className="rounded-xl bg-white border border-gray-200 p-4 flex-1 min-w-40">
-                  <p className="text-xs text-gray-500">Valor total</p>
-                  <p className="text-2xl font-bold text-primary-600 mt-1">{formatCurrency(jerarquia.valor_total)}</p>
+                <div className="cv-card p-4 flex-1 min-w-40">
+                  <p className="text-xs cv-muted">Valor total</p>
+                  <p className="text-2xl font-bold cv-primary mt-1">{formatCurrency(jerarquia.valor_total)}</p>
                 </div>
               </div>
             )}
@@ -367,7 +357,7 @@ export default function InventarioPage() {
                 <JerarquiaProductoCard key={p.producto_id} producto={p} />
               ))}
               {jerarquia?.productos.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin datos de inventario</p>
                   <p className="text-sm">Registra entradas para ver la jerarquía</p>
                 </div>
@@ -425,30 +415,30 @@ type JerarquiaProducto = {
 function JerarquiaProductoCard({ producto }: { producto: JerarquiaProducto }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className={`rounded-xl border bg-white overflow-hidden ${producto.alerta ? 'border-red-300' : 'border-gray-200'}`}>
+    <div className={`cv-card overflow-hidden ${producto.alerta ? 'border-[var(--cv-negative)]' : ''}`}>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--cv-elevated)] transition-colors text-left"
       >
         <div className="flex items-center gap-3">
           {producto.alerta && (
-            <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" title="Stock bajo" />
+            <span className="h-2 w-2 rounded-full bg-[var(--cv-negative)] flex-shrink-0" title="Stock bajo" />
           )}
           <div>
-            <p className="text-sm font-medium text-gray-900">{producto.nombre}</p>
-            <p className="text-xs text-gray-500 font-mono">{producto.codigo}</p>
+            <p className="text-sm font-medium cv-text">{producto.nombre}</p>
+            <p className="text-xs cv-muted font-mono">{producto.codigo}</p>
           </div>
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="text-right">
-            <p className={`text-sm font-semibold ${producto.alerta ? 'text-red-600' : 'text-gray-900'}`}>
+            <p className={`text-sm font-semibold ${producto.alerta ? 'cv-negative' : 'cv-text'}`}>
               {formatNumber(producto.cantidad)} uds
             </p>
-            <p className="text-xs text-gray-400">{formatCurrency(producto.valor_total)}</p>
+            <p className="text-xs cv-muted">{formatCurrency(producto.valor_total)}</p>
           </div>
           <svg
-            className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 cv-muted transition-transform ${expanded ? 'rotate-180' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -457,23 +447,23 @@ function JerarquiaProductoCard({ producto }: { producto: JerarquiaProducto }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-          <div className="flex gap-4 mb-3 text-xs text-gray-500 flex-wrap">
-            <span>Costo promedio: <strong className="text-gray-700">{formatCurrency(producto.costo_promedio)}</strong></span>
+        <div className="border-t cv-divider px-4 py-3 cv-elevated">
+          <div className="flex gap-4 mb-3 text-xs cv-muted flex-wrap">
+            <span>Costo promedio: <strong className="cv-text">{formatCurrency(producto.costo_promedio)}</strong></span>
             {producto.stock_minimo != null && (
-              <span>Stock mínimo: <strong className={producto.alerta ? 'text-red-600' : 'text-gray-700'}>{formatNumber(producto.stock_minimo)}</strong></span>
+              <span>Stock mínimo: <strong className={producto.alerta ? 'cv-negative' : 'cv-text'}>{formatNumber(producto.stock_minimo)}</strong></span>
             )}
           </div>
           {producto.ultimos_movimientos.length > 0 ? (
             <>
-              <p className="text-xs font-medium text-gray-500 mb-2">Últimos movimientos</p>
+              <p className="text-xs font-medium cv-muted mb-2">Últimos movimientos</p>
               <div className="space-y-1.5">
                 {producto.ultimos_movimientos.map((m) => (
                   <div key={m.id} className="flex items-center justify-between text-xs">
-                    <span className={`font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-medium ${m.cantidad >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                       {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)} — {m.tipo}
                     </span>
-                    <span className="text-gray-400">
+                    <span className="cv-muted">
                       {m.fecha ? formatDate(m.fecha) : '-'}
                       {m.referencia && ` · ${m.referencia}`}
                     </span>
@@ -482,7 +472,7 @@ function JerarquiaProductoCard({ producto }: { producto: JerarquiaProducto }) {
               </div>
             </>
           ) : (
-            <p className="text-xs text-gray-400">Sin movimientos recientes</p>
+            <p className="text-xs cv-muted">Sin movimientos recientes</p>
           )}
         </div>
       )}
@@ -518,15 +508,15 @@ function EntradaForm({ productos, error, saving, onSubmit, onCancel }: {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>}
+      {error && <div className="cv-alert-error px-4 py-2 text-sm">{error}</div>}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Producto *</label>
         <select
           required
           value={productoId}
           onChange={(e) => setProductoId(e.target.value)}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="cv-input"
         >
           <option value="">Seleccionar producto...</option>
           {[...productos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((p) => (
@@ -537,37 +527,35 @@ function EntradaForm({ productos, error, saving, onSubmit, onCancel }: {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad *</label>
+          <label className="block text-sm font-medium cv-muted mb-1">Cantidad *</label>
           <input type="number" required min={0.01} step={0.01} value={cantidad} onChange={(e) => setCantidad(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            className="cv-input" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario *</label>
+          <label className="block text-sm font-medium cv-muted mb-1">Costo unitario *</label>
           <input type="number" required min={0} step={0.01} value={costoUnitario} onChange={(e) => setCostoUnitario(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            className="cv-input" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Documento referencia</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Documento referencia</label>
         <input type="text" value={docRef} onChange={(e) => setDocRef(e.target.value)}
           placeholder="Ej: FACTURA-001, REMISION-023"
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          className="cv-input" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Observaciones</label>
         <textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          className="cv-input" />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-        <button type="button" onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+      <div className="flex justify-end gap-3 pt-4 border-t cv-divider">
+        <button type="button" onClick={onCancel} className="cv-btn cv-btn-secondary">
           Cancelar
         </button>
-        <button type="submit" disabled={saving}
-          className="px-4 py-2 text-sm font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50">
+        <button type="submit" disabled={saving} className="cv-btn cv-btn-primary">
           {saving ? 'Registrando...' : 'Registrar Entrada'}
         </button>
       </div>
@@ -599,15 +587,15 @@ function AjusteForm({ productos, error, saving, onSubmit, onCancel }: {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>}
+      {error && <div className="cv-alert-error px-4 py-2 text-sm">{error}</div>}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Producto *</label>
         <select
           required
           value={productoId}
           onChange={(e) => setProductoId(e.target.value)}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="cv-input"
         >
           <option value="">Seleccionar producto...</option>
           {[...productos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((p) => (
@@ -617,26 +605,24 @@ function AjusteForm({ productos, error, saving, onSubmit, onCancel }: {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad nueva *</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Cantidad nueva *</label>
         <input type="number" required min={0} step={0.01} value={cantidadNueva} onChange={(e) => setCantidadNueva(e.target.value)}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
-        <p className="text-xs text-gray-400 mt-1">Se ajustara el stock a esta cantidad exacta</p>
+          className="cv-input" />
+        <p className="text-xs cv-muted mt-1">Se ajustara el stock a esta cantidad exacta</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Motivo *</label>
+        <label className="block text-sm font-medium cv-muted mb-1">Motivo *</label>
         <textarea rows={2} required value={motivo} onChange={(e) => setMotivo(e.target.value)}
           placeholder="Ej: Conteo fisico, merma, daño..."
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          className="cv-input" />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-        <button type="button" onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+      <div className="flex justify-end gap-3 pt-4 border-t cv-divider">
+        <button type="button" onClick={onCancel} className="cv-btn cv-btn-secondary">
           Cancelar
         </button>
-        <button type="submit" disabled={saving}
-          className="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50">
+        <button type="submit" disabled={saving} className="cv-btn cv-btn-primary">
           {saving ? 'Ajustando...' : 'Ajustar Inventario'}
         </button>
       </div>

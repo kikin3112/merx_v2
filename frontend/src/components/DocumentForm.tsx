@@ -463,6 +463,7 @@ export default function DocumentForm({ tipo, open, onClose, onSubmit, loading }:
                   <span>Desc. global</span>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min={0}
                     max={100}
                     step={1}

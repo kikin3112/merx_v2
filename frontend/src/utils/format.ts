@@ -32,18 +32,18 @@ export function formatDateTime(isoString: string): string {
 
 export function statusColor(estado: string): string {
   const colors: Record<string, string> = {
-    PENDIENTE: 'bg-yellow-100 text-yellow-800',
-    CONFIRMADA: 'bg-blue-100 text-blue-800',
-    FACTURADA: 'bg-green-100 text-green-800',
-    ANULADA: 'bg-red-100 text-red-800',
-    PAGADA: 'bg-green-100 text-green-800',
-    PARCIAL: 'bg-orange-100 text-orange-800',
-    EMITIDA: 'bg-blue-100 text-blue-800',
-    VIGENTE: 'bg-blue-100 text-blue-800',
-    ACEPTADA: 'bg-green-100 text-green-800',
-    RECHAZADA: 'bg-red-100 text-red-800',
-    VENCIDA: 'bg-orange-100 text-orange-800',
-    ACTIVO: 'bg-green-100 text-green-800',
+    PENDIENTE: 'cv-badge-primary',
+    CONFIRMADA: 'cv-badge-accent',
+    FACTURADA: 'cv-badge-positive',
+    ANULADA: 'cv-badge-negative',
+    PAGADA: 'cv-badge-positive',
+    PARCIAL: 'cv-badge-primary',
+    EMITIDA: 'cv-badge-accent',
+    VIGENTE: 'cv-badge-accent',
+    ACEPTADA: 'cv-badge-positive',
+    RECHAZADA: 'cv-badge-negative',
+    VENCIDA: 'cv-badge-primary',
+    ACTIVO: 'cv-badge-positive',
   };
-  return colors[estado] || 'bg-gray-100 text-gray-800';
+  return colors[estado] || 'cv-badge-neutral';
 }

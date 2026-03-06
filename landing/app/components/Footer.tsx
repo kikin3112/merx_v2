@@ -4,7 +4,7 @@ const footerLinks = [
   { label: 'Funciones', href: '/#funciones' },
   { label: 'Precios', href: '/#precios' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Soporte', href: 'https://wa.me/573117677016' },
+  { label: 'Soporte', href: 'https://wa.me/573019365537' },
 ];
 
 export function Footer() {
@@ -56,7 +56,7 @@ export function Footer() {
           {/* WhatsApp */}
           <div className="text-center md:text-right">
             <a
-              href="https://wa.me/573000000000"
+              href="https://wa.me/573019365537"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"

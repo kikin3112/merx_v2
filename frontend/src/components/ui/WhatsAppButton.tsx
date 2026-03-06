@@ -1,4 +1,4 @@
-const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || '573117677016';
+const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || '573019365537';
 
 export default function WhatsAppButton() {
   const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent('Hola, necesito ayuda con ChandeliERP')}`;
@@ -8,7 +8,7 @@ export default function WhatsAppButton() {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 transition-colors hover:scale-105 active:scale-95"
+      className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 transition-colors hover:scale-105 active:scale-95"
       aria-label="Contactar por WhatsApp"
     >
       <svg viewBox="0 0 24 24" className="h-7 w-7 fill-current">

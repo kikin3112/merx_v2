@@ -42,11 +42,8 @@ export default function SoportePage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Soporte</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
-        >
+        <h1 className="font-brand text-xl font-medium cv-text">Soporte</h1>
+        <button onClick={() => setShowCreate(true)} className="cv-btn cv-btn-primary">
           + Nuevo ticket
         </button>
       </div>
@@ -56,7 +53,7 @@ export default function SoportePage() {
         <select
           value={filterTipo}
           onChange={(e) => setFilterTipo(e.target.value as TipoPQRS | '')}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+          className="cv-input w-auto"
         >
           <option value="">Todos los tipos</option>
           <option value="SOPORTE">Soporte</option>
@@ -69,7 +66,7 @@ export default function SoportePage() {
         <select
           value={filterEstado}
           onChange={(e) => setFilterEstado(e.target.value as EstadoTicket | '')}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+          className="cv-input w-auto"
         >
           <option value="">Todos los estados</option>
           <option value="ABIERTO">Abierto</option>
@@ -82,7 +79,7 @@ export default function SoportePage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-20 cv-elevated rounded-lg animate-pulse" />
           ))}
         </div>
       ) : (

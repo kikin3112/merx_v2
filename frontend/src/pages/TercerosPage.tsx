@@ -180,28 +180,28 @@ export default function TercerosPage() {
   // Detail panel for selected tercero
   const detailPanel = selectedTercero && (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4">
+      <div className="cv-card shadow-xl w-full max-w-2xl mx-4">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b cv-divider">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">{selectedTercero.nombre}</h2>
+            <h2 className="text-lg font-semibold cv-text">{selectedTercero.nombre}</h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs cv-muted">
                 {selectedTercero.tipo_documento}: {selectedTercero.numero_documento}
               </span>
               <span
-                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                className={`cv-badge ${
                   selectedTercero.tipo_tercero === 'CLIENTE'
-                    ? 'bg-blue-100 text-blue-700'
+                    ? 'cv-badge-primary'
                     : selectedTercero.tipo_tercero === 'PROVEEDOR'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-gray-100 text-gray-700'
+                    ? 'cv-badge-accent'
+                    : 'cv-badge-neutral'
                 }`}
               >
                 {selectedTercero.tipo_tercero}
               </span>
               {selectedTercero.grupo_cliente && (
-                <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
+                <span className="cv-badge cv-badge-accent">
                   {selectedTercero.grupo_cliente}
                 </span>
               )}
@@ -209,22 +209,22 @@ export default function TercerosPage() {
           </div>
           <button
             onClick={() => setSelectedTercero(null)}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="cv-icon-btn text-xl leading-none p-1"
           >
             &times;
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 px-6">
+        <div className="flex border-b cv-divider px-6">
           {(['info', 'historial', 'notas'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setDetailTab(tab)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 detailTab === tab
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-[var(--cv-primary)] text-[var(--cv-primary)]'
+                  : 'border-transparent cv-muted'
               }`}
             >
               {tab === 'info' ? 'Informacion' : tab === 'historial' ? 'Historial' : 'Notas'}
@@ -265,62 +265,62 @@ export default function TercerosPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Teléfono</label>
+                  <label className="cv-label mb-1">Teléfono</label>
                   <input
                     type="text"
                     value={detailForm.telefono || ''}
                     onChange={(e) => setDetailForm({ ...detailForm, telefono: e.target.value || null })}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                  <label className="cv-label mb-1">Email</label>
                   <input
                     type="email"
                     value={detailForm.email || ''}
                     onChange={(e) => setDetailForm({ ...detailForm, email: e.target.value || null })}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Dirección</label>
+                  <label className="cv-label mb-1">Dirección</label>
                   <input
                     type="text"
                     value={detailForm.direccion || ''}
                     onChange={(e) => setDetailForm({ ...detailForm, direccion: e.target.value || null })}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Persona contacto</label>
+                  <label className="cv-label mb-1">Persona contacto</label>
                   <input
                     type="text"
                     value={detailForm.persona_contacto || ''}
                     onChange={(e) =>
                       setDetailForm({ ...detailForm, persona_contacto: e.target.value || null })
                     }
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Sector económico</label>
+                  <label className="cv-label mb-1">Sector económico</label>
                   <input
                     type="text"
                     value={detailForm.sector_economico || ''}
                     onChange={(e) =>
                       setDetailForm({ ...detailForm, sector_economico: e.target.value || null })
                     }
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Grupo cliente</label>
+                  <label className="cv-label mb-1">Grupo cliente</label>
                   <select
                     value={detailForm.grupo_cliente || ''}
                     onChange={(e) =>
                       setDetailForm({ ...detailForm, grupo_cliente: e.target.value || null })
                     }
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   >
                     {GRUPOS_CLIENTE.map((g) => (
                       <option key={g} value={g}>
@@ -330,7 +330,7 @@ export default function TercerosPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Limite credito</label>
+                  <label className="cv-label mb-1">Limite credito</label>
                   <input
                     type="number"
                     min={0}
@@ -339,11 +339,11 @@ export default function TercerosPage() {
                     onChange={(e) =>
                       setDetailForm({ ...detailForm, limite_credito: Number(e.target.value) })
                     }
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Plazo pago (días)</label>
+                  <label className="cv-label mb-1">Plazo pago (días)</label>
                   <input
                     type="number"
                     min={0}
@@ -351,7 +351,7 @@ export default function TercerosPage() {
                     onChange={(e) =>
                       setDetailForm({ ...detailForm, plazo_pago_dias: Number(e.target.value) })
                     }
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cv-input"
                   />
                 </div>
               </div>
@@ -363,27 +363,25 @@ export default function TercerosPage() {
             <div className="space-y-4">
               {historial?.ventas && historial.ventas.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Ventas / Facturas</h4>
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-medium cv-text mb-2">Ventas / Facturas</h4>
+                  <div className="cv-card overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                          <th className="text-left px-3 py-2 font-medium text-gray-500">Numero</th>
-                          <th className="text-left px-3 py-2 font-medium text-gray-500">Fecha</th>
-                          <th className="text-right px-3 py-2 font-medium text-gray-500">Total</th>
-                          <th className="text-center px-3 py-2 font-medium text-gray-500">Estado</th>
+                      <thead className="cv-table-header">
+                        <tr>
+                          <th className="text-left">Numero</th>
+                          <th className="text-left">Fecha</th>
+                          <th className="text-right">Total</th>
+                          <th className="text-center">Estado</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="cv-table-body">
                         {historial.ventas.map((v) => (
-                          <tr key={v.id} className="border-b border-gray-50">
-                            <td className="px-3 py-2 font-mono text-xs">{v.numero}</td>
-                            <td className="px-3 py-2 text-gray-600">{formatDate(v.fecha)}</td>
-                            <td className="px-3 py-2 text-right font-medium">{formatCurrency(v.total)}</td>
-                            <td className="px-3 py-2 text-center">
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(v.estado)}`}>
-                                {v.estado}
-                              </span>
+                          <tr key={v.id}>
+                            <td className="font-mono text-xs">{v.numero}</td>
+                            <td className="cv-muted">{formatDate(v.fecha)}</td>
+                            <td className="text-right font-medium">{formatCurrency(v.total)}</td>
+                            <td className="text-center">
+                              <span className={`cv-badge ${statusColor(v.estado)}`}>{v.estado}</span>
                             </td>
                           </tr>
                         ))}
@@ -395,27 +393,25 @@ export default function TercerosPage() {
 
               {historial?.cotizaciones && historial.cotizaciones.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Cotizaciones</h4>
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-medium cv-text mb-2">Cotizaciones</h4>
+                  <div className="cv-card overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                          <th className="text-left px-3 py-2 font-medium text-gray-500">Numero</th>
-                          <th className="text-left px-3 py-2 font-medium text-gray-500">Fecha</th>
-                          <th className="text-right px-3 py-2 font-medium text-gray-500">Total</th>
-                          <th className="text-center px-3 py-2 font-medium text-gray-500">Estado</th>
+                      <thead className="cv-table-header">
+                        <tr>
+                          <th className="text-left">Numero</th>
+                          <th className="text-left">Fecha</th>
+                          <th className="text-right">Total</th>
+                          <th className="text-center">Estado</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="cv-table-body">
                         {historial.cotizaciones.map((c) => (
-                          <tr key={c.id} className="border-b border-gray-50">
-                            <td className="px-3 py-2 font-mono text-xs">{c.numero}</td>
-                            <td className="px-3 py-2 text-gray-600">{formatDate(c.fecha)}</td>
-                            <td className="px-3 py-2 text-right font-medium">{formatCurrency(c.total)}</td>
-                            <td className="px-3 py-2 text-center">
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(c.estado)}`}>
-                                {c.estado}
-                              </span>
+                          <tr key={c.id}>
+                            <td className="font-mono text-xs">{c.numero}</td>
+                            <td className="cv-muted">{formatDate(c.fecha)}</td>
+                            <td className="text-right font-medium">{formatCurrency(c.total)}</td>
+                            <td className="text-center">
+                              <span className={`cv-badge ${statusColor(c.estado)}`}>{c.estado}</span>
                             </td>
                           </tr>
                         ))}
@@ -426,7 +422,7 @@ export default function TercerosPage() {
               )}
 
               {(!historial?.ventas?.length && !historial?.cotizaciones?.length) && (
-                <p className="text-center text-gray-400 py-8 text-sm">Sin historial de transacciones</p>
+                <p className="text-center cv-muted py-8 text-sm">Sin historial de transacciones</p>
               )}
             </div>
           )}
@@ -440,14 +436,14 @@ export default function TercerosPage() {
                   onChange={(e) => setDetailForm({ ...detailForm, notas: e.target.value || null })}
                   rows={6}
                   placeholder="Notas sobre este cliente..."
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  className="cv-input resize-none"
                 />
               ) : (
-                <div className="bg-gray-50 rounded-lg p-4 min-h-[120px]">
+                <div className="cv-elevated rounded-lg p-4 min-h-[120px]">
                   {selectedTercero.notas ? (
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTercero.notas}</p>
+                    <p className="text-sm cv-text whitespace-pre-wrap">{selectedTercero.notas}</p>
                   ) : (
-                    <p className="text-sm text-gray-400">Sin notas</p>
+                    <p className="text-sm cv-muted">Sin notas</p>
                   )}
                 </div>
               )}
@@ -456,12 +452,12 @@ export default function TercerosPage() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-t cv-divider">
           <div className="flex gap-2">
             {!editingDetail ? (
               <button
                 onClick={startEditDetail}
-                className="rounded-lg px-4 py-2 text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                className="cv-btn rounded-lg px-4 py-2 text-sm font-medium bg-[var(--cv-accent-dim)] text-[var(--cv-accent)] hover:opacity-80 transition-opacity"
               >
                 Editar
               </button>
@@ -470,13 +466,13 @@ export default function TercerosPage() {
                 <button
                   onClick={saveDetail}
                   disabled={updateMut.isPending}
-                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors disabled:opacity-50"
+                  className="cv-btn cv-btn-primary"
                 >
                   {updateMut.isPending ? 'Guardando...' : 'Guardar'}
                 </button>
                 <button
                   onClick={() => setEditingDetail(false)}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="cv-btn cv-btn-secondary"
                 >
                   Cancelar
                 </button>
@@ -485,7 +481,7 @@ export default function TercerosPage() {
           </div>
           <button
             onClick={() => setSelectedTercero(null)}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            className="cv-btn cv-btn-secondary"
           >
             Cerrar
           </button>
@@ -497,11 +493,8 @@ export default function TercerosPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Terceros</h1>
-        <button
-          onClick={openCreate}
-          className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
-        >
+        <h1 className="font-brand text-xl font-medium cv-text">Terceros</h1>
+        <button onClick={openCreate} className="cv-btn cv-btn-primary">
           + Nuevo Tercero
         </button>
       </div>
@@ -514,7 +507,7 @@ export default function TercerosPage() {
         <select
           value={filterTipo}
           onChange={(e) => setFilterTipo(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="cv-input w-auto"
         >
           <option value="">Todos los tipos</option>
           {TIPOS_TERCERO.map((t) => (
@@ -526,65 +519,57 @@ export default function TercerosPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+            <div key={i} className="h-16 cv-elevated rounded-lg animate-pulse" />
           ))}
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="hidden md:block cv-card overflow-hidden">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Documento</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Grupo</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Teléfono</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+              <thead className="cv-table-header">
+                <tr>
+                  <th className="text-left">Nombre</th>
+                  <th className="text-left">Documento</th>
+                  <th className="text-left">Tipo</th>
+                  <th className="text-left">Grupo</th>
+                  <th className="text-left">Teléfono</th>
+                  <th className="text-center">Estado</th>
+                  <th className="text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="cv-table-body">
                 {data?.map((t) => (
                   <tr
                     key={t.id}
                     onClick={() => openDetail(t)}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="cursor-pointer"
                   >
-                    <td className="px-4 py-3 font-medium text-gray-900">{t.nombre}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                      <span className="text-gray-400 mr-1">{t.tipo_documento}</span>
+                    <td className="font-medium cv-text">{t.nombre}</td>
+                    <td className="font-mono text-xs cv-muted">
+                      <span className="opacity-60 mr-1">{t.tipo_documento}</span>
                       {t.numero_documento}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                          t.tipo_tercero === 'CLIENTE'
-                            ? 'bg-blue-100 text-blue-700'
-                            : t.tipo_tercero === 'PROVEEDOR'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
+                    <td>
+                      <span className={`cv-badge ${
+                        t.tipo_tercero === 'CLIENTE' ? 'cv-badge-primary'
+                        : t.tipo_tercero === 'PROVEEDOR' ? 'cv-badge-accent'
+                        : 'cv-badge-neutral'
+                      }`}>
                         {t.tipo_tercero}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{t.grupo_cliente || '-'}</td>
-                    <td className="px-4 py-3 text-gray-500">{t.telefono || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                          t.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}
-                      >
+                    <td className="cv-muted text-xs">{t.grupo_cliente || '-'}</td>
+                    <td className="cv-muted">{t.telefono || '-'}</td>
+                    <td className="text-center">
+                      <span className={`cv-badge ${t.estado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>
                         {t.estado ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => openEdit(t)}
-                        className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-3"
+                        className="text-xs text-[var(--cv-primary)] hover:opacity-70 font-medium mr-3"
                       >
                         Editar
                       </button>
@@ -592,7 +577,7 @@ export default function TercerosPage() {
                         onClick={() => {
                           if (confirm('Desactivar este tercero?')) deleteMut.mutate(t.id);
                         }}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium"
+                        className="text-xs cv-negative font-medium"
                       >
                         Eliminar
                       </button>
@@ -602,7 +587,7 @@ export default function TercerosPage() {
               </tbody>
             </table>
             {data?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 cv-muted">
                 <p className="text-lg mb-2">Sin terceros</p>
                 <p className="text-sm">Crea tu primer cliente o proveedor</p>
               </div>
@@ -617,11 +602,7 @@ export default function TercerosPage() {
                 title={t.nombre}
                 subtitle={`${TIPO_DOC_LABELS[t.tipo_documento] || t.tipo_documento}: ${t.numero_documento}`}
                 badge={
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      t.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}
-                  >
+                  <span className={`cv-badge ${t.estado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>
                     {t.estado ? 'Activo' : 'Inactivo'}
                   </span>
                 }
@@ -629,15 +610,11 @@ export default function TercerosPage() {
                   {
                     label: 'Tipo',
                     value: (
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                          t.tipo_tercero === 'CLIENTE'
-                            ? 'bg-blue-100 text-blue-700'
-                            : t.tipo_tercero === 'PROVEEDOR'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
+                      <span className={`cv-badge ${
+                        t.tipo_tercero === 'CLIENTE' ? 'cv-badge-primary'
+                        : t.tipo_tercero === 'PROVEEDOR' ? 'cv-badge-accent'
+                        : 'cv-badge-neutral'
+                      }`}>
                         {t.tipo_tercero}
                       </span>
                     ),
@@ -649,7 +626,7 @@ export default function TercerosPage() {
                   <>
                     <button
                       onClick={() => openEdit(t)}
-                      className="flex-1 text-center py-2 text-sm font-medium text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50 transition-colors"
+                      className="flex-1 text-center py-2 text-sm font-medium text-[var(--cv-primary)] hover:opacity-70 rounded-lg transition-opacity"
                     >
                       Editar
                     </button>
@@ -657,7 +634,7 @@ export default function TercerosPage() {
                       onClick={() => {
                         if (confirm('Desactivar este tercero?')) deleteMut.mutate(t.id);
                       }}
-                      className="flex-1 text-center py-2 text-sm font-medium text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                      className="flex-1 text-center py-2 text-sm font-medium cv-negative rounded-lg"
                     >
                       Eliminar
                     </button>
@@ -666,7 +643,7 @@ export default function TercerosPage() {
               />
             ))}
             {data?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 cv-muted">
                 <p className="text-lg mb-2">Sin terceros</p>
                 <p className="text-sm">Crea tu primer cliente o proveedor</p>
               </div>
@@ -678,64 +655,58 @@ export default function TercerosPage() {
       {/* Create / Edit Modal */}
       <Modal open={modalOpen} onClose={closeModal} title={editing ? 'Editar Tercero' : 'Nuevo Tercero'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">
-              {error}
-            </div>
-          )}
+          {error && <div className="cv-alert-error px-4 py-2 text-sm">{error}</div>}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <label className="cv-label mb-1">Nombre *</label>
             <input
               type="text"
               required
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="cv-input"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de documento *</label>
+              <label className="cv-label mb-1">Tipo de documento *</label>
               <select
                 value={form.tipo_documento}
                 onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })}
                 disabled={!!editing}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
+                className="cv-input disabled:opacity-50"
               >
                 {TIPOS_DOCUMENTO.map((td) => (
-                  <option key={td} value={td}>
-                    {TIPO_DOC_LABELS[td]}
-                  </option>
+                  <option key={td} value={td}>{TIPO_DOC_LABELS[td]}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Numero de documento *</label>
+              <label className="cv-label mb-1">Numero de documento *</label>
               <input
                 type="text"
                 required
                 disabled={!!editing}
                 value={form.numero_documento}
                 onChange={(e) => setForm({ ...form, numero_documento: e.target.value })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
+                className="cv-input disabled:opacity-50"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de tercero *</label>
+            <label className="cv-label mb-1">Tipo de tercero *</label>
             <div className="flex gap-4">
               {TIPOS_TERCERO.map((tt) => (
-                <label key={tt} className="flex items-center gap-2 text-sm text-gray-700">
+                <label key={tt} className="flex items-center gap-2 text-sm cv-text">
                   <input
                     type="radio"
                     name="tipo_tercero"
                     value={tt}
                     checked={form.tipo_tercero === tt}
                     onChange={(e) => setForm({ ...form, tipo_tercero: e.target.value })}
-                    className="text-primary-500 focus:ring-primary-500"
+                    className="text-[var(--cv-primary)] focus:ring-[var(--cv-primary)]"
                   />
                   {tt}
                 </label>
@@ -745,108 +716,59 @@ export default function TercerosPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={form.email || ''}
-                onChange={(e) => setForm({ ...form, email: e.target.value || null })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="cv-label mb-1">Email</label>
+              <input type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value || null })} className="cv-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-              <input
-                type="text"
-                value={form.telefono || ''}
-                onChange={(e) => setForm({ ...form, telefono: e.target.value || null })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="cv-label mb-1">Teléfono</label>
+              <input type="text" value={form.telefono || ''} onChange={(e) => setForm({ ...form, telefono: e.target.value || null })} className="cv-input" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-            <input
-              type="text"
-              value={form.direccion || ''}
-              onChange={(e) => setForm({ ...form, direccion: e.target.value || null })}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+            <label className="cv-label mb-1">Dirección</label>
+            <input type="text" value={form.direccion || ''} onChange={(e) => setForm({ ...form, direccion: e.target.value || null })} className="cv-input" />
           </div>
 
           {/* CRM fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Persona contacto</label>
-              <input
-                type="text"
-                value={form.persona_contacto || ''}
-                onChange={(e) => setForm({ ...form, persona_contacto: e.target.value || null })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="cv-label mb-1">Persona contacto</label>
+              <input type="text" value={form.persona_contacto || ''} onChange={(e) => setForm({ ...form, persona_contacto: e.target.value || null })} className="cv-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Grupo cliente</label>
-              <select
-                value={form.grupo_cliente || ''}
-                onChange={(e) => setForm({ ...form, grupo_cliente: e.target.value || null })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {GRUPOS_CLIENTE.map((g) => (
-                  <option key={g} value={g}>
-                    {g || '(Sin grupo)'}
-                  </option>
-                ))}
+              <label className="cv-label mb-1">Grupo cliente</label>
+              <select value={form.grupo_cliente || ''} onChange={(e) => setForm({ ...form, grupo_cliente: e.target.value || null })} className="cv-input">
+                {GRUPOS_CLIENTE.map((g) => <option key={g} value={g}>{g || '(Sin grupo)'}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Limite credito</label>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={form.limite_credito || 0}
-                onChange={(e) => setForm({ ...form, limite_credito: Number(e.target.value) })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="cv-label mb-1">Limite credito</label>
+              <input type="number" min={0} step={1000} value={form.limite_credito || 0} onChange={(e) => setForm({ ...form, limite_credito: Number(e.target.value) })} className="cv-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Plazo pago (días)</label>
-              <input
-                type="number"
-                min={0}
-                value={form.plazo_pago_dias || 0}
-                onChange={(e) => setForm({ ...form, plazo_pago_dias: Number(e.target.value) })}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="cv-label mb-1">Plazo pago (días)</label>
+              <input type="number" min={0} value={form.plazo_pago_dias || 0} onChange={(e) => setForm({ ...form, plazo_pago_dias: Number(e.target.value) })} className="cv-input" />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm cv-text">
               <input
                 type="checkbox"
                 checked={form.estado ?? true}
                 onChange={(e) => setForm({ ...form, estado: e.target.checked })}
-                className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                className="rounded text-[var(--cv-primary)] focus:ring-[var(--cv-primary)]"
               />
               Activo
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={closeModal}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
+          <div className="flex justify-end gap-3 pt-4 border-t cv-divider">
+            <button type="button" onClick={closeModal} className="cv-btn cv-btn-secondary">
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
-            >
+            <button type="submit" disabled={saving} className="cv-btn cv-btn-primary">
               {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
             </button>
           </div>
@@ -861,8 +783,8 @@ export default function TercerosPage() {
 function InfoField({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-      <p className="text-sm text-gray-900">{value || '-'}</p>
+      <p className="text-xs cv-muted mb-0.5">{label}</p>
+      <p className="text-sm cv-text">{value || '-'}</p>
     </div>
   );
 }

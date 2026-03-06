@@ -67,24 +67,22 @@ export default function FacturasPage() {
     onError: (err: any) => showError(err, 'Error al anular factura'),
   });
 
-  // Removed facturarMutation - "facturar" flow belongs on VentasPage only
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Facturas</h1>
+        <h1 className="font-brand text-xl font-medium cv-text">Facturas</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+          className="cv-btn cv-btn-primary"
         >
           + Nueva factura
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-3">
+        <div className="mb-4 cv-alert-error px-4 py-3 flex items-center justify-between">
+          <p className="text-sm">{error}</p>
+          <button onClick={() => setError(null)} className="ml-3 cv-icon-btn p-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -98,10 +96,10 @@ export default function FacturasPage() {
           <button
             key={estado}
             onClick={() => setFiltroEstado(estado)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`whitespace-nowrap cv-badge cursor-pointer transition-colors ${
               filtroEstado === estado
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'cv-badge-primary'
+                : 'cv-badge-neutral hover:cv-badge-accent'
             }`}
           >
             {estado || 'Todas'}
@@ -112,59 +110,58 @@ export default function FacturasPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+            <div key={i} className="h-16 cv-elevated rounded-lg animate-pulse" />
           ))}
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="hidden md:block cv-card overflow-hidden">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Subtotal</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">IVA</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+              <thead className="cv-table-header">
+                <tr>
+                  <th className="text-left">Numero</th>
+                  <th className="text-left">Fecha</th>
+                  <th className="text-right">Subtotal</th>
+                  <th className="text-right">IVA</th>
+                  <th className="text-right">Total</th>
+                  <th className="text-center">Estado</th>
+                  <th className="text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="cv-table-body">
                 {data?.map((f) => (
                   <tr
                     key={f.id}
                     onClick={() => setSelectedDoc(f)}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="cursor-pointer"
                   >
-                    <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">
+                    <td className="font-mono text-xs font-medium">
                       {f.numero_venta}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(f.fecha_venta)}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">
+                    <td className="cv-muted">{formatDate(f.fecha_venta)}</td>
+                    <td className="text-right cv-muted">
                       {formatCurrency(f.subtotal)}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-600">
+                    <td className="text-right cv-muted">
                       {formatCurrency(f.total_iva)}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                    <td className="text-right font-semibold">
                       {formatCurrency(f.total_venta)}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(f.estado)}`}
-                      >
+                    <td className="text-center">
+                      <span className={`cv-badge ${statusColor(f.estado)}`}>
                         {f.estado}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1">
                         {f.estado === 'PENDIENTE' && (
                           <button
                             onClick={() => emitirMutation.mutate(f.id)}
                             disabled={emitirMutation.isPending}
-                            className="rounded px-2 py-1 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                            className="cv-btn cv-btn-secondary text-xs px-2 py-1"
+                            style={{ color: 'var(--cv-positive)', borderColor: 'var(--cv-positive)' }}
                           >
                             Emitir
                           </button>
@@ -181,7 +178,7 @@ export default function FacturasPage() {
                                 window.URL.revokeObjectURL(url);
                               });
                             }}
-                            className="rounded px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                            className="cv-btn cv-btn-secondary text-xs px-2 py-1"
                           >
                             PDF
                           </button>
@@ -194,7 +191,7 @@ export default function FacturasPage() {
                               }
                             }}
                             disabled={anularMutation.isPending}
-                            className="rounded px-2 py-1 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                            className="cv-btn cv-btn-danger text-xs px-2 py-1"
                           >
                             Anular
                           </button>
@@ -206,7 +203,7 @@ export default function FacturasPage() {
               </tbody>
             </table>
             {data?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 cv-muted">
                 <p className="text-lg mb-2">Sin facturas</p>
                 <p className="text-sm">Crea tu primera factura o emite una venta</p>
               </div>
@@ -221,7 +218,7 @@ export default function FacturasPage() {
                 title={f.numero_venta}
                 subtitle={formatDate(f.fecha_venta)}
                 badge={
-                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(f.estado)}`}>
+                  <span className={`cv-badge ${statusColor(f.estado)}`}>
                     {f.estado}
                   </span>
                 }
@@ -236,7 +233,8 @@ export default function FacturasPage() {
                       <button
                         onClick={() => emitirMutation.mutate(f.id)}
                         disabled={emitirMutation.isPending}
-                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 active:bg-green-100"
+                        className="cv-btn cv-btn-secondary text-xs px-3 py-1.5"
+                        style={{ color: 'var(--cv-positive)' }}
                       >
                         Emitir
                       </button>
@@ -253,7 +251,7 @@ export default function FacturasPage() {
                             window.URL.revokeObjectURL(url);
                           });
                         }}
-                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 active:bg-purple-100"
+                        className="cv-btn cv-btn-secondary text-xs px-3 py-1.5"
                       >
                         PDF
                       </button>
@@ -262,7 +260,7 @@ export default function FacturasPage() {
                       <button
                         onClick={() => { if (confirm('Anular esta factura?')) anularMutation.mutate(f.id); }}
                         disabled={anularMutation.isPending}
-                        className="rounded-lg px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 active:bg-red-100"
+                        className="cv-btn cv-btn-danger text-xs px-3 py-1.5"
                       >
                         Anular
                       </button>
@@ -272,7 +270,7 @@ export default function FacturasPage() {
               />
             ))}
             {data?.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 cv-muted">
                 <p className="text-lg mb-2">Sin facturas</p>
                 <p className="text-sm">Crea tu primera factura o emite una venta</p>
               </div>

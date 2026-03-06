@@ -3,7 +3,6 @@
  * Currently returns unlimited for all features (no gating yet).
  * Phase 6 will populate limits from Clerk publicMetadata.
  */
-import { useAuthStore } from '../stores/authStore';
 
 export interface PlanLimits {
   maxProductos: number;

@@ -1,5 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('/fonts/CreatoDisplay-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('/fonts/CreatoDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @theme {
   /* === BRAND: Ámbar Profundo === */
@@ -36,49 +58,122 @@
   --color-gold-600: #B8903A;
 
   /* === Typography === */
-  --font-sans: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-brand: 'CreatoDisplay', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* === CARBON VIVO — semantic tokens (dark-first) === */
+/* === CARBON VIVO — tokens exactos del mockup (dark-first) === */
 :root {
-  --cv-bg: #1C1C1E;
-  --cv-surface: #252528;
-  --cv-elevated: #2C2C2F;
-  --cv-border: rgba(255,255,255,0.08);
-  --cv-amber: #F5A623;
-  --cv-ember: #E8643C;
-  --cv-text: #F5F5F7;
-  --cv-muted: #8E8E93;
-  --cv-amber-dark: #D4891F;
+  --cv-bg:           #484848;
+  --cv-surface:      #3A3A3A;
+  --cv-elevated:     #525252;
+  --cv-border:       rgba(255,255,255,0.08);
+  --cv-border-mid:   rgba(255,255,255,0.14);
+  --cv-text:         #F5F5F5;
+  --cv-muted:        #A8A8A8;
+  --cv-primary:      #FF9B65;
+  --cv-primary-dim:  rgba(255,155,101,0.15);
+  --cv-accent:       #FFE680;
+  --cv-accent-dim:   rgba(255,230,128,0.15);
+  --cv-positive:     #BDFFA8;
+  --cv-positive-dim: rgba(189,255,168,0.15);
+  --cv-negative:     #FF7A7A;
+  --cv-negative-dim: rgba(255,122,122,0.15);
+  /* Legacy aliases (backwards compat) */
+  --cv-amber:        var(--cv-primary);
+  --cv-ember:        #E8643C;
 }
 
 :root.light {
-  --cv-bg: #F5F5F7;
-  --cv-surface: #FFFFFF;
-  --cv-elevated: #EBEBED;
-  --cv-border: rgba(0,0,0,0.08);
-  --cv-amber: #D4891F;
-  --cv-ember: #C9542D;
-  --cv-text: #1C1C1E;
-  --cv-muted: #6B6B70;
-  --cv-amber-dark: #B8760F;
+  --cv-bg:           #F6F4F0;
+  --cv-surface:      #FFFFFF;
+  --cv-elevated:     #EEECE8;
+  --cv-border:       rgba(0,0,0,0.08);
+  --cv-border-mid:   rgba(0,0,0,0.13);
+  --cv-text:         #1A1A1A;
+  --cv-muted:        #6B6B6B;
+  --cv-primary:      #E8854A;
+  --cv-primary-dim:  rgba(232,133,74,0.1);
+  --cv-accent:       #B8960A;
+  --cv-accent-dim:   rgba(184,150,10,0.1);
+  --cv-positive:     #2A7A16;
+  --cv-positive-dim: rgba(42,122,22,0.1);
+  --cv-negative:     #C13A3A;
+  --cv-negative-dim: rgba(193,58,58,0.1);
+  --cv-amber:        var(--cv-primary);
+  --cv-ember:        #C9542D;
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
+  background-color: var(--cv-bg);
+  color: var(--cv-text);
+  font-family: var(--font-sans);
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Carbon Vivo utilities */
-.cv-bg { background-color: var(--cv-bg); }
-.cv-surface { background-color: var(--cv-surface); }
-.cv-elevated { background-color: var(--cv-elevated); }
-.cv-text { color: var(--cv-text); }
-.cv-muted { color: var(--cv-muted); }
-.cv-border { border-color: var(--cv-border); }
-.cv-amber { color: var(--cv-amber); }
-.cv-amber-bg { background-color: var(--cv-amber); }
-.cv-ember { color: var(--cv-ember); }
+/* Noise texture overlay — dark mode */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 0;
+}
+:root.light body::before {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.018;
+}
+
+/* ── Carbon Vivo: base utilities ── */
+.cv-bg        { background-color: var(--cv-bg); }
+.cv-surface   { background-color: var(--cv-surface); }
+.cv-elevated  { background-color: var(--cv-elevated); }
+.cv-text      { color: var(--cv-text); }
+.cv-muted     { color: var(--cv-muted); }
+.cv-border    { border-color: var(--cv-border); }
+.cv-primary   { color: var(--cv-primary); }
+.cv-primary-bg{ background-color: var(--cv-primary); }
+.cv-accent    { color: var(--cv-accent); }
+.cv-positive  { color: var(--cv-positive); }
+.cv-negative  { color: var(--cv-negative); }
+/* Legacy */
+.cv-amber     { color: var(--cv-primary); }
+.cv-amber-bg  { background-color: var(--cv-primary); }
+.cv-ember     { color: var(--cv-ember); }
+
+/* ── Carbon Vivo: nav items ── */
+.cv-nav-item {
+  color: var(--cv-muted);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.cv-nav-item:hover {
+  background-color: var(--cv-elevated);
+  color: var(--cv-text);
+}
+.cv-nav-item.active {
+  background-color: var(--cv-primary-dim);
+  color: var(--cv-primary);
+}
+
+/* ── Carbon Vivo: icon buttons ── */
+.cv-icon-btn {
+  color: var(--cv-muted);
+  transition: background-color 150ms ease, color 150ms ease;
+  border-radius: 8px;
+}
+.cv-icon-btn:hover {
+  background-color: var(--cv-elevated);
+  color: var(--cv-text);
+}
+
+/* ── Carbon Vivo: font utilities ── */
+.font-brand { font-family: var(--font-brand); }
+.font-mono  { font-family: var(--font-mono); }
 
 /* Touch target minimum for mobile accessibility */
 @media (max-width: 767px) {
@@ -86,4 +181,204 @@ body {
     min-height: 44px;
     min-width: 44px;
   }
+}
+
+/* ── Carbon Vivo: buttons ── */
+.cv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+.cv-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.cv-btn-primary {
+  background-color: var(--cv-primary);
+  color: #1A1A1A;
+}
+.cv-btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.cv-btn-secondary {
+  background-color: var(--cv-elevated);
+  color: var(--cv-text);
+  border: 1px solid var(--cv-border-mid);
+}
+.cv-btn-secondary:hover:not(:disabled) {
+  background-color: var(--cv-surface);
+}
+.cv-btn-ghost {
+  background-color: transparent;
+  color: var(--cv-muted);
+}
+.cv-btn-ghost:hover:not(:disabled) {
+  background-color: var(--cv-elevated);
+  color: var(--cv-text);
+}
+.cv-btn-danger {
+  background-color: var(--cv-negative-dim);
+  color: var(--cv-negative);
+  border: 1px solid var(--cv-negative);
+}
+.cv-btn-danger:hover:not(:disabled) {
+  background-color: var(--cv-negative);
+  color: #1A1A1A;
+}
+
+/* ── Carbon Vivo: cards ── */
+.cv-card {
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 0.75rem;
+}
+.cv-card-elevated {
+  background-color: var(--cv-elevated);
+  border: 1px solid var(--cv-border);
+  border-radius: 0.75rem;
+}
+.cv-card-hover {
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 0.75rem;
+  transition: background-color 150ms ease;
+}
+.cv-card-hover:hover {
+  background-color: var(--cv-elevated);
+}
+
+/* ── Carbon Vivo: inputs ── */
+.cv-input {
+  background-color: var(--cv-elevated);
+  border: 1px solid var(--cv-border-mid);
+  border-radius: 0.5rem;
+  color: var(--cv-text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  outline: none;
+  width: 100%;
+}
+.cv-input:focus {
+  border-color: var(--cv-primary);
+  box-shadow: 0 0 0 2px var(--cv-primary-dim);
+}
+.cv-input::placeholder {
+  color: var(--cv-muted);
+}
+
+/* ── Carbon Vivo: badges ── */
+.cv-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+.cv-badge-primary {
+  background-color: var(--cv-primary-dim);
+  color: var(--cv-primary);
+}
+.cv-badge-positive {
+  background-color: var(--cv-positive-dim);
+  color: var(--cv-positive);
+}
+.cv-badge-negative {
+  background-color: var(--cv-negative-dim);
+  color: var(--cv-negative);
+}
+.cv-badge-accent {
+  background-color: var(--cv-accent-dim);
+  color: var(--cv-accent);
+}
+.cv-badge-neutral {
+  background-color: var(--cv-elevated);
+  color: var(--cv-muted);
+}
+
+/* ── Carbon Vivo: tables ── */
+.cv-table-header th {
+  background-color: var(--cv-elevated);
+  color: var(--cv-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--cv-border);
+}
+.cv-table-body tr {
+  border-bottom: 1px solid var(--cv-border);
+  transition: background-color 100ms ease;
+}
+.cv-table-body tr:hover {
+  background-color: var(--cv-elevated);
+}
+.cv-table-body tr:last-child {
+  border-bottom: none;
+}
+.cv-table-body td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--cv-text);
+}
+
+/* ── Carbon Vivo: alerts ── */
+.cv-alert-error {
+  background-color: var(--cv-negative-dim);
+  border: 1px solid var(--cv-negative);
+  border-radius: 0.5rem;
+  color: var(--cv-negative);
+}
+.cv-alert-positive {
+  background-color: var(--cv-positive-dim);
+  border: 1px solid var(--cv-positive);
+  border-radius: 0.5rem;
+  color: var(--cv-positive);
+}
+.cv-alert-accent {
+  background-color: var(--cv-accent-dim);
+  border: 1px solid var(--cv-accent);
+  border-radius: 0.5rem;
+  color: var(--cv-accent);
+}
+
+/* ── Carbon Vivo: dividers & labels ── */
+.cv-divider {
+  border-color: var(--cv-border);
+}
+.cv-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cv-muted);
+  font-family: var(--font-mono);
+}
+
+/* Section label — mockup spec: mono 11px 0.18em uppercase primary */
+.cv-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv-primary);
+}
+
+/* Section title — mockup spec: CreatoDisplay 28px weight-500 */
+.cv-section-title {
+  font-family: var(--font-brand);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--cv-text);
 }

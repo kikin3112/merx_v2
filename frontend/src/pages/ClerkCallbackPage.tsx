@@ -78,13 +78,13 @@ export default function ClerkCallbackPage() {
 
   if (error && isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)] px-4">
         <div className="text-center max-w-sm">
-          <div className="rounded-full h-12 w-12 bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <span className="text-red-500 text-xl">!</span>
+          <div className="rounded-full h-12 w-12 bg-[var(--cv-surface)] border border-[var(--cv-negative)]/30 flex items-center justify-center mx-auto mb-4">
+            <span className="text-[var(--cv-negative)] text-xl">!</span>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Error al iniciar sesión</h2>
-          <p className="text-sm text-gray-500 mb-6">{error}</p>
+          <h2 className="text-lg font-semibold cv-text mb-2">Error al iniciar sesión</h2>
+          <p className="text-sm cv-muted mb-6">{error}</p>
           <div className="space-y-2">
             <button
               onClick={() => {
@@ -92,13 +92,13 @@ export default function ClerkCallbackPage() {
                 setError(null);
                 setRetryCount((c) => c + 1);
               }}
-              className="w-full rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+              className="cv-btn cv-btn-primary w-full"
             >
               Reintentar
             </button>
             <button
               onClick={() => signOut().then(() => navigate('/login', { replace: true }))}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="cv-btn cv-btn-ghost w-full"
             >
               Cerrar sesión e intentar de nuevo
             </button>
@@ -109,10 +109,10 @@ export default function ClerkCallbackPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)]">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mx-auto mb-3" />
-        <p className="text-sm text-gray-500">Iniciando sesión...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--cv-primary)] mx-auto mb-3" />
+        <p className="text-sm cv-muted">Iniciando sesión...</p>
       </div>
     </div>
   );

@@ -214,7 +214,7 @@ export default function POSPage() {
         placeholder="Buscar producto..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-3"
+        className="cv-input mb-3"
       />
 
       {/* Category tabs */}
@@ -223,10 +223,10 @@ export default function POSPage() {
           <button
             key={cat}
             onClick={() => setCategoriaFiltro(cat)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`whitespace-nowrap cv-badge cursor-pointer transition-colors ${
               categoriaFiltro === cat
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'cv-badge-primary'
+                : 'cv-badge-neutral'
             }`}
           >
             {cat === 'Todas' ? 'Todas' : cat.replace('_', ' ')}
@@ -240,15 +240,15 @@ export default function POSPage() {
           <button
             key={p.id}
             onClick={() => handleAddToCart(p)}
-            className="flex flex-col items-start bg-white rounded-xl border border-gray-200 p-3 text-left hover:border-primary-300 hover:shadow-sm active:scale-95 transition-all min-h-[80px]"
+            className="flex flex-col items-start cv-card-hover p-3 text-left active:scale-95 transition-all min-h-[80px]"
           >
-            <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{p.nombre}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{p.codigo_interno}</p>
-            <p className="text-sm font-bold text-primary-600 mt-auto pt-1">{formatCurrency(p.precio_venta)}</p>
+            <p className="text-sm font-medium cv-text line-clamp-2 leading-tight">{p.nombre}</p>
+            <p className="text-xs cv-muted mt-0.5">{p.codigo_interno}</p>
+            <p className="text-sm font-bold cv-primary mt-auto pt-1">{formatCurrency(p.precio_venta)}</p>
           </button>
         ))}
         {productosFiltrados.length === 0 && (
-          <p className="col-span-full text-center text-gray-400 py-8">
+          <p className="col-span-full text-center cv-muted py-8">
             No se encontraron productos
           </p>
         )}
@@ -260,11 +260,11 @@ export default function POSPage() {
     <div className="flex flex-col h-full">
       {/* Client selector */}
       <div className="mb-3">
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Cliente</label>
+        <label className="text-xs font-medium cv-muted mb-1 block">Cliente</label>
         <select
           value={clienteId}
           onChange={e => { setCliente(e.target.value); setShowQuickClient(false); }}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500"
+          className="cv-input"
         >
           {tercerosData?.map(t => (
             <option key={t.id} value={t.id}>{t.nombre}</option>
@@ -273,7 +273,7 @@ export default function POSPage() {
         {isMostrador && !showQuickClient && (
           <button
             onClick={() => setShowQuickClient(true)}
-            className="mt-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+            className="mt-1.5 text-xs font-medium cv-primary hover:opacity-80 transition-opacity"
           >
             + Registrar nuevo cliente
           </button>
@@ -282,12 +282,12 @@ export default function POSPage() {
 
       {/* Quick client registration */}
       {showQuickClient && (
-        <div className="mb-3 bg-white rounded-lg border border-primary-200 p-3 space-y-2">
+        <div className="mb-3 cv-card p-3 space-y-2" style={{ borderColor: 'var(--cv-primary)' }}>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs font-semibold text-gray-700">Nuevo cliente</p>
+            <p className="text-xs font-semibold cv-text">Nuevo cliente</p>
             <button
               onClick={() => { setShowQuickClient(false); setClientForm(emptyClientForm); }}
-              className="text-gray-400 hover:text-gray-600 p-0.5"
+              className="cv-icon-btn p-0.5"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -298,13 +298,13 @@ export default function POSPage() {
             placeholder="Nombre *"
             value={clientForm.nombre}
             onChange={e => setClientForm(f => ({ ...f, nombre: e.target.value }))}
-            className="w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            className="cv-input"
           />
           <div className="flex gap-2">
             <select
               value={clientForm.tipo_documento}
               onChange={e => setClientForm(f => ({ ...f, tipo_documento: e.target.value }))}
-              className="rounded border border-gray-200 px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary-500"
+              className="cv-input w-auto"
             >
               {TIPOS_DOCUMENTO.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -319,14 +319,14 @@ export default function POSPage() {
             placeholder="Telefono (opcional)"
             value={clientForm.telefono}
             onChange={e => setClientForm(f => ({ ...f, telefono: e.target.value }))}
-            className="w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            className="cv-input"
           />
           <input
             placeholder="Email (opcional)"
             type="email"
             value={clientForm.email}
             onChange={e => setClientForm(f => ({ ...f, email: e.target.value }))}
-            className="w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            className="cv-input"
           />
           {createClientMutation.isError && (
             <p className="text-xs text-red-600">
@@ -346,21 +346,21 @@ export default function POSPage() {
       {/* Cart items */}
       <div className="flex-1 overflow-y-auto space-y-2 mb-3">
         {cart.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 cv-muted">
             <p className="text-lg mb-1">Carrito vacío</p>
             <p className="text-sm">Agrega productos para comenzar</p>
           </div>
         ) : (
           cart.map(item => (
-            <div key={item.producto.id} className="bg-white rounded-lg border border-gray-200 p-3">
+            <div key={item.producto.id} className="cv-card p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">{item.producto.nombre}</p>
-                  <p className="text-xs text-gray-500">{formatCurrency(item.producto.precio_venta)} c/u</p>
+                  <p className="text-sm font-medium cv-text truncate">{item.producto.nombre}</p>
+                  <p className="text-xs cv-muted">{formatCurrency(item.producto.precio_venta)} c/u</p>
                 </div>
                 <button
                   onClick={() => handleRemoveItem(item.producto.id)}
-                  className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                  className="cv-muted hover:text-red-500 p-1 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -371,19 +371,19 @@ export default function POSPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleUpdateQty(item.producto.id, item.cantidad - 1)}
-                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold transition-colors"
+                    className="w-8 h-8 rounded-lg cv-elevated hover:cv-bg flex items-center justify-center cv-text font-bold transition-colors"
                   >
                     -
                   </button>
                   <span className="w-8 text-center text-sm font-semibold">{item.cantidad}</span>
                   <button
                     onClick={() => handleUpdateQty(item.producto.id, item.cantidad + 1)}
-                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold transition-colors"
+                    className="w-8 h-8 rounded-lg cv-elevated hover:cv-bg flex items-center justify-center cv-text font-bold transition-colors"
                   >
                     +
                   </button>
                 </div>
-                <p className="text-sm font-bold text-gray-900">
+                <p className="text-sm font-bold cv-text">
                   {formatCurrency(item.cantidad * item.producto.precio_venta)}
                 </p>
               </div>
@@ -393,13 +393,13 @@ export default function POSPage() {
       </div>
 
       {/* Totals + Checkout */}
-      <div className="border-t border-gray-200 pt-3 space-y-2">
-        <div className="flex justify-between text-sm text-gray-600">
+      <div className="border-t cv-divider pt-3 space-y-2">
+        <div className="flex justify-between text-sm cv-muted">
           <span>Subtotal</span>
           <span>{formatCurrency(totals.subtotal)}</span>
         </div>
         {/* Global discount */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm cv-muted">
           <div className="flex items-center gap-2">
             <span>Descuento global</span>
             <input
@@ -409,21 +409,21 @@ export default function POSPage() {
               step={1}
               value={descuentoGlobal}
               onChange={e => setDescuento(Math.min(100, Math.max(0, Number(e.target.value))))}
-              className="w-14 text-right rounded border border-gray-200 px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-14 text-right cv-input px-1.5 py-0.5 text-sm"
             />
-            <span className="text-xs text-gray-400">%</span>
+            <span className="text-xs cv-muted">%</span>
           </div>
           {totals.montoDescGlobal > 0 && (
             <span className="text-red-600">-{formatCurrency(totals.montoDescGlobal)}</span>
           )}
         </div>
         {totals.totalIva > 0 && (
-          <div className="flex justify-between text-sm text-gray-600">
+          <div className="flex justify-between text-sm cv-muted">
             <span>IVA</span>
             <span>{formatCurrency(totals.totalIva)}</span>
           </div>
         )}
-        <div className="flex justify-between text-lg font-bold text-gray-900">
+        <div className="flex justify-between text-lg font-bold cv-text">
           <span>TOTAL</span>
           <span>{formatCurrency(totals.total)}</span>
         </div>
@@ -467,11 +467,11 @@ export default function POSPage() {
       {/* Desktop layout */}
       <div className="hidden lg:grid lg:grid-cols-5 gap-4 h-full">
         <div className="col-span-3 overflow-y-auto pr-2">
-          <h1 className="text-xl font-bold text-gray-900 mb-4">Punto de Venta</h1>
+          <h1 className="font-brand text-xl font-medium cv-text mb-4">Punto de Venta</h1>
           {productGrid}
         </div>
-        <div className="col-span-2 bg-gray-50 rounded-xl p-4 flex flex-col">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Carrito ({cart.length})</h2>
+        <div className="col-span-2 cv-card-elevated rounded-xl p-4 flex flex-col">
+          <h2 className="text-sm font-semibold cv-text mb-3">Carrito ({cart.length})</h2>
           {cartPanel}
         </div>
       </div>
@@ -479,13 +479,13 @@ export default function POSPage() {
       {/* Mobile layout */}
       <div className="lg:hidden flex flex-col h-full">
         {/* Mobile tabs */}
-        <div className="flex border-b border-gray-200 mb-3">
+        <div className="flex border-b cv-divider mb-3">
           <button
             onClick={() => setMobileTab('productos')}
             className={`flex-1 py-3 text-sm font-medium text-center transition-colors ${
               mobileTab === 'productos'
-                ? 'text-primary-600 border-b-2 border-primary-500'
-                : 'text-gray-500'
+                ? 'cv-primary border-b-2 border-[var(--cv-primary)]'
+                : 'cv-muted'
             }`}
           >
             Productos
@@ -494,8 +494,8 @@ export default function POSPage() {
             onClick={() => setMobileTab('carrito')}
             className={`flex-1 py-3 text-sm font-medium text-center transition-colors relative ${
               mobileTab === 'carrito'
-                ? 'text-primary-600 border-b-2 border-primary-500'
-                : 'text-gray-500'
+                ? 'cv-primary border-b-2 border-[var(--cv-primary)]'
+                : 'cv-muted'
             }`}
           >
             Carrito
