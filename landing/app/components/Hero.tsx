@@ -40,7 +40,7 @@ export function Hero() {
             className="text-5xl sm:text-6xl lg:text-7xl leading-[1.05] mb-6 animate-fade-up"
             style={{ fontFamily: 'var(--font-brand)', fontWeight: 500, color: 'var(--text)' }}
           >
-            Tu negocio,{' '}
+            Tu negocio,
             <TypewriterText />
           </h1>
 
