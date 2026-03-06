@@ -32,7 +32,7 @@ export function Hero() {
               background: 'var(--primary-dim)',
             }}
           >
-            Para solopreneurs colombianos
+            Para emprendedor@s solitari@s
           </p>
 
           {/* Heading */}
