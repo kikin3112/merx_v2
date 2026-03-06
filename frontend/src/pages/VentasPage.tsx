@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ventas } from '../api/endpoints';
@@ -579,6 +580,7 @@ export default function VentasPage() {
           setSelectedDoc(null);
         }}
       />
+      <HelpPanel modulo="ventas" />
     </div>
   );
 }

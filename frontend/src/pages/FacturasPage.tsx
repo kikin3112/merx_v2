@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facturas } from '../api/endpoints';
@@ -297,6 +298,7 @@ export default function FacturasPage() {
           setSelectedDoc(null);
         }}
       />
+      <HelpPanel modulo="facturas" />
     </div>
   );
 }

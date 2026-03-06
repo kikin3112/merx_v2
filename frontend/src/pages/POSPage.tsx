@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productos, terceros, facturas } from '../api/endpoints';
@@ -511,6 +512,7 @@ export default function POSPage() {
           {mobileTab === 'productos' ? productGrid : cartPanel}
         </div>
       </div>
+      <HelpPanel modulo="pos" />
     </div>
   );
 }

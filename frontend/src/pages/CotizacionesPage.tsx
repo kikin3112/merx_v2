@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cotizaciones } from '../api/endpoints';
@@ -230,6 +231,7 @@ export default function CotizacionesPage() {
           setSelectedDoc(null);
         }}
       />
+      <HelpPanel modulo="cotizaciones" />
     </div>
   );
 }

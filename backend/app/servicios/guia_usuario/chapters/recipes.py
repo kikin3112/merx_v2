@@ -45,9 +45,9 @@ class RecipesChapter:
         chapter.add_section(
             "4.1 ¿Qué es una Receta?",
             "Una receta (o Lista de Materiales - BOM) define los ingredientes necesarios "
-            "para producir una unidad de producto terminado. En el contexto de velas, "
-            "una receta especifica qué materias primas (cera, fragancia, colorante, pabilo) "
-            "y en qué cantidades se necesitan para crear cada unidad.",
+            "para producir una unidad de producto terminado. Una receta especifica qué materias primas "
+            "y en qué cantidades se necesitan para crear cada unidad de tu producto artesanal — "
+            "ya sea una vela, un confite, una prenda, un alimento o cualquier otro producto.",
         )
 
         chapter.add_section(
@@ -58,7 +58,7 @@ class RecipesChapter:
             "• <b>Unidad de medida:</b> gramos (g), mililitros (ml) o unidades (ud)",
         )
 
-        chapter.add_screenshot_placeholder("Ejemplo de receta para vela de soja 200g")
+        chapter.add_screenshot_placeholder("Ejemplo de receta para un producto artesanal terminado")
 
         chapter.add_spacer(0.3)
 
@@ -90,14 +90,14 @@ class RecipesChapter:
         )
 
         chapter.add_section(
-            "4.2.2 Ejemplo: Receta para Vela de Soja 200g",
-            "<b>Producto:</b> Vela Aromática Lavanda 200g\n"
+            "4.2.2 Ejemplo: Receta para un Producto Artesanal",
+            "<b>Producto:</b> Crema Corporal Artesanal 200g\n"
             "<b>Rendimiento:</b> 1 unidad\n"
             "<br/><b>Materias primas:</b>\n"
-            "• Cera de soja: 180 g\n"
-            "• Fragancia lavanda: 18 ml\n"
-            "• Pabilo de algodón: 1 ud\n"
-            "• Colorante violeta (opcional): 0.5 g",
+            "• Base crema: 160 g\n"
+            "• Aceite esencial: 15 ml\n"
+            "• Manteca de karité: 20 g\n"
+            "• Envase plástico: 1 ud",
         )
 
         chapter.add_screenshot_placeholder("Lista de materias primas en la receta")
@@ -133,10 +133,10 @@ class RecipesChapter:
 
         chapter.add_section(
             "4.3.3 Ejemplo de Simulación",
-            "Producir 50 velas de 200g requiere:\n"
-            "• Cera de soja: 9.0 kg (disponible: 5.2 kg) → ⚠️ FALTAN 3.8 kg\n"
-            "• Fragancia lavanda: 900 ml (disponible: 850 ml) → ⚠️ FALTAN 50 ml\n"
-            "• Pabilo: 50 ud (disponible: 200 ud) → ✓ SUFICIENTE\n"
+            "Producir 50 unidades de Crema Corporal Artesanal 200g requiere:\n"
+            "• Base crema: 8.0 kg (disponible: 5.2 kg) → ⚠️ FALTAN 2.8 kg\n"
+            "• Aceite esencial: 750 ml (disponible: 850 ml) → ✓ SUFICIENTE\n"
+            "• Envase plástico: 50 ud (disponible: 200 ud) → ✓ SUFICIENTE\n"
             "<br/>Resultado: No se puede producir - Stock insuficiente",
         )
 
@@ -167,11 +167,11 @@ class RecipesChapter:
             "4.4.2 Movimientos Automáticos",
             "Al producir 50 unidades con la receta del ejemplo:\n"
             "<br/><b>Movimientos de salida (materias primas):</b>\n"
-            "• Cera de soja: -9.0 kg\n"
-            "• Fragancia lavanda: -900 ml\n"
-            "• Pabilo: -50 ud\n"
+            "• Base crema: -8.0 kg\n"
+            "• Aceite esencial: -750 ml\n"
+            "• Envase plástico: -50 ud\n"
             "<br/><b>Movimiento de entrada (producto terminado):</b>\n"
-            "• Vela Aromática Lavanda 200g: +50 ud",
+            "• Crema Corporal Artesanal 200g: +50 ud",
         )
 
         chapter.add_spacer(0.3)
@@ -227,7 +227,7 @@ class RecipesChapter:
                 },
                 {
                     "name": "Simulador de Producción",
-                    "description": "Calcular所需材料 antes de producir, validar stock disponible",
+                    "description": "Calcular los insumos necesarios antes de producir, validar stock disponible",
                     "available": True,
                 },
                 {

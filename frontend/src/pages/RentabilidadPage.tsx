@@ -54,7 +54,7 @@ export function RentabilidadPage() {
         <span className="text-3xl">📊</span>
         <div>
           <h1 className="font-brand text-2xl font-medium cv-text">Comparador de Rentabilidad</h1>
-          <p className="cv-muted text-sm">¿Cuál vela te conviene más hacer? Aquí lo ves de un vistazo.</p>
+          <p className="cv-muted text-sm">¿Cuál producto te conviene más hacer? Aquí lo ves de un vistazo.</p>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ export function RentabilidadPage() {
       {items && items.some((i) => i.mc_por_minuto != null) && (
         <div className="bg-[var(--cv-primary-dim)] border border-[var(--cv-primary)] rounded-xl p-4">
           <p className="text-sm cv-text">
-            <strong>💡 MC/minuto</strong> te dice cuánto ganas por cada minuto de trabajo. Una vela que lleva más tiempo pero tiene bajo MC puede ser menos eficiente que una más sencilla con buen margen.
+            <strong>💡 MC/minuto</strong> te dice cuánto ganas por cada minuto de trabajo. Un producto que lleva más tiempo pero tiene bajo MC puede ser menos eficiente que uno más sencillo con buen margen.
           </p>
         </div>
       )}

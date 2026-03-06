@@ -1,27 +1,93 @@
 import { useState } from 'react';
 import { TUTORIALES } from '../../data/tutorial-content';
 
-const CONCEPTOS_RELEVANTES = [
-  'costoIngredientes',
-  'costoManoObra',
-  'costosIndirectos',
-  'margenContribucion',
-  'puntoEquilibrio',
-  'margenSeguridad',
-  'analisisSensibilidad',
-  'margenObjetivo',
-  'precioSugerido',
-] as const;
+type Modulo =
+  | 'recetas'
+  | 'facturas'
+  | 'ventas'
+  | 'cotizaciones'
+  | 'inventario'
+  | 'contabilidad'
+  | 'cartera'
+  | 'comercial'
+  | 'pos';
 
-export function HelpPanel() {
+const CONCEPTOS_POR_MODULO: Record<Modulo, string[]> = {
+  recetas: [
+    'costoIngredientes',
+    'costoManoObra',
+    'costosIndirectos',
+    'margenContribucion',
+    'puntoEquilibrio',
+    'margenSeguridad',
+    'analisisSensibilidad',
+    'margenObjetivo',
+    'precioSugerido',
+  ],
+  facturas: [
+    'estadoFactura',
+    'envioFactura',
+    'impuestosFactura',
+    'numeracionFactura',
+    'terceroVenta',
+  ],
+  ventas: [
+    'flujoVenta',
+    'estadoVenta',
+    'terceroVenta',
+    'envioFactura',
+  ],
+  cotizaciones: [
+    'estadoCotizacion',
+    'validezCotizacion',
+    'convertirCotizacion',
+    'terceroVenta',
+  ],
+  inventario: [
+    'stockMinimo',
+    'movimientoInventario',
+    'ajusteInventario',
+    'costoProducto',
+  ],
+  contabilidad: [
+    'causacion',
+    'cuentaContable',
+    'periodoContable',
+    'utilidadNeta',
+  ],
+  cartera: [
+    'carteraPorCobrar',
+    'diasCartera',
+    'abono',
+    'estadoFactura',
+  ],
+  comercial: [
+    'pipeline',
+    'prospectoComercial',
+    'actividadComercial',
+    'convertirCotizacion',
+  ],
+  pos: [
+    'cajaPos',
+    'metodoPago',
+    'estadoVenta',
+  ],
+};
+
+interface Props {
+  modulo?: Modulo;
+}
+
+export function HelpPanel({ modulo = 'recetas' }: Props) {
   const [open, setOpen] = useState(false);
+  const conceptos = CONCEPTOS_POR_MODULO[modulo];
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-40 bg-amber-500 hover:bg-amber-600 text-white rounded-full px-4 py-2 shadow-lg text-sm font-medium flex items-center gap-2 transition-colors"
+        className="fixed bottom-24 right-4 z-40 bg-amber-500 hover:bg-amber-600 text-white rounded-full px-4 py-2 shadow-lg text-sm font-medium flex items-center gap-2 transition-colors"
       >
         🕯️ ¿Cómo funciona esto?
       </button>
@@ -41,7 +107,7 @@ export function HelpPanel() {
               <button onClick={() => setOpen(false)} className="text-white hover:text-amber-100 text-xl">×</button>
             </div>
             <div className="flex-1 p-4 space-y-4">
-              {CONCEPTOS_RELEVANTES.map((key) => {
+              {conceptos.map((key) => {
                 const t = TUTORIALES[key];
                 return (
                   <div key={key} className="border-b border-gray-100 pb-4 last:border-0">

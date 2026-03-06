@@ -35,7 +35,7 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">¿Cuántas velas necesitas vender?</h3>
+        <h3 className="text-sm font-semibold text-gray-900">¿Cuántas unidades necesitas vender?</h3>
         <TutorialTooltip concepto="puntoEquilibrio" />
       </div>
 
@@ -52,7 +52,7 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
             onChange={(e) => setPrecioVenta(Number(e.target.value))}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
           />
-          <p className="text-xs text-gray-400 mt-1">¿Cuánto cobras por vela?</p>
+          <p className="text-xs text-gray-400 mt-1">¿Cuánto cobras por unidad?</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
@@ -69,7 +69,7 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
           <p className="text-xs text-gray-400 mt-1">Arriendo, internet, etc.</p>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Velas esperadas/mes</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Unidades esperadas/mes</label>
           <input
             type="number"
             min={1}
@@ -97,12 +97,12 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
           }`}>
             <p className="text-xs text-gray-500 mb-1">Necesitas vender al menos</p>
             <p className={`text-3xl font-bold ${resultado.margen_seguridad_unidades >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-              {Math.ceil(resultado.punto_equilibrio_unidades)} velas
+              {Math.ceil(resultado.punto_equilibrio_unidades)} uds.
             </p>
             <p className="text-xs text-gray-500 mt-1">para no perder dinero este mes</p>
             {resultado.margen_seguridad_unidades >= 0 ? (
               <p className="text-sm font-medium text-green-600 mt-2">
-                ¡Tienes un colchón de {Math.floor(resultado.margen_seguridad_unidades)} velas extra!
+                ¡Tienes un colchón de {Math.floor(resultado.margen_seguridad_unidades)} uds. extra!
               </p>
             ) : (
               <p className="text-sm font-medium text-red-600 mt-2">
@@ -114,7 +114,7 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
           {/* Métricas */}
           <div className="grid grid-cols-2 gap-2">
             <MetricCard
-              label="Lo que te queda por vela"
+              label="Lo que te queda por unidad"
               value={formatCurrency(resultado.margen_contribucion_unitario)}
               tooltip={TUTORIALES.margenContribucion.explicacion}
               sub={`${resultado.ratio_margen_contribucion.toFixed(1)}% del precio`}
@@ -128,13 +128,13 @@ export function PuntoEquilibrioPanel({ recetaId, precioVentaDefault }: Props) {
               label="Utilidad esperada"
               value={formatCurrency(resultado.utilidad_esperada)}
               highlight={resultado.utilidad_esperada > 0 ? 'green' : 'red'}
-              sub={`si vendes ${volumen} velas`}
+              sub={`si vendes ${volumen} uds.`}
             />
             <MetricCard
               label="Margen de seguridad"
               value={`${resultado.margen_seguridad_porcentaje.toFixed(1)}%`}
               tooltip={TUTORIALES.margenSeguridad.explicacion}
-              sub={`${Math.floor(resultado.margen_seguridad_unidades)} velas de colchón`}
+              sub={`${Math.floor(resultado.margen_seguridad_unidades)} uds. de colchón`}
             />
           </div>
         </div>

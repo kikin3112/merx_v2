@@ -25,7 +25,7 @@ export function CostoIndirectoManager() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Gastos adicionales</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Gas, empaques, electricidad... se reparten automáticamente en cada vela</p>
+          <p className="text-xs text-gray-500 mt-0.5">Gas, empaques, electricidad... se reparten automáticamente en cada unidad producida</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -117,7 +117,7 @@ export function CostoIndirectoManager() {
       ) : (
         <div className="text-center py-6 border border-dashed border-amber-200 rounded-xl bg-amber-50/50">
           <p className="text-sm text-amber-700">Sin gastos adicionales todavía</p>
-          <p className="text-xs text-amber-600 mt-1">Agrégalos para que el costo de cada vela sea más preciso</p>
+          <p className="text-xs text-amber-600 mt-1">Agrégalos para que el costo de cada producto sea más preciso</p>
         </div>
       )}
     </div>

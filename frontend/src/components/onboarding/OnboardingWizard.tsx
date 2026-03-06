@@ -148,7 +148,7 @@ export default function OnboardingWizard({
         {currentStep === 1 && (
           <div className="space-y-3">
             <h3 className="text-sm font-semibold cv-text">Paso 1: Carga tu primer producto</h3>
-            <p className="text-xs cv-muted">Agrega un producto terminado (ej: una vela) para empezar.</p>
+            <p className="text-xs cv-muted">Agrega un producto terminado (ej: una vela, un confite, una prenda) para empezar.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input type="text" value={prodNombre} onChange={(e) => setProdNombre(e.target.value)} placeholder="Nombre del producto" className="cv-input" />
               <input type="number" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio de venta" className="cv-input" />
@@ -175,7 +175,7 @@ export default function OnboardingWizard({
           <div className="space-y-3">
             <h3 className="text-sm font-semibold cv-text">Paso 2: Crea tu primera receta</h3>
             <p className="text-xs cv-muted">Una receta define la fórmula de producción (ingredientes + costos). Los ingredientes los puedes agregar después.</p>
-            <input type="text" value={recetaNombre} onChange={(e) => setRecetaNombre(e.target.value)} placeholder="Nombre de la receta (ej: Vela Aromática)" className="cv-input" />
+            <input type="text" value={recetaNombre} onChange={(e) => setRecetaNombre(e.target.value)} placeholder="Nombre de la receta (ej: Jabón de avena, Torta de chocolate)" className="cv-input" />
             <button
               onClick={() => crearReceta.mutate()}
               disabled={!recetaNombre.trim() || crearReceta.isPending}

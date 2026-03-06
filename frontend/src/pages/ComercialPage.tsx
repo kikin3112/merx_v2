@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { comercial, cotizaciones, ventas } from '../api/endpoints';
@@ -451,6 +452,7 @@ export default function ComercialPage() {
         onClose={() => { setSelectedDoc(null); setDocType(null); }}
         onUpdated={() => queryClient.invalidateQueries({ queryKey: ['comercial-pipeline'] })}
       />
+      <HelpPanel modulo="comercial" />
     </div>
   );
 }

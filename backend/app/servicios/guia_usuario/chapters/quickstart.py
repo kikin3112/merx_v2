@@ -43,10 +43,10 @@ class QuickStartChapter:
         # Sección 1: ¿Qué es chandelierp?
         chapter.add_section(
             "1.1 ¿Qué es chandelierp?",
-            "chandelierp es un sistema ERP/POS diseñado específicamente para microempresas de "
-            "velas y aromáticos en Colombia. Incluye gestión de productos, inventario, facturas, "
-            "cotizaciones, clientes y contabilidad básica. El sistema es multi-tenant, lo que significa "
-            "que cada empresa tiene su propio espacio de trabajo seguro.",
+            "chandelierp es un sistema ERP/POS diseñado para microempresarios y emprendedores en Colombia — "
+            "velas, confites, ropa, alimentos, artesanías, servicios de belleza y más. Incluye gestión de "
+            "productos, inventario, facturas, cotizaciones, clientes y contabilidad básica. El sistema es "
+            "multi-tenant, lo que significa que cada empresa tiene su propio espacio de trabajo seguro.",
         )
 
         chapter.add_section(

@@ -46,7 +46,6 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
     onSuccess: ({ data }) => {
       const respuesta = (data as { respuesta: string }).respuesta;
       setChatHistory((prev) => [...prev, { role: 'assistant', content: respuesta }]);
-      setUserInput('');
     },
     onError: () => {
       setChatHistory((prev) => [
@@ -72,6 +71,7 @@ export function AsistenteCosteoPanel({ recetaId, onClose }: Props) {
     const nuevoMensaje: ChatMessage = { role: 'user', content: userInput.trim() };
     const historialActualizado = [...chatHistory, nuevoMensaje];
     setChatHistory(historialActualizado);
+    setUserInput('');
     fase2Mutation.mutate(historialActualizado);
   }
 

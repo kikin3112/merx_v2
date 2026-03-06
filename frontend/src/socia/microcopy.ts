@@ -1,17 +1,17 @@
 export const SOCIA_MESSAGES = {
-  primeraReceta: "¡Listo! Creaste tu primera receta. Ya empezamos 🕯️",
-  margenAlto: (pct: number) => `¡Bacana! Esta vela te deja el ${pct}% de ganancia 💚`,
-  puntoEquilibrio: (pe: number) => `Vendiendo ${pe} velitas ya cubres los gastos. Lo que sobrepases es ganancia pura 🎉`,
+  primeraReceta: "¡Listo! Creaste tu primera receta. Ya empezamos 🌱",
+  margenAlto: (pct: number) => `¡Bacana! Este producto te deja el ${pct}% de ganancia 💚`,
+  puntoEquilibrio: (pe: number) => `Vendiendo ${pe} unidades ya cubres los gastos. Lo que sobrepases es ganancia pura 🎉`,
   precioSugerido: (precio: string) => `Tu Socia te sugiere vender a ${precio}. ¿Qué te parece?`,
-  margenBajo: "Ojo con esta, linda... estás ganando muy poco. Te ayudo a ajustar el precio ⚡",
-  sinCostosIndirectos: "Psst... no has agregado tus gastos del negocio (gas, empaques...). Sin ellos tu precio puede quedar corto 🤫",
+  margenBajo: "Ojo con este, linda... estás ganando muy poco. Te ayudo a ajustar el precio ⚡",
+  sinCostosIndirectos: "Psst... no has agregado tus gastos del negocio (arriendo, empaques, servicios...). Sin ellos tu precio puede quedar corto 🤫",
   stockBajo: "Te falta material para producir. ¿Revisamos el inventario juntas?",
-  mejorProducto: (nombre: string) => `Tu "${nombre}" es la más rentable de tu catálogo. ¡Ponle amor a esa! 💛`,
-  productoMejorable: (nombre: string) => `La "${nombre}" puede mejorar. Con un ajuste de precio podrías ganar mucho más 📈`,
+  mejorProducto: (nombre: string) => `Tu "${nombre}" es el más rentable de tu catálogo. ¡Ponle amor a ese! 💛`,
+  productoMejorable: (nombre: string) => `El "${nombre}" puede mejorar. Con un ajuste de precio podrías ganar mucho más 📈`,
   logrosDesbloqueados: (n: number) => `¡Desbloqueaste ${n} logro${n > 1 ? 's' : ''}! Míralo 👇`,
-  bienvenida: "¡Hola! Soy Socia, tu asistente de precios 🕯️ Te ayudo a ponerle el precio justo a cada vela para que tu negocio crezca y nunca trabajes a pérdida.",
-  primerCalculo: "¡Calculé tu primer costo! Ahora ya sabes cuánto te cuesta hacer cada vela 🔢",
-  margenEquilibrado: "Esta vela tiene un margen sano. ¡Sigue así! 📊",
+  bienvenida: "¡Hola! Soy Socia, tu asistente de precios ✨ Te ayudo a ponerle el precio justo a cada producto para que tu negocio crezca y nunca trabajes a pérdida.",
+  primerCalculo: "¡Calculé tu primer costo! Ahora ya sabes cuánto te cuesta hacer cada producto 🔢",
+  margenEquilibrado: "Este producto tiene un margen sano. ¡Sigue así! 📊",
 };
 
 export const SOCIA_THEME = {

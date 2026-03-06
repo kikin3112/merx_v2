@@ -1,3 +1,4 @@
+import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartera, terceros } from '../api/endpoints';
@@ -419,6 +420,7 @@ function PagoModal({ item, terceroNombre, onClose, onSuccess }: {
           </div>
         </div>
       </div>
+      <HelpPanel modulo="cartera" />
     </div>
   );
 }

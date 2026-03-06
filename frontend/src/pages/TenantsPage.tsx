@@ -1859,7 +1859,7 @@ function TenantCreateForm({ planes, onSubmit, isPending }: {
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               pattern="^[a-z0-9-]+$"
-              placeholder="ej: velas-aromaticas"
+              placeholder="ej: mi-negocio-palmira"
               className="cv-input font-mono"
             />
           </div>

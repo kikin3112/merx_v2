@@ -14,16 +14,16 @@ const PASOS: PasoTour[] = [
   },
   {
     titulo: 'No olvides tus gastos del negocio',
-    descripcion: 'El gas, los empaques, la electricidad... también hacen parte del costo de tu vela. Agrégalos en la pestaña "Gastos adicionales".',
+    descripcion: 'El gas, los empaques, la electricidad... también hacen parte del costo de tu producto. Agrégalos en la pestaña "Gastos adicionales".',
     elementoId: 'tab-indirectos',
   },
   {
-    titulo: 'Calcula cuánto te cuesta cada vela',
+    titulo: 'Calcula cuánto te cuesta cada producto',
     descripcion: 'Haz clic en "Calcular costo" en cualquier receta. Te mostramos el desglose completo: materiales, tu trabajo y los gastos adicionales.',
   },
   {
-    titulo: '¿Cuántas velas necesitas vender?',
-    descripcion: 'En la pestaña "Análisis de precios" puedes calcular tu punto de equilibrio. Dinos tus gastos fijos del mes y cuántas velas esperas vender.',
+    titulo: '¿Cuántas unidades necesitas vender?',
+    descripcion: 'En la pestaña "Análisis de precios" puedes calcular tu punto de equilibrio. Dinos tus gastos fijos del mes y cuántas unidades esperas vender.',
     elementoId: 'tab-analisis',
   },
   {

@@ -15,7 +15,7 @@ export interface Nivel {
 }
 
 export const LOGROS: Logro[] = [
-  { id: 'primera_receta', titulo: '¡Primera receta!', emoji: '🕯️', mensaje: '¡Listo! Creaste tu primera receta. Ya empezamos 🕯️' },
+  { id: 'primera_receta', titulo: '¡Primera receta!', emoji: '🌱', mensaje: '¡Listo! Creaste tu primera receta. Ya empezamos 🌱' },
   { id: 'primer_calculo_costo', titulo: '¡Calculé tu primer costo!', emoji: '🔢' },
   { id: 'primer_cvu', titulo: '¡Análisis completo!', emoji: '📈' },
   { id: 'primer_punto_equilibrio', titulo: '¡Ya sabes cuánto vender!', emoji: '⚖️' },
@@ -24,7 +24,7 @@ export const LOGROS: Logro[] = [
   { id: 'primera_sensibilidad', titulo: '¡Viste el futuro!', emoji: '🔮' },
   { id: '5_recetas_activas', titulo: '¡Catálogo creciendo!', emoji: '🌱' },
   { id: 'equilibrio_real_mes', titulo: '¡Mes en positivo!', emoji: '💰' },
-  { id: '10_producciones', titulo: '¡100 velas producidas!', emoji: '✨' },
+  { id: '10_producciones', titulo: '¡100 producciones completadas!', emoji: '✨' },
 ];
 
 export const NIVELES: Nivel[] = [
@@ -34,7 +34,7 @@ export const NIVELES: Nivel[] = [
     descripcion: 'Empezaste a ordenar tu negocio',
     requerimientos: ['primera_receta', 'primer_calculo_costo'],
     desbloquea: 'Acceso a análisis de punto de equilibrio',
-    emoji: '🕯️',
+    emoji: '🌱',
   },
   {
     id: 'conocedora',
