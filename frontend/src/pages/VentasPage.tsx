@@ -416,18 +416,20 @@ export default function VentasPage() {
                             {facturarMutation.isPending ? 'Facturando...' : 'Facturar'}
                           </button>
                         )}
-                        {v.estado === 'FACTURADA' && v.url_pdf && (
+                        {v.estado === 'FACTURADA' && (
                           <>
+                            {v.url_pdf && (
+                              <a
+                                href={v.url_pdf}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rounded px-2 py-1 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)] hover:opacity-80 transition-opacity"
+                              >
+                                PDF
+                              </a>
+                            )}
                             <a
-                              href={v.url_pdf}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded px-2 py-1 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)] hover:opacity-80 transition-opacity"
-                            >
-                              PDF
-                            </a>
-                            <a
-                              href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}: ${v.url_pdf}`)}`}
+                              href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}${v.url_pdf ? `: ${v.url_pdf}` : ''}`)}`}
                               target="_blank"
                               rel="noreferrer"
                               onClick={() => registrarEnvioMutation.mutate({ id: v.id, canal: 'whatsapp', destinatario: v.tercero?.telefono || 'desconocido' })}
@@ -436,7 +438,7 @@ export default function VentasPage() {
                               WA
                             </a>
                             <a
-                              href={`mailto:${v.tercero?.email || ''}?subject=${encodeURIComponent(`Factura ${v.numero_venta}`)}&body=${encodeURIComponent(`Hola! Adjunto tu factura ${v.numero_venta}.\n\nDescargar: ${v.url_pdf}`)}`}
+                              href={`mailto:${v.tercero?.email || ''}?subject=${encodeURIComponent(`Factura ${v.numero_venta}`)}&body=${encodeURIComponent(`Hola! Adjunto tu factura ${v.numero_venta}.${v.url_pdf ? `\n\nDescargar: ${v.url_pdf}` : ''}`)}`}
                               onClick={() => registrarEnvioMutation.mutate({ id: v.id, canal: 'email', destinatario: v.tercero?.email || 'desconocido' })}
                               className="rounded px-2 py-1 text-xs font-medium bg-[var(--cv-elevated)] cv-muted hover:opacity-80 transition-opacity"
                             >
@@ -513,18 +515,20 @@ export default function VentasPage() {
                         Facturar
                       </button>
                     )}
-                    {v.estado === 'FACTURADA' && v.url_pdf && (
+                    {v.estado === 'FACTURADA' && (
                       <>
+                        {v.url_pdf && (
+                          <a
+                            href={v.url_pdf}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]"
+                          >
+                            PDF
+                          </a>
+                        )}
                         <a
-                          href={v.url_pdf}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]"
-                        >
-                          PDF
-                        </a>
-                        <a
-                          href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}: ${v.url_pdf}`)}`}
+                          href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}${v.url_pdf ? `: ${v.url_pdf}` : ''}`)}`}
                           target="_blank"
                           rel="noreferrer"
                           onClick={() => registrarEnvioMutation.mutate({ id: v.id, canal: 'whatsapp', destinatario: v.tercero?.telefono || 'desconocido' })}
