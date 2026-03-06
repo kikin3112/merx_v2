@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-04-PLAN.md tasks 1-2, awaiting human-verify checkpoint (Task 3)
-last_updated: "2026-03-05T00:52:19.393Z"
+stopped_at: Completed 02-05-PLAN.md — Phase 2 COMPLETE, all 5 plans executed, Socia validated in production
+last_updated: "2026-03-06T04:26:02.409Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # GSD Execution State
 
 **Project:** chandelierp — Propuesta de Valor 2026
-**Last Updated:** 2026-03-04T23:22:27Z
-**Stopped At:** Completed 02-04-PLAN.md tasks 1-2, awaiting human-verify checkpoint (Task 3)
+**Last Updated:** 2026-03-06T04:26:02Z
+**Stopped At:** Completed 02-05-PLAN.md — Phase 2 COMPLETE, all 5 plans executed, Socia validated in production
 
 ---
 
@@ -24,17 +24,18 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Current Phase | 01-auditoria |
-| Current Plan | 03 |
-| Phase Progress | 3/3 plans complete |
-| Overall Status | Phase 1 Complete — Ready for Phase 2 |
+| Current Phase | 02-ia-core-asistente-de-costeo-y-pricing |
+| Current Plan | 05 (COMPLETE) |
+| Phase Progress | 5/5 plans complete |
+| Overall Status | Phase 2 COMPLETE — Ready for Phase 3 (PDF Branding) |
 
 ---
 
 ## Progress
 
 ```
-Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
+Phase 1 Auditoria:  [==========] 3/3 plans COMPLETO
+Phase 2 IA Core:    [==========] 5/5 plans COMPLETO
 ```
 
 ---
@@ -62,6 +63,8 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 - [Phase 02]: test_asistente_ia_invalid_body uses valid JWT + get_db override to bypass auth so Pydantic body validation is the terminal check
 - [Phase 02]: key={selectedReceta.id} on AsistenteCosteoPanel forces remount for clean state reset on close/reopen
 - [Phase 02]: Chat history in React local state only, destroyed on modal close (confirmed from 02-03 locked decision)
+- [Phase 02]: OPENROUTER_API_KEY confirmed already set in Railway production — no configuration action needed
+- [Phase 02]: Production smoke test automated via curl (Fase 1 0.63s, Fase 2 0.52s, both HTTP 200) for Luz De Luna tenant VELA VASO recipe
 
 ## Performance Metrics
 
@@ -76,8 +79,9 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 | Phase 02 P02 | 233s | 1 tasks | 1 files |
 | Phase 02 P03 | 469 | 2 tasks | 2 files |
 | Phase 02 P04 | 240 | 2 tasks | 4 files |
+| Phase 02 P05 | 480 | 3 tasks | 0 files |
 
 ## Session Info
 
-**Last session:** 2026-03-05T00:52:19.390Z
+**Last session:** 2026-03-06T04:26:02.406Z
 **Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)

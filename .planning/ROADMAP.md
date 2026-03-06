@@ -54,6 +54,15 @@ márgenes y recomendaciones de optimización de costos dentro del módulo receta
 
 **Dependencies:** Phase 1 AUDIT.md decision on LLM provider
 
+**Plans:** 5/5 plans executed
+- [x] 02-01-PLAN.md — ServicioIACosteo backend skeleton + OpenRouter integration
+- [x] 02-02-PLAN.md — SociaAnalisisResponse schema + Decimal safety
+- [x] 02-03-PLAN.md — /recetas/{id}/asistente-ia endpoint + tenant isolation
+- [x] 02-04-PLAN.md — AsistenteCosteoPanel frontend modal + "Consultar a Socia" button
+- [x] 02-05-PLAN.md — E2E validation: 61 tests green, Socia HTTP 200 in production
+
+**Status:** COMPLETO
+
 ---
 
 ## Phase 3: Imagen Profesional — Plantillas PDF y Catálogos
@@ -172,7 +181,7 @@ recordatorios de declaración, explicaciones de IVA/retenciones en contexto.
 | Phase | Goal | Requirements | Effort | Impact | Notes |
 |-------|------|-------------|--------|--------|-------|
 | 1 | Auditoría + Decisiones | R1–R7 | S | Unlock todo | COMPLETO |
-| 2 | 3/5 | In Progress|  | Alto diferenciador | Requiere: ANTHROPIC_API_KEY en Railway |
+| 2 | 5/5 | COMPLETO   | 2026-03-06 | Alto diferenciador | COMPLETO — OpenRouter confirmed, 61 tests green, Socia E2E validated |
 | 3 | PDF Branded | R4.1, R4.2 | M | Imagen profesional | Requiere: verificar S3 bucket AWS |
 | 4 | Pagos Locales | R3.1–R3.3 | L | Conversión crítica | Requiere: cuenta Wompi producción |
 | 5 | WhatsApp | R2.1, R2.2 | L | Canal de ventas | Requiere: BSP onboarding (1 sem lead time) |
