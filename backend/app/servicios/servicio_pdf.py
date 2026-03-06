@@ -144,13 +144,22 @@ class ServicioPDF:
                     _hdr, b64data = url_logo.split(",", 1)
                     img_bytes = base64.b64decode(b64data)
                     logo_img = RLImage(io.BytesIO(img_bytes), width=2 * cm, height=2 * cm)
-                else:
+                elif url_logo.startswith("/"):
                     # legacy: filesystem path
                     static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
                     logo_path = os.path.normpath(os.path.join(static_base, url_logo.replace("/static/", "", 1)))
                     if not os.path.exists(logo_path):
                         raise FileNotFoundError(f"Logo not found: {logo_path}")
                     logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
+                else:
+                    # New: S3 key path (e.g. "tenants/uuid/logo.png")
+                    from app.servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+                    storage = ServicioAlmacenamiento()
+                    img_bytes = storage.obtener_imagen_bytes(url_logo)
+                    if img_bytes is None:
+                        raise ValueError("S3 logo not found")
+                    logo_img = RLImage(io.BytesIO(img_bytes), width=3 * cm, height=3 * cm)
                 logo_img.hAlign = "CENTER"
                 elements.append(logo_img)
                 elements.append(Spacer(1, 0.3 * cm))
@@ -179,7 +188,9 @@ class ServicioPDF:
         if info_parts:
             elements.append(Paragraph(" | ".join(info_parts), self.styles["DocSubtitle"]))
 
-        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1a1a2e"), spaceAfter=4 * mm))
+        elements.append(
+            HRFlowable(width="100%", thickness=1, color=colors.HexColor(self.primary_color), spaceAfter=4 * mm)
+        )
 
         # Titulo documento + numero + fecha
         doc_info = [
@@ -264,8 +275,8 @@ class ServicioPDF:
         style = TableStyle(
             [
                 # Header
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(self.primary_color)),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor(self.text_on_primary)),
                 ("FONTSIZE", (0, 0), (-1, 0), 8),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("ALIGN", (0, 0), (-1, 0), "CENTER"),
@@ -280,7 +291,7 @@ class ServicioPDF:
                 ("ALIGN", (2, 1), (2, -1), "CENTER"),  # Cant
                 ("ALIGN", (3, 1), (-1, -1), "RIGHT"),  # Prices
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
-                ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#1a1a2e")),
+                ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor(self.primary_color)),
             ]
         )
 
@@ -320,7 +331,7 @@ class ServicioPDF:
                 # Total row bold
                 ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
                 ("FONTSIZE", (0, -1), (-1, -1), 11),
-                ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#1a1a2e")),
+                ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor(self.primary_color)),
                 ("TOPPADDING", (0, -1), (-1, -1), 6),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
             ]
