@@ -4,7 +4,22 @@ import { productos } from '../api/endpoints';
 import type { Producto } from '../types';
 import { formatCurrency } from '../utils/format';
 
+// Set to false to restore full Catálogo functionality
+const CATALOGO_UNDER_CONSTRUCTION = true;
+
 export default function CatalogoPage() {
+  if (CATALOGO_UNDER_CONSTRUCTION) {
+    return (
+      <div>
+        <h1 className="font-brand text-xl font-medium cv-text mb-6">Catálogo</h1>
+        <div className="cv-card p-12 text-center cv-muted">
+          <p className="text-lg mb-2">Módulo Catálogo</p>
+          <p className="text-sm">Próximamente: generación de catálogos PDF con imagen y precios</p>
+        </div>
+      </div>
+    );
+  }
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
 
