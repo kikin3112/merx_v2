@@ -1,3 +1,5 @@
+import { TypewriterText } from './TypewriterText';
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.chandelierp.com';
 
 export function Hero() {
@@ -39,7 +41,7 @@ export function Hero() {
             style={{ fontFamily: 'var(--font-brand)', fontWeight: 500, color: 'var(--text)' }}
           >
             Tu negocio,{' '}
-            <span style={{ color: 'var(--primary)' }}>en orden.</span>
+            <TypewriterText />
           </h1>
 
           {/* Subheading */}
