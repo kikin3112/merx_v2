@@ -32,12 +32,14 @@ export default function Sidebar() {
     >
       {/* Brand */}
       <div className="relative flex items-center justify-center py-5 border-b" style={{ borderColor: 'var(--cv-border)' }}>
-        <img
-          src="/logo-grande.png"
-          alt="chandelierp"
-          className="h-10 object-contain"
-          style={{ maxWidth: '152px' }}
-        />
+        <a href="https://chandelierp-landing.vercel.app/" target="_blank" rel="noopener noreferrer">
+          <img
+            src="/logo-grande.png"
+            alt="chandelierp"
+            className="h-10 object-contain"
+            style={{ maxWidth: '152px' }}
+          />
+        </a>
         <button
           onClick={toggleTheme}
           className="absolute right-3 p-1.5 cv-icon-btn"
