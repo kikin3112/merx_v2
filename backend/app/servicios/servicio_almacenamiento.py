@@ -122,3 +122,39 @@ class ServicioAlmacenamiento:
         except Exception as e:
             logger.error(f"Error deleting from S3: {e}")
             return False
+
+    def subir_imagen(
+        self,
+        contenido: bytes,
+        tenant_id: str,
+        sub_path: str,
+        extension: str,
+    ) -> Optional[str]:
+        """Sube imagen a S3. Retorna S3 key o None si falla."""
+        if not self.is_enabled or not self._client:
+            return None
+        key = f"tenants/{tenant_id}/{sub_path}.{extension}"
+        try:
+            content_type = "image/png" if extension == "png" else "image/jpeg"
+            self._client.put_object(
+                Bucket=settings.S3_BUCKET,
+                Key=key,
+                Body=contenido,
+                ContentType=content_type,
+            )
+            logger.info(f"Image uploaded to S3: {key}")
+            return key
+        except Exception as e:
+            logger.error(f"Error subiendo imagen S3: {e}")
+            return None
+
+    def obtener_imagen_bytes(self, key: str) -> Optional[bytes]:
+        """Descarga imagen de S3. Retorna bytes o None si falla."""
+        if not self.is_enabled or not self._client:
+            return None
+        try:
+            response = self._client.get_object(Bucket=settings.S3_BUCKET, Key=key)
+            return response["Body"].read()
+        except Exception as e:
+            logger.error(f"Error descargando imagen S3: {e}")
+            return None
