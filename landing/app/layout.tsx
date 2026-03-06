@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: 'chandelierp — ERP para solopreneurs',
   description: 'Control total de tu negocio. Inventario, recetas, POS, facturación y contabilidad en un solo lugar. Hecho para solopreneurs colombianos.',
   keywords: ['ERP', 'solopreneur', 'inventario', 'POS', 'facturación', 'PyME', 'Colombia'],
-  icons: { icon: '/logo.png' },
+  icons: { icon: [{ url: '/logo-circular.svg', type: 'image/svg+xml' }, { url: '/isotipo.png', type: 'image/png' }] },
   openGraph: {
     title: 'chandelierp — ERP para solopreneurs',
     description: 'Control total de tu negocio. Prueba gratis 14 días.',
