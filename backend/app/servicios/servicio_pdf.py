@@ -356,6 +356,133 @@ class ServicioPDF:
 
         return elements
 
+    def generar_catalogo_pdf(self, productos: list) -> bytes:
+        """Genera catálogo PDF con grid 2 columnas.
+
+        Args:
+            productos: list of dicts with keys:
+                nombre (str), descripcion (Optional[str]),
+                precio_venta (Decimal), imagen_s3_key (Optional[str])
+        Returns:
+            PDF bytes
+        """
+        from app.servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            leftMargin=1.5 * cm,
+            rightMargin=1.5 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=1.5 * cm,
+        )
+        styles = self.styles
+        primary = colors.HexColor(self.primary_color)
+        storage = ServicioAlmacenamiento()
+        story = []
+
+        # ── Catalogue header: logo + company name + divider ──
+        url_logo = self.tenant.get("url_logo")
+        if url_logo:
+            try:
+                if url_logo.startswith("data:"):
+                    _hdr, b64data = url_logo.split(",", 1)
+                    img_bytes = base64.b64decode(b64data)
+                    logo_img = RLImage(io.BytesIO(img_bytes), width=2 * cm, height=2 * cm)
+                elif url_logo.startswith("/"):
+                    static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
+                    logo_path = os.path.normpath(os.path.join(static_base, url_logo.replace("/static/", "", 1)))
+                    logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
+                else:
+                    img_bytes = storage.obtener_imagen_bytes(url_logo)
+                    if img_bytes:
+                        logo_img = RLImage(io.BytesIO(img_bytes), width=3 * cm, height=3 * cm)
+                    else:
+                        logo_img = None
+                if logo_img:
+                    logo_img.hAlign = "CENTER"
+                    story.append(logo_img)
+                    story.append(Spacer(1, 0.3 * cm))
+            except Exception:
+                pass
+
+        story.append(Paragraph(self.tenant.get("nombre", "Catálogo de Productos"), styles["DocTitle"]))
+        story.append(Paragraph("Catálogo de Productos", styles["DocSubtitle"]))
+        from reportlab.platypus import HRFlowable
+
+        story.append(HRFlowable(width="100%", thickness=1, color=primary, spaceAfter=4 * mm))
+        story.append(Spacer(1, 0.3 * cm))
+
+        # ── Product styles ──
+        name_style = ParagraphStyle(
+            "CatName",
+            parent=styles["Normal"],
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            spaceAfter=2,
+        )
+        desc_style = ParagraphStyle(
+            "CatDesc",
+            parent=styles["Normal"],
+            fontSize=7,
+            fontName="Helvetica",
+            spaceAfter=2,
+            textColor=colors.HexColor("#555555"),
+        )
+        price_style = ParagraphStyle(
+            "CatPrice",
+            parent=styles["Normal"],
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            textColor=primary,
+        )
+
+        def build_product_cell(p: dict) -> list:
+            cell: list = []
+            # Try S3 image
+            if p.get("imagen_s3_key") and storage.is_enabled:
+                img_bytes = storage.obtener_imagen_bytes(p["imagen_s3_key"])
+                if img_bytes:
+                    try:
+                        cell.append(RLImage(io.BytesIO(img_bytes), width=3.5 * cm, height=3.5 * cm))
+                    except Exception:
+                        pass
+            cell.append(Paragraph(p.get("nombre", ""), name_style))
+            if p.get("descripcion"):
+                desc = (p["descripcion"] or "")[:80]
+                cell.append(Paragraph(desc, desc_style))
+            # precio_venta is Decimal — f-string handles it natively
+            precio = p.get("precio_venta", 0)
+            cell.append(Paragraph(f"${precio:,.0f}", price_style))
+            return cell
+
+        # ── 2-column grid ──
+        rows = []
+        for i in range(0, len(productos), 2):
+            left = build_product_cell(productos[i])
+            right = (
+                build_product_cell(productos[i + 1]) if i + 1 < len(productos) else [Paragraph("", styles["Normal"])]
+            )
+            rows.append([left, right])
+
+        if rows:
+            table = Table(rows, colWidths=[9 * cm, 9 * cm])
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("PADDING", (0, 0), (-1, -1), 8),
+                        ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#DDDDDD")),
+                        ("LINEAFTER", (0, 0), (0, -1), 0.5, colors.HexColor("#DDDDDD")),
+                    ]
+                )
+            )
+            story.append(table)
+
+        doc.build(story)
+        return buffer.getvalue()
+
     def generar_factura_pdf(
         self,
         numero: str,
