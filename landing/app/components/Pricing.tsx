@@ -28,7 +28,7 @@ export function Pricing() {
             Precios transparentes
           </h2>
           <p className="mt-4 text-base" style={{ color: 'var(--text-muted)' }}>
-            Un solo plan con todo incluido. Paga lo que puedas.
+            Un solo plan con todo incluido. Bueno, bonito y barato.
           </p>
         </div>
 
@@ -58,7 +58,7 @@ export function Pricing() {
                 className="text-xl font-medium"
                 style={{ fontFamily: 'var(--font-brand)', color: 'var(--text)' }}
               >
-                Plan Único — Paga lo que puedas
+                3B — Bueno, bonito y barato
               </h3>
 
               {/* Price */}
@@ -68,7 +68,7 @@ export function Pricing() {
                   className="text-5xl font-bold"
                   style={{ fontFamily: 'var(--font-brand)', color: 'var(--primary)' }}
                 >
-                  $5.000
+                  $15.000
                 </span>
                 <span className="text-base" style={{ color: 'var(--text-muted)' }}>COP/mes</span>
               </div>

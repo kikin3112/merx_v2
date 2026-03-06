@@ -94,7 +94,7 @@ export function Hero() {
           >
             {[
               { val: '14 días', label: 'prueba gratis' },
-              { val: '$5.000', label: 'desde / mes COP' },
+              { val: '$15.000', label: 'desde / mes COP' },
               { val: '6+', label: 'módulos integrados' },
             ].map(({ val, label }) => (
               <div
