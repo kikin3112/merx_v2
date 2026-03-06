@@ -49,6 +49,17 @@ class UsuarioMini(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TerceroMini(BaseModel):
+    """Schema mínimo de tercero para embeddings en ventas."""
+
+    id: UUID
+    nombre: str
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UsuarioBase(BaseModel):
     nombre: str = Field(..., max_length=100)
     email: EmailStr
@@ -308,6 +319,21 @@ class VentasUpdate(BaseModel):
     observaciones: Optional[str] = None
 
 
+class VentaEnvioCreate(BaseModel):
+    canal: str = Field(..., pattern="^(whatsapp|email)$")
+    destinatario: str = Field(..., min_length=1, max_length=200)
+
+
+class VentaEnvioResponse(BaseModel):
+    id: UUID
+    venta_id: UUID
+    canal: str
+    destinatario: str
+    enviado_en: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class VentasResponse(BaseModel):
     """
     Schema de respuesta con todos los campos calculados
@@ -333,6 +359,8 @@ class VentasResponse(BaseModel):
 
     # Relaciones
     detalles: List[VentasDetalleResponse] = []
+    tercero: Optional[TerceroMini] = None
+    envios: List[VentaEnvioResponse] = []
 
     # Auditoría
     created_by: Optional[UsuarioMini] = Field(None, validation_alias="created_by_user")

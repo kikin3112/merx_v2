@@ -185,6 +185,21 @@ export interface TerceroUpdate {
 
 // ---- Ventas ----
 
+export interface VentaEnvio {
+  id: string;
+  venta_id: string;
+  canal: 'whatsapp' | 'email';
+  destinatario: string;
+  enviado_en: string;
+}
+
+export interface VentaTerceroMini {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  email: string | null;
+}
+
 export interface Venta {
   id: string;
   numero_venta: string;
@@ -200,6 +215,8 @@ export interface Venta {
   total_iva: number;
   total_venta: number;
   detalles: VentaDetalle[];
+  tercero?: VentaTerceroMini | null;
+  envios?: VentaEnvio[];
   created_at: string;
   updated_at: string;
   created_by?: UsuarioMini;

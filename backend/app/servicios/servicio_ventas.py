@@ -106,7 +106,12 @@ def listar_ventas(
     """Lista ventas con filtros opcionales."""
     query = (
         db.query(Ventas)
-        .options(selectinload(Ventas.created_by_user), selectinload(Ventas.updated_by_user))
+        .options(
+            selectinload(Ventas.created_by_user),
+            selectinload(Ventas.updated_by_user),
+            selectinload(Ventas.tercero),
+            selectinload(Ventas.envios),
+        )
         .filter(Ventas.tenant_id == tenant_id)
     )
 
@@ -124,7 +129,11 @@ def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
     venta = (
         db.query(Ventas)
         .options(
-            selectinload(Ventas.created_by_user), selectinload(Ventas.updated_by_user), selectinload(Ventas.detalles)
+            selectinload(Ventas.created_by_user),
+            selectinload(Ventas.updated_by_user),
+            selectinload(Ventas.detalles),
+            selectinload(Ventas.tercero),
+            selectinload(Ventas.envios),
         )
         .filter(Ventas.id == venta_id, Ventas.tenant_id == tenant_id)
         .first()

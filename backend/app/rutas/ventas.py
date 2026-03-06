@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
-from ..datos.esquemas import VentasCreate, VentasResponse, VentasUpdate
-from ..datos.modelos import Productos, Usuarios, VentasDetalle
+from ..datos.esquemas import VentaEnvioCreate, VentasCreate, VentasResponse, VentasUpdate
+from ..datos.modelos import Productos, Usuarios, VentaEnvio, VentasDetalle
 from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_ventas import (
@@ -370,3 +370,28 @@ async def pos_venta_rapida(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al procesar la venta POS"
         )
+
+
+@router.post("/{venta_id}/registrar-envio", response_model=VentasResponse)
+async def registrar_envio_venta(
+    venta_id: UUID,
+    envio_data: VentaEnvioCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """Registra el envío de una factura por WhatsApp o Email."""
+    venta = obtener_venta(db, venta_id, tenant_id)
+
+    envio = VentaEnvio(
+        venta_id=venta.id,
+        canal=envio_data.canal,
+        destinatario=envio_data.destinatario,
+        usuario_id=current_user.id,
+        tenant_id=tenant_id,
+    )
+    db.add(envio)
+    db.commit()
+    db.refresh(venta)
+
+    return VentasResponse.model_validate(venta)

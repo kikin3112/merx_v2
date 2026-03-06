@@ -19,7 +19,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
@@ -288,6 +288,7 @@ class Ventas(TenantAuditMixin, Base):
     # Relaciones
     tercero = relationship("Terceros", back_populates="ventas")
     detalles = relationship("VentasDetalle", back_populates="venta", cascade="all, delete-orphan")
+    envios = relationship("VentaEnvio", back_populates="venta", cascade="all, delete-orphan")
 
     # Propiedades calculadas
     @hybrid_property
@@ -397,6 +398,35 @@ class VentasDetalle(TenantMixin, Base):
         CheckConstraint("cantidad > 0", name="check_venta_cantidad_positiva"),
         CheckConstraint("precio_unitario >= 0", name="check_venta_precio_positivo"),
         CheckConstraint("descuento >= 0", name="check_venta_descuento_positivo"),
+    )
+
+
+# ============================================================================
+# MODELO: VentaEnvio
+# ============================================================================
+
+
+class VentaEnvio(TenantMixin, Base):
+    """
+    Registro de envíos de facturas por WhatsApp o Email.
+    """
+
+    __tablename__ = "venta_envios"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    venta_id = Column(UUID(as_uuid=True), ForeignKey("ventas.id", ondelete="CASCADE"), nullable=False)
+    canal = Column(String(20), nullable=False)  # 'whatsapp' | 'email'
+    destinatario = Column(String(200), nullable=False)
+    enviado_en = Column(DateTime, server_default=func.now(), nullable=False)
+    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+
+    # Relaciones
+    venta = relationship("Ventas", back_populates="envios")
+    usuario = relationship("Usuarios")
+
+    __table_args__ = (
+        Index("idx_venta_envios_tenant_venta", "tenant_id", "venta_id"),
+        CheckConstraint("canal IN ('whatsapp', 'email')", name="check_venta_envio_canal_valido"),
     )
 
 
@@ -650,6 +680,8 @@ class Recetas(TenantAuditMixin, Base):
     )  # Unidades/mes esperadas para distribuir CIF fijo
     estado = Column(Boolean, default=True, nullable=False)
     notas = Column(Text)
+    socia_cache = Column(JSONB, nullable=True)  # Cached Fase-1 result (invalidated when costs change)
+    socia_cache_key = Column(String(64), nullable=True)  # SHA-256 of context for cache validation
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 

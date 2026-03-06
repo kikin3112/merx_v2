@@ -132,6 +132,8 @@ export const ventas = {
     client.post<Venta>(`/ventas/${id}/anular`, null, { params: { motivo } }),
   pos: (data: unknown) => client.post<Venta>('/ventas/pos', data),
   facturar: (id: string) => client.post<Venta>(`/ventas/${id}/facturar`),
+  registrarEnvio: (id: string, data: { canal: string; destinatario: string }) =>
+    client.post<Venta>(`/ventas/${id}/registrar-envio`, data),
 };
 
 // Inventario
