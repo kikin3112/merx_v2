@@ -31,16 +31,16 @@ export default function Sidebar() {
       style={{ backgroundColor: 'var(--cv-surface)', borderColor: 'var(--cv-border)', position: 'relative', zIndex: 1 }}
     >
       {/* Brand */}
-      <div className="flex items-center justify-between px-[10px] py-4 border-b" style={{ borderColor: 'var(--cv-border)' }}>
+      <div className="relative flex items-center justify-center px-[10px] py-5 border-b" style={{ borderColor: 'var(--cv-border)' }}>
         <img
           src="/logo-grande.png"
           alt="chandelierp"
-          className="h-8 object-contain"
-          style={{ maxWidth: '140px' }}
+          className="h-10 object-contain"
+          style={{ maxWidth: '160px' }}
         />
         <button
           onClick={toggleTheme}
-          className="p-1.5 cv-icon-btn shrink-0"
+          className="absolute right-2 p-1.5 cv-icon-btn"
           title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
         >
           {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
