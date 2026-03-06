@@ -24,7 +24,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build backend image for scanning
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.backend
@@ -53,7 +53,7 @@ jobs:
           category: trivy-image-backend
 
       - name: Build frontend image for scanning
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.frontend
