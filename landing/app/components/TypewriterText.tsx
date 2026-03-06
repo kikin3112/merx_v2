@@ -41,7 +41,14 @@ export function TypewriterText() {
   }, [displayed, phraseIdx, isDeleting]);
 
   return (
-    <span style={{ color: 'var(--primary)', whiteSpace: 'nowrap' }}>
+    <span
+      style={{
+        display: 'block',
+        minHeight: '1.1em',
+        color: 'var(--primary)',
+        whiteSpace: 'nowrap',
+      }}
+    >
       {displayed}
       <span
         aria-hidden="true"
