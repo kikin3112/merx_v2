@@ -12,6 +12,7 @@ import type { Cotizacion, Venta } from '../../types';
 interface PipelineData {
   cotizaciones: Cotizacion[];
   ventas_pendientes: Venta[];
+  ventas_confirmadas: Venta[];
   facturas_recientes: Venta[];
   resumen: { total_cotizado: string; por_cobrar: string; facturado_mes: string };
 }
@@ -43,14 +44,25 @@ function buildActions(pipeline: PipelineData): Action[] {
     });
   }
 
-  // Ventas pendientes de facturar
+  // Ventas en borrador (sin confirmar)
   if (pipeline.ventas_pendientes.length > 0) {
-    const totalPendiente = pipeline.ventas_pendientes.reduce(
+    actions.push({
+      id: 'ventas-sin-confirmar',
+      mensaje: `${pipeline.ventas_pendientes.length} venta${pipeline.ventas_pendientes.length > 1 ? 's' : ''} sin confirmar`,
+      cta: 'Confirmar',
+      to: '/ventas',
+      urgencia: 'media',
+    });
+  }
+
+  // Ventas confirmadas → pendientes de emitir factura
+  if (pipeline.ventas_confirmadas.length > 0) {
+    const totalConfirmadas = pipeline.ventas_confirmadas.reduce(
       (s, v) => s + Number(v.total_venta ?? 0), 0
     );
     actions.push({
-      id: 'ventas-pendientes',
-      mensaje: `${pipeline.ventas_pendientes.length} venta${pipeline.ventas_pendientes.length > 1 ? 's' : ''} por facturar (${formatCurrency(totalPendiente)})`,
+      id: 'ventas-por-facturar',
+      mensaje: `${pipeline.ventas_confirmadas.length} venta${pipeline.ventas_confirmadas.length > 1 ? 's' : ''} por facturar (${formatCurrency(totalConfirmadas)})`,
       cta: 'Facturar ahora',
       to: '/comercial',
       urgencia: 'alta',
@@ -79,9 +91,9 @@ function buildActions(pipeline: PipelineData): Action[] {
 }
 
 const URGENCIA_STYLES: Record<string, { badge: string; border: string }> = {
-  alta:   { badge: 'bg-red-100 text-red-700',    border: 'border-l-red-400' },
-  media:  { badge: 'bg-amber-100 text-amber-700', border: 'border-l-amber-400' },
-  normal: { badge: 'bg-blue-50 text-blue-600',   border: 'border-l-blue-300' },
+  alta:   { badge: 'cv-badge cv-badge-negative',  border: 'border-l-[var(--cv-negative)]' },
+  media:  { badge: 'cv-badge cv-badge-accent',    border: 'border-l-[var(--cv-accent)]' },
+  normal: { badge: 'cv-badge cv-badge-primary',   border: 'border-l-[var(--cv-primary)]' },
 };
 
 export default function NextActionsPanel() {
@@ -98,7 +110,7 @@ export default function NextActionsPanel() {
 
   return (
     <div className="mb-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+      <p className="cv-section-label mb-2">
         Próximas acciones
       </p>
       <div className="space-y-2">
@@ -107,12 +119,12 @@ export default function NextActionsPanel() {
           return (
             <div
               key={action.id}
-              className={`flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-100 border-l-4 ${styles.border} px-4 py-3 shadow-sm`}
+              className={`flex items-center justify-between gap-3 cv-card border-l-4 ${styles.border} px-4 py-3`}
             >
-              <p className="text-sm text-gray-700">{action.mensaje}</p>
+              <p className="text-sm cv-text">{action.mensaje}</p>
               <Link
                 to={action.to}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${styles.badge}`}
+                className={`shrink-0 ${styles.badge}`}
               >
                 {action.cta}
               </Link>

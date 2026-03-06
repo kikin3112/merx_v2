@@ -10,7 +10,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from ..datos.modelos import Cotizaciones, Ventas
+from ..datos.modelos import Cartera, Cotizaciones, Ventas
 
 
 class ServicioComercial:
@@ -27,7 +27,7 @@ class ServicioComercial:
         facturas_recientes = self._get_facturas_recientes(db, tenant_id)
 
         total_cotizado = sum(c.total_cotizacion for c in cotizaciones if c.total_cotizacion)
-        por_cobrar = sum(v.total_venta for v in facturas_recientes if v.total_venta and v.estado == "FACTURADA")
+        por_cobrar = self._saldo_por_cobrar(db, tenant_id)
         facturado_mes = self._total_facturado_mes(db, tenant_id)
 
         return {
@@ -77,6 +77,19 @@ class ServicioComercial:
             .limit(30)
             .all()
         )
+
+    def _saldo_por_cobrar(self, db: Session, tenant_id: UUID) -> Decimal:
+        """Saldo real pendiente de cobro desde Cartera, descontando pagos parciales."""
+        items = (
+            db.query(Cartera)
+            .filter(
+                Cartera.tenant_id == tenant_id,
+                Cartera.tipo_cartera == "COBRAR",
+                Cartera.estado.in_(["PENDIENTE", "PARCIAL"]),
+            )
+            .all()
+        )
+        return sum((c.saldo_pendiente for c in items), Decimal("0"))
 
     def _total_facturado_mes(self, db: Session, tenant_id: UUID) -> Decimal:
         from sqlalchemy import extract

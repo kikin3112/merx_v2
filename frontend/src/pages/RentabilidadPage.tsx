@@ -53,7 +53,7 @@ export function RentabilidadPage() {
       <div className="flex items-center gap-3">
         <span className="text-3xl">📊</span>
         <div>
-          <h1 className="font-brand text-2xl font-medium cv-text">Comparador de Rentabilidad</h1>
+          <h1 className="font-brand text-xl font-medium cv-text">Comparador de Rentabilidad</h1>
           <p className="cv-muted text-sm">¿Cuál producto te conviene más hacer? Aquí lo ves de un vistazo.</p>
         </div>
       </div>

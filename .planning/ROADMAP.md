@@ -72,18 +72,29 @@ generador de catálogo de productos descargable/compartible por WhatsApp.
 
 **Requirements:** R4.1, R4.2
 
-**Key decisions (pending Phase 1):**
-- PDF engine: WeasyPrint (Python, Railway) vs Puppeteer (Node, sidecar)
-- Storage: S3 bucket existente (confirmar configuración)
-- Branding: configuración de logo/colores por tenant (nueva tabla `tenant_branding`)
+**Key decisions (resolved in CONTEXT.md 2026-03-06):**
+- PDF engine: ReportLab (ya instalado, sin dependencias nuevas en Railway)
+- Storage: S3 bucket existente — imágenes en `tenants/{id}/{sub_path}.{ext}`
+- Branding: campos existentes en Tenants (url_logo, color_primario, color_secundario) — sin migración
+- Catalogue: streaming puro (no S3 cache), selección manual por checkboxes
 
 **Deliverables:**
-- `backend/app/servicios/servicio_pdf.py` — generación branded PDF
-- `backend/app/rutas/facturas.py` — endpoint `/facturas/{id}/pdf-branded`
-- `backend/app/rutas/productos.py` — endpoint `/productos/catalogo-pdf`
-- `frontend` — botón "Descargar PDF" en FacturasPage + CatálogoPage
+- `backend/app/servicios/servicio_pdf.py` — branded PDF con colores tenant + logo S3
+- `backend/app/servicios/servicio_almacenamiento.py` — subir_imagen(), obtener_imagen_bytes()
+- `backend/app/rutas/tenants.py` — POST /me/logo, PATCH /me
+- `backend/app/rutas/productos.py` — POST /catalogo-pdf, POST/{id}/imagen, DELETE/{id}/imagen
+- `frontend/src/pages/CatalogoPage.tsx` — grid + checkboxes + PDF download
+- `frontend/src/components/config/MarcaTab.tsx` — logo upload + color pickers + preview
+- Alembic migration: `add_imagen_s3_key_to_productos`
 
 **Dependencies:** None (independiente de Phase 2)
+
+**Plans:** 2/5 plans executed
+- [ ] 03-01-PLAN.md — S3 infraestructura + logo upload endpoint + migración Productos
+- [ ] 03-02-PLAN.md — PDF branding: colores tenant + logo S3 + WCAG contrast
+- [ ] 03-03-PLAN.md — ConfigPage pestaña Marca: logo upload UI + color pickers + preview
+- [ ] 03-04-PLAN.md — CatalogoPage + POST /productos/catalogo-pdf + product image upload
+- [ ] 03-05-PLAN.md — Validación E2E: test suite completo + smoke test producción + SUMMARY
 
 ---
 
@@ -182,7 +193,7 @@ recordatorios de declaración, explicaciones de IVA/retenciones en contexto.
 |-------|------|-------------|--------|--------|-------|
 | 1 | Auditoría + Decisiones | R1–R7 | S | Unlock todo | COMPLETO |
 | 2 | 5/5 | COMPLETO   | 2026-03-06 | Alto diferenciador | COMPLETO — OpenRouter confirmed, 61 tests green, Socia E2E validated |
-| 3 | PDF Branded | R4.1, R4.2 | M | Imagen profesional | Requiere: verificar S3 bucket AWS |
+| 3 | 2/5 | In Progress|  | Imagen profesional | 5 planes listos — ejecutar `/gsd:execute-phase 03` |
 | 4 | Pagos Locales | R3.1–R3.3 | L | Conversión crítica | Requiere: cuenta Wompi producción |
 | 5 | WhatsApp | R2.1, R2.2 | L | Canal de ventas | Requiere: BSP onboarding (1 sem lead time) |
 | 6 | Freemium | R6.1–R6.3 | M | Adquisición masiva | Requiere: Clerk pk_live_* keys |

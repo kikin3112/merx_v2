@@ -94,7 +94,7 @@ function PipelineColumn({ title, count, total, headerClass, children }: ColumnPr
   return (
     <div className="flex-1 min-w-[220px] max-w-xs">
       <div className={`flex items-center justify-between px-3 py-2 rounded-xl mb-3 ${headerClass}`}>
-        <span className="text-sm font-semibold">{title}</span>
+        <span className="text-sm font-semibold cv-text">{title}</span>
         <div className="flex items-center gap-2">
           <span className="text-xs opacity-70">{formatCurrency(total)}</span>
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs font-bold">
@@ -270,11 +270,11 @@ export default function ComercialPage() {
           {[
             { label: 'En cotización', value: resumen.total_cotizado, colorClass: 'cv-accent' },
             { label: 'Por cobrar', value: resumen.por_cobrar, colorClass: 'cv-primary' },
-            { label: 'Facturado este mes', value: resumen.facturado_mes, colorClass: 'text-[var(--cv-positive)]' },
+            { label: 'Facturado este mes', value: resumen.facturado_mes, colorClass: 'cv-positive' },
           ].map((kpi) => (
-            <div key={kpi.label} className="cv-card p-4">
-              <p className="text-xs font-medium cv-muted mb-1">{kpi.label}</p>
-              <p className={`text-xl font-bold ${kpi.colorClass}`}>{formatCurrency(Number(kpi.value))}</p>
+            <div key={kpi.label} className="bento-cell">
+              <div className="bento-kpi-label">{kpi.label}</div>
+              <div className={`bento-kpi-val ${kpi.colorClass}`}>{formatCurrency(Number(kpi.value))}</div>
             </div>
           ))}
         </div>

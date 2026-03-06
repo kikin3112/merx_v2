@@ -11,14 +11,14 @@ export const SOCIA_THEME = {
 
 export function getViabilidadColor(viabilidad: 'VIABLE' | 'CRITICO' | 'NO_VIABLE'): string {
   switch (viabilidad) {
-    case 'VIABLE': return 'text-green-700 bg-green-100';
-    case 'CRITICO': return 'text-yellow-700 bg-yellow-100';
-    case 'NO_VIABLE': return 'text-red-700 bg-red-100';
+    case 'VIABLE': return 'cv-badge-positive';
+    case 'CRITICO': return 'cv-badge-accent';
+    case 'NO_VIABLE': return 'cv-badge-negative';
   }
 }
 
 export function getMargenColor(margen: number): string {
-  if (margen >= 50) return 'text-green-700 bg-green-100';
-  if (margen >= 30) return 'text-yellow-700 bg-yellow-100';
-  return 'text-red-700 bg-red-100';
+  if (margen >= 50) return 'cv-badge-positive';
+  if (margen >= 30) return 'cv-badge-accent';
+  return 'cv-badge-negative';
 }

@@ -80,6 +80,8 @@ def _get_tenant_info(db: Session, tenant_id: UUID) -> dict:
         "ciudad": tenant.ciudad,
         "departamento": tenant.departamento,
         "url_logo": tenant.url_logo,
+        "color_primario": tenant.color_primario or "#1976D2",
+        "color_secundario": tenant.color_secundario or "#424242",
     }
 
 

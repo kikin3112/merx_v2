@@ -31,19 +31,18 @@ export default function Sidebar() {
       style={{ backgroundColor: 'var(--cv-surface)', borderColor: 'var(--cv-border)', position: 'relative', zIndex: 1 }}
     >
       {/* Brand */}
-      <div className="flex items-center gap-[10px] px-[10px] py-5 border-b" style={{ borderColor: 'var(--cv-border)' }}>
-        <img
-          src={logoSrc}
-          alt={logoAlt}
-          className="h-7 w-7 rounded-md object-cover shrink-0"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
-        />
-        <p className="text-[15px] font-medium truncate font-brand flex-1 min-w-0" style={{ color: 'var(--cv-text)' }}>
-          {isSuperadminOnly ? 'SuperAdmin' : (tenantName || 'chandelierp')}
-        </p>
+      <div className="relative flex items-center justify-center py-5 border-b" style={{ borderColor: 'var(--cv-border)' }}>
+        <a href="https://chandelierp-landing.vercel.app/" target="_blank" rel="noopener noreferrer">
+          <img
+            src="/logo-grande.png"
+            alt="chandelierp"
+            className="h-10 object-contain"
+            style={{ maxWidth: '152px' }}
+          />
+        </a>
         <button
           onClick={toggleTheme}
-          className="p-1.5 cv-icon-btn shrink-0"
+          className="absolute right-3 p-1.5 cv-icon-btn"
           title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
         >
           {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
@@ -120,15 +119,18 @@ export default function Sidebar() {
       <div className="border-t px-3 py-3" style={{ borderColor: 'var(--cv-border)' }}>
         <div className="flex items-center gap-[10px] px-[10px] py-2 rounded-[10px] cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.05)]">
           <div
-            className="h-8 w-8 rounded-[8px] flex items-center justify-center shrink-0"
+            className="h-8 w-8 rounded-[8px] flex items-center justify-center shrink-0 overflow-hidden"
             style={{
               backgroundColor: 'var(--cv-primary-dim)',
               border: '1px solid rgba(255,155,101,0.3)',
             }}
           >
-            <span className="text-xs font-bold font-mono" style={{ color: 'var(--cv-primary)' }}>
-              {user?.nombre?.slice(0, 2).toUpperCase() || 'US'}
-            </span>
+            <img
+              src={isSuperadminOnly ? '/isotipo.png' : logoSrc}
+              alt={isSuperadminOnly ? 'chandelierp' : logoAlt}
+              className="h-full w-full object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/isotipo.png'; }}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium truncate" style={{ color: 'var(--cv-text)' }}>{user?.nombre || 'Usuario'}</p>

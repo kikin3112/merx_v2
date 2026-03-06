@@ -382,3 +382,80 @@ body::before {
   line-height: 1.2;
   color: var(--cv-text);
 }
+
+/* ══════════════════════════════════
+   BENTO — Dashboard KPI grid
+   Specs: carbon-vivo-design-system mockup
+══════════════════════════════════ */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+/* Responsive col spans */
+.bento-col-3  { grid-column: span 3; }
+.bento-col-4  { grid-column: span 4; }
+.bento-col-6  { grid-column: span 6; }
+.bento-col-12 { grid-column: span 12; }
+.bento-row-2  { grid-row: span 2; }
+.bento-row-3  { grid-row: span 3; }
+
+.bento-cell {
+  background: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 0.75rem;
+  padding: 20px 22px;
+  overflow: hidden;
+  position: relative;
+  transition: border-color 150ms ease;
+}
+.bento-cell:hover { border-color: var(--cv-border-mid); }
+
+.bento-kpi-label {
+  font-size: 11px;
+  color: var(--cv-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+}
+.bento-kpi-val {
+  font-family: var(--font-mono);
+  font-size: 1.625rem; /* 26px */
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--cv-text);
+  line-height: 1.1;
+}
+.bento-kpi-delta {
+  font-size: 12px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--cv-muted);
+}
+
+/* Bento table — compact data grid inside bento-cell */
+.bento-table { width: 100%; border-collapse: collapse; }
+.bento-table th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cv-border);
+  font-weight: 600;
+  opacity: 0.5;
+}
+.bento-table td {
+  padding: 10px 0;
+  font-size: 12px;
+  color: var(--cv-muted);
+  border-bottom: 1px solid var(--cv-border);
+  vertical-align: middle;
+}
+.bento-table tr:last-child td { border-bottom: none; }
+.bento-table .bento-mono { font-family: var(--font-mono); font-size: 12px; color: var(--cv-text); }

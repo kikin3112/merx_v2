@@ -35,9 +35,9 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
   const pctInd = Math.round((c.costo_indirecto / total) * 100);
 
   const segments = [
-    { label: 'Material directo', valor: c.costo_material_directo, pct: pctMat, color: 'bg-amber-400' },
-    { label: 'Mano de obra', valor: c.costo_mano_obra_directa, pct: pctMO, color: 'bg-violet-400' },
-    { label: 'Gastos adicionales', valor: c.costo_indirecto, pct: pctInd, color: 'bg-teal-400' },
+    { label: 'Material directo', valor: c.costo_material_directo, pct: pctMat, color: 'bg-[var(--cv-primary)]' },
+    { label: 'Mano de obra', valor: c.costo_mano_obra_directa, pct: pctMO, color: 'bg-[var(--cv-accent)]' },
+    { label: 'Gastos adicionales', valor: c.costo_indirecto, pct: pctInd, color: 'bg-[var(--cv-positive)]' },
   ].filter((s) => s.valor > 0);
 
   // Diferencia vs costo estándar
@@ -48,7 +48,7 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
   return (
     <div className="space-y-3">
       {/* Barra horizontal stacked */}
-      <div className="flex rounded-full overflow-hidden h-4 bg-gray-100">
+      <div className="flex rounded-full overflow-hidden h-4 cv-elevated">
         {segments.map((s) => (
           <div
             key={s.label}
@@ -65,26 +65,26 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
           <div key={s.label} className="flex items-start gap-2">
             <div className={`w-3 h-3 rounded-sm mt-0.5 flex-shrink-0 ${s.color}`} />
             <div>
-              <p className="text-xs text-gray-500">{s.label}</p>
-              <p className="text-sm font-semibold text-gray-900">{formatCurrency(s.valor)}</p>
-              <p className="text-xs text-gray-400">{s.pct}%</p>
+              <p className="text-xs cv-muted">{s.label}</p>
+              <p className="text-sm font-semibold cv-text">{formatCurrency(s.valor)}</p>
+              <p className="text-xs cv-muted">{s.pct}%</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Estructura profesional */}
-      <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
+      <div className="cv-elevated rounded-lg p-3 space-y-1.5 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-500">Costo Primo (MD + MOD)</span>
-          <span className="font-semibold">{formatCurrency(c.costo_primo)}</span>
+          <span className="cv-muted">Costo Primo (MD + MOD)</span>
+          <span className="font-semibold cv-text">{formatCurrency(c.costo_primo)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Gastos adicionales (CIF)</span>
-          <span className="font-semibold">{formatCurrency(c.costo_indirecto)}</span>
+          <span className="cv-muted">Gastos adicionales (CIF)</span>
+          <span className="font-semibold cv-text">{formatCurrency(c.costo_indirecto)}</span>
         </div>
         {c.cif_fijo_mensual > 0 && (
-          <div className="ml-3 text-xs text-gray-400 space-y-0.5">
+          <div className="ml-3 text-xs cv-muted space-y-0.5">
             <div className="flex justify-between">
               <span>CIF fijo mensual</span>
               <span>{formatCurrency(c.cif_fijo_mensual)}</span>
@@ -100,7 +100,7 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
             </div>
           </div>
         )}
-        <div className="flex justify-between border-t border-gray-200 pt-1.5 font-bold">
+        <div className="flex justify-between border-t cv-divider pt-1.5 font-bold cv-text">
           <span>Costo Total Manufactura</span>
           <span>{formatCurrency(c.costo_total)}</span>
         </div>
@@ -108,14 +108,14 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
 
       {/* Cobertura de stock */}
       {c.lotes_posibles_con_stock !== undefined && (
-        <div className={`rounded-lg px-3 py-2 flex items-center justify-between text-sm ${
-          c.lotes_posibles_con_stock === 0 ? 'bg-red-50 border border-red-200' :
-          c.lotes_posibles_con_stock <= 2 ? 'bg-yellow-50 border border-yellow-200' :
-          'bg-green-50 border border-green-200'
+        <div className={`cv-card rounded-lg px-3 py-2 flex items-center justify-between text-sm ${
+          c.lotes_posibles_con_stock === 0 ? 'cv-alert-error' :
+          c.lotes_posibles_con_stock <= 2 ? 'cv-alert-accent' :
+          'cv-alert-positive'
         }`}>
           <span className={`font-medium ${
-            c.lotes_posibles_con_stock === 0 ? 'text-red-700' :
-            c.lotes_posibles_con_stock <= 2 ? 'text-yellow-700' : 'text-green-700'
+            c.lotes_posibles_con_stock === 0 ? 'cv-negative' :
+            c.lotes_posibles_con_stock <= 2 ? 'cv-accent' : 'cv-positive'
           }`}>
             {c.lotes_posibles_con_stock === 0
               ? `Sin stock${c.ingrediente_critico ? ` — falta: ${c.ingrediente_critico}` : ''}`
@@ -125,53 +125,48 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
       )}
 
       {/* Totales clave */}
-      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-        <div className="bg-gray-50 rounded-lg p-2.5">
-          <p className="text-xs text-gray-500">Costo unitario</p>
-          <p className="text-base font-bold text-gray-900">{formatCurrency(c.costo_unitario)}</p>
-          <p className="text-xs text-gray-400">por unidad producida</p>
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t cv-divider">
+        <div className="cv-elevated rounded-lg p-2.5">
+          <p className="text-xs cv-muted">Costo unitario</p>
+          <p className="text-base font-bold cv-text">{formatCurrency(c.costo_unitario)}</p>
+          <p className="text-xs cv-muted">por unidad producida</p>
         </div>
-        <div className={`rounded-lg p-2.5 ${
-          c.margen_actual_porcentaje >= 50 ? 'bg-green-50' :
-          c.margen_actual_porcentaje >= 30 ? 'bg-yellow-50' : 'bg-red-50'
-        }`}>
-          <p className="text-xs text-gray-500">Margen actual</p>
+        <div className={`rounded-lg p-2.5 cv-elevated`}>
+          <p className="text-xs cv-muted">Margen actual</p>
           <p className={`text-base font-bold ${
-            c.margen_actual_porcentaje >= 50 ? 'text-green-700' :
-            c.margen_actual_porcentaje >= 30 ? 'text-yellow-700' : 'text-red-700'
+            c.margen_actual_porcentaje >= 50 ? 'cv-positive' :
+            c.margen_actual_porcentaje >= 30 ? 'cv-accent' : 'cv-negative'
           }`}>{c.margen_actual_porcentaje.toFixed(1)}%</p>
-          <p className="text-xs text-gray-400">sobre precio de venta</p>
+          <p className="text-xs cv-muted">sobre precio de venta</p>
         </div>
       </div>
 
       {c.precio_sugerido && c.margen_objetivo && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+        <div className="cv-card p-3 flex items-center justify-between" style={{ background: 'var(--cv-primary-dim)', borderColor: 'var(--cv-primary)' }}>
           <div>
-            <p className="text-xs text-amber-700 font-medium">Tu Socia te sugiere</p>
-            <p className="text-lg font-bold text-amber-900">{formatCurrency(c.precio_sugerido)}</p>
+            <p className="text-xs cv-primary font-medium">Tu Socia te sugiere</p>
+            <p className="text-lg font-bold cv-text">{formatCurrency(c.precio_sugerido)}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-amber-600">Para ganar el {c.margen_objetivo}%</p>
-            <p className="text-xs text-amber-500">de cada venta</p>
+            <p className="text-xs cv-muted">Para ganar el {c.margen_objetivo}%</p>
+            <p className="text-xs cv-muted">de cada venta</p>
           </div>
         </div>
       )}
 
       {/* Costo estándar vigente + diferencia */}
       {costoEstandar && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+        <div className="cv-card p-3 text-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-blue-600 font-medium">Costo estándar vigente</p>
-              <p className="font-bold text-blue-900">{formatCurrency(Number(costoEstandar.costo_unitario))}</p>
-              <p className="text-xs text-blue-500">
+              <p className="text-xs cv-primary font-medium">Costo estándar vigente</p>
+              <p className="font-bold cv-text">{formatCurrency(Number(costoEstandar.costo_unitario))}</p>
+              <p className="text-xs cv-muted">
                 Fijado por {costoEstandar.confirmado_por_nombre ?? 'Admin'} · {new Date(costoEstandar.confirmado_en).toLocaleDateString('es-CO')}
               </p>
             </div>
             {diferenciaPct !== null && Math.abs(diferenciaPct) > 1 && (
-              <span className={`text-xs font-bold px-2 py-1 rounded ${
-                diferenciaPct > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-              }`}>
+              <span className={`cv-badge ${diferenciaPct > 0 ? 'cv-badge-negative' : 'cv-badge-positive'}`}>
                 {diferenciaPct > 0 ? '+' : ''}{diferenciaPct.toFixed(1)}% vs estándar
               </span>
             )}
@@ -184,7 +179,7 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
         <button
           onClick={onFijarCosto}
           disabled={fijarLoading}
-          className="w-full py-2 text-sm font-semibold rounded-lg border-2 border-blue-500 text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-50"
+          className="cv-btn cv-btn-secondary w-full disabled:opacity-50"
         >
           {fijarLoading ? 'Fijando...' : 'Fijar como costo estándar'}
         </button>

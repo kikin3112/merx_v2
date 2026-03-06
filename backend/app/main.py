@@ -485,8 +485,8 @@ app.include_router(facturas.router, prefix=f"{prefix}/facturas", tags=["Facturas
 # Reportes
 app.include_router(reportes.router, prefix=f"{prefix}/reportes", tags=["Reportes"])
 
-# Recetas
-app.include_router(recetas.router, prefix=f"{prefix}/recetas", tags=["Recetas"])
+# Produccion
+app.include_router(recetas.router, prefix=f"{prefix}/produccion", tags=["Produccion"])
 
 # Socia — Costos Indirectos, Análisis de Precios y Gamificación
 app.include_router(costos_indirectos.router, prefix=f"{prefix}/costos-indirectos", tags=["Socia / Costos Indirectos"])

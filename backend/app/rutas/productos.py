@@ -4,7 +4,7 @@ import re
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
@@ -260,6 +260,130 @@ async def listar_productos_cursor(
         "next_cursor": next_cursor,
         "has_more": has_more,
     }
+
+
+@router.post("/catalogo-pdf", summary="Generar catálogo PDF de productos seleccionados")
+async def generar_catalogo_pdf(
+    datos: dict,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "vendedor", "operador")),
+):
+    """Genera un PDF catálogo con los productos indicados. Streamea directamente al cliente."""
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    from ..rutas.facturas import _get_tenant_info
+    from ..servicios.servicio_pdf import ServicioPDF
+
+    producto_ids = datos.get("producto_ids", [])
+    if not producto_ids:
+        raise HTTPException(status_code=422, detail="Debe seleccionar al menos un producto")
+
+    productos_db = (
+        db.query(Productos)
+        .filter(
+            Productos.tenant_id == ctx.tenant_id,
+            Productos.id.in_(producto_ids),
+            Productos.deleted_at.is_(None),
+        )
+        .all()
+    )
+
+    tenant_info = _get_tenant_info(db, ctx.tenant_id)
+    servicio = ServicioPDF(tenant_info)
+
+    # Pass Decimal directly — NEVER cast to float (project rule)
+    productos_list = [
+        {
+            "nombre": p.nombre,
+            "descripcion": p.descripcion,
+            "precio_venta": p.precio_venta,
+            "imagen_s3_key": p.imagen_s3_key,
+        }
+        for p in productos_db
+    ]
+
+    pdf_bytes = servicio.generar_catalogo_pdf(productos_list)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline; filename=catalogo.pdf"},
+    )
+
+
+@router.post("/{producto_id}/imagen", summary="Subir imagen de producto")
+async def subir_imagen_producto(
+    producto_id: UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """Sube una imagen (JPG/PNG) a un producto y almacena la S3 key."""
+    from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+    ALLOWED_TYPES = {"image/jpeg", "image/png"}
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=422, detail="Solo JPG y PNG permitidos")
+
+    contenido = await file.read()
+    if len(contenido) > MAX_SIZE:
+        raise HTTPException(status_code=422, detail="Archivo demasiado grande. Máximo 5MB")
+
+    producto = (
+        db.query(Productos)
+        .filter(
+            Productos.id == producto_id,
+            Productos.tenant_id == ctx.tenant_id,
+            Productos.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    extension = "png" if file.content_type == "image/png" else "jpg"
+    storage = ServicioAlmacenamiento()
+    key = storage.subir_imagen(
+        contenido=contenido,
+        tenant_id=str(ctx.tenant_id),
+        sub_path=f"products/{producto_id}",
+        extension=extension,
+    )
+
+    producto.imagen_s3_key = key
+    db.commit()
+    return {"imagen_s3_key": key, "message": "Imagen actualizada"}
+
+
+@router.delete("/{producto_id}/imagen", status_code=204, summary="Eliminar imagen de producto")
+async def eliminar_imagen_producto(
+    producto_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """Elimina la imagen de un producto de S3 y limpia el campo imagen_s3_key."""
+    from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+    producto = (
+        db.query(Productos)
+        .filter(
+            Productos.id == producto_id,
+            Productos.tenant_id == ctx.tenant_id,
+            Productos.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    if producto.imagen_s3_key:
+        storage = ServicioAlmacenamiento()
+        storage.eliminar_archivo(producto.imagen_s3_key)
+        producto.imagen_s3_key = None
+        db.commit()
 
 
 @router.get("/{producto_id}", response_model=ProductoResponse)

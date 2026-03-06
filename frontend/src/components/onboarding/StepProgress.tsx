@@ -6,7 +6,7 @@ interface StepProgressProps {
 
 const STEP_LABELS = [
   'Primer producto',
-  'Primera receta',
+  'Primera producción',
   'Primera venta',
   'Dashboard',
   'Primer cliente',

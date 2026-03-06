@@ -14,6 +14,7 @@ import {
   LifebuoyIcon,
   QueueListIcon,
   ShoppingBagIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/authStore';
 
@@ -38,9 +39,10 @@ const navItems: NavItem[] = [
   { to: '/pos', label: 'POS', icon: BanknotesIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/crm', label: 'CRM', icon: BriefcaseIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/terceros', label: 'Terceros', icon: UserGroupIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
+  { to: '/catalogo', label: 'Catálogo', icon: BookOpenIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/productos', label: 'Productos', icon: CubeIcon, roles: ['admin', 'operador'] },
   { to: '/inventario', label: 'Inventario', icon: ArchiveBoxIcon, roles: ['admin', 'operador'] },
-  { to: '/recetas', label: 'Recetas', icon: BeakerIcon, roles: ['admin', 'operador'] },
+  { to: '/produccion', label: 'Producción', icon: BeakerIcon, roles: ['admin', 'operador'] },
   { to: '/cartera', label: 'Cartera', icon: CreditCardIcon, roles: ['admin', 'contador'] },
   { to: '/contabilidad', label: 'Contabilidad', icon: CalculatorIcon, roles: ['admin', 'contador'] },
   { to: '/reportes', label: 'Reportes', icon: ChartPieIcon, roles: ['admin', 'contador'] },
@@ -51,8 +53,8 @@ const navItems: NavItem[] = [
 // Group structure — semantic sections of the sidebar
 const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> = [
   { id: 'overview', label: null, paths: ['/'] },
-  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros'] },
-  { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/recetas'] },
+  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros', '/catalogo'] },
+  { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/produccion'] },
   { id: 'finanzas', label: 'Finanzas', paths: ['/cartera', '/contabilidad', '/reportes'] },
   { id: 'empresa', label: 'Empresa', paths: ['/config', '/soporte'] },
 ];

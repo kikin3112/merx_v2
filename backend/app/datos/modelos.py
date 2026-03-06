@@ -162,6 +162,7 @@ class Productos(TenantAuditMixin, Base):
     stock_minimo = Column(Numeric(15, 2))
     stock_maximo = Column(Numeric(15, 2))
     estado = Column(Boolean, default=True, nullable=False)
+    imagen_s3_key = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -652,13 +653,13 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
 
 
 # ============================================================================
-# MODELO: Recetas (BOM - Bill of Materials para produccion de velas)
+# MODELO: Produccion (BOM - Bill of Materials para fabricacion de productos)
 # ============================================================================
 
 
 class Recetas(TenantAuditMixin, Base):
     """
-    Recetas para produccion de velas.
+    Fichas de produccion — BOM (Bill of Materials) para fabricar productos.
     Define los ingredientes necesarios para producir un producto terminado.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """

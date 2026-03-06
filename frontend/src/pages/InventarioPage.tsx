@@ -91,7 +91,7 @@ export default function InventarioPage() {
         <div className="flex gap-2">
           <button
             onClick={() => { setError(''); setEntradaOpen(true); }}
-            className="rounded-lg bg-[var(--cv-positive)] px-4 py-2 text-sm font-semibold text-[#1A1A1A] hover:opacity-85 transition-opacity"
+            className="cv-btn cv-btn-primary"
           >
             + Entrada
           </button>
@@ -342,13 +342,13 @@ export default function InventarioPage() {
           <div>
             {jerarquia && (
               <div className="flex gap-4 mb-4 flex-wrap">
-                <div className="cv-card p-4 flex-1 min-w-40">
-                  <p className="text-xs cv-muted">Total productos</p>
-                  <p className="text-2xl font-bold cv-text mt-1">{jerarquia.total_productos}</p>
+                <div className="bento-cell flex-1 min-w-40">
+                  <div className="bento-kpi-label">Total productos</div>
+                  <div className="bento-kpi-val">{jerarquia.total_productos}</div>
                 </div>
-                <div className="cv-card p-4 flex-1 min-w-40">
-                  <p className="text-xs cv-muted">Valor total</p>
-                  <p className="text-2xl font-bold cv-primary mt-1">{formatCurrency(jerarquia.valor_total)}</p>
+                <div className="bento-cell flex-1 min-w-40">
+                  <div className="bento-kpi-label">Valor total</div>
+                  <div className="bento-kpi-val cv-primary">{formatCurrency(jerarquia.valor_total)}</div>
                 </div>
               </div>
             )}

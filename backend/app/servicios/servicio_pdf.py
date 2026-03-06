@@ -17,6 +17,20 @@ from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer,
 from reportlab.platypus import Image as RLImage
 
 
+def _wcag_text_color(hex_color: str) -> str:
+    """Returns #FFFFFF or #1a1a2e based on WCAG relative luminance.
+
+    Uses simplified formula: luminance = (0.299R + 0.587G + 0.114B) / 255
+    Threshold 0.5 gives readable contrast for both directions.
+    """
+    c = hex_color.lstrip("#")
+    if len(c) != 6:
+        return "#FFFFFF"  # fallback for invalid hex
+    r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return "#FFFFFF" if luminance < 0.5 else "#1a1a2e"
+
+
 def _formato_moneda(valor) -> str:
     """Formatea un valor numérico como pesos colombianos."""
     try:
@@ -108,8 +122,13 @@ class ServicioPDF:
         Args:
             tenant_info: Dict con info del tenant:
                 - nombre, nit, email_contacto, telefono, direccion, ciudad, departamento
+                - color_primario: hex string (e.g. "#1976D2") — optional, defaults to #1976D2
+                - color_secundario: hex string — optional, defaults to #424242
         """
         self.tenant = tenant_info
+        self.primary_color = tenant_info.get("color_primario") or "#1976D2"
+        self.secondary_color = tenant_info.get("color_secundario") or "#424242"
+        self.text_on_primary = _wcag_text_color(self.primary_color)
         self.styles = _crear_estilos()
 
     def _build_header(self, titulo: str, numero: str, fecha: str, fecha_vencimiento: Optional[str] = None) -> list:
@@ -125,13 +144,22 @@ class ServicioPDF:
                     _hdr, b64data = url_logo.split(",", 1)
                     img_bytes = base64.b64decode(b64data)
                     logo_img = RLImage(io.BytesIO(img_bytes), width=2 * cm, height=2 * cm)
-                else:
+                elif url_logo.startswith("/"):
                     # legacy: filesystem path
                     static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
                     logo_path = os.path.normpath(os.path.join(static_base, url_logo.replace("/static/", "", 1)))
                     if not os.path.exists(logo_path):
                         raise FileNotFoundError(f"Logo not found: {logo_path}")
                     logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
+                else:
+                    # New: S3 key path (e.g. "tenants/uuid/logo.png")
+                    from app.servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+                    storage = ServicioAlmacenamiento()
+                    img_bytes = storage.obtener_imagen_bytes(url_logo)
+                    if img_bytes is None:
+                        raise ValueError("S3 logo not found")
+                    logo_img = RLImage(io.BytesIO(img_bytes), width=3 * cm, height=3 * cm)
                 logo_img.hAlign = "CENTER"
                 elements.append(logo_img)
                 elements.append(Spacer(1, 0.3 * cm))
@@ -160,7 +188,9 @@ class ServicioPDF:
         if info_parts:
             elements.append(Paragraph(" | ".join(info_parts), self.styles["DocSubtitle"]))
 
-        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1a1a2e"), spaceAfter=4 * mm))
+        elements.append(
+            HRFlowable(width="100%", thickness=1, color=colors.HexColor(self.primary_color), spaceAfter=4 * mm)
+        )
 
         # Titulo documento + numero + fecha
         doc_info = [
@@ -245,8 +275,8 @@ class ServicioPDF:
         style = TableStyle(
             [
                 # Header
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(self.primary_color)),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor(self.text_on_primary)),
                 ("FONTSIZE", (0, 0), (-1, 0), 8),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("ALIGN", (0, 0), (-1, 0), "CENTER"),
@@ -261,7 +291,7 @@ class ServicioPDF:
                 ("ALIGN", (2, 1), (2, -1), "CENTER"),  # Cant
                 ("ALIGN", (3, 1), (-1, -1), "RIGHT"),  # Prices
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
-                ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#1a1a2e")),
+                ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor(self.primary_color)),
             ]
         )
 
@@ -301,7 +331,7 @@ class ServicioPDF:
                 # Total row bold
                 ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
                 ("FONTSIZE", (0, -1), (-1, -1), 11),
-                ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#1a1a2e")),
+                ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor(self.primary_color)),
                 ("TOPPADDING", (0, -1), (-1, -1), 6),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
             ]
@@ -325,6 +355,133 @@ class ServicioPDF:
         elements.append(Paragraph("Generado con <3 por chandelierp", self.styles["FooterText"]))
 
         return elements
+
+    def generar_catalogo_pdf(self, productos: list) -> bytes:
+        """Genera catálogo PDF con grid 2 columnas.
+
+        Args:
+            productos: list of dicts with keys:
+                nombre (str), descripcion (Optional[str]),
+                precio_venta (Decimal), imagen_s3_key (Optional[str])
+        Returns:
+            PDF bytes
+        """
+        from app.servicios.servicio_almacenamiento import ServicioAlmacenamiento
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            leftMargin=1.5 * cm,
+            rightMargin=1.5 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=1.5 * cm,
+        )
+        styles = self.styles
+        primary = colors.HexColor(self.primary_color)
+        storage = ServicioAlmacenamiento()
+        story = []
+
+        # ── Catalogue header: logo + company name + divider ──
+        url_logo = self.tenant.get("url_logo")
+        if url_logo:
+            try:
+                if url_logo.startswith("data:"):
+                    _hdr, b64data = url_logo.split(",", 1)
+                    img_bytes = base64.b64decode(b64data)
+                    logo_img = RLImage(io.BytesIO(img_bytes), width=2 * cm, height=2 * cm)
+                elif url_logo.startswith("/"):
+                    static_base = os.path.join(os.path.dirname(__file__), "..", "..", "static")
+                    logo_path = os.path.normpath(os.path.join(static_base, url_logo.replace("/static/", "", 1)))
+                    logo_img = RLImage(logo_path, width=2 * cm, height=2 * cm)
+                else:
+                    img_bytes = storage.obtener_imagen_bytes(url_logo)
+                    if img_bytes:
+                        logo_img = RLImage(io.BytesIO(img_bytes), width=3 * cm, height=3 * cm)
+                    else:
+                        logo_img = None
+                if logo_img:
+                    logo_img.hAlign = "CENTER"
+                    story.append(logo_img)
+                    story.append(Spacer(1, 0.3 * cm))
+            except Exception:
+                pass
+
+        story.append(Paragraph(self.tenant.get("nombre", "Catálogo de Productos"), styles["DocTitle"]))
+        story.append(Paragraph("Catálogo de Productos", styles["DocSubtitle"]))
+        from reportlab.platypus import HRFlowable
+
+        story.append(HRFlowable(width="100%", thickness=1, color=primary, spaceAfter=4 * mm))
+        story.append(Spacer(1, 0.3 * cm))
+
+        # ── Product styles ──
+        name_style = ParagraphStyle(
+            "CatName",
+            parent=styles["Normal"],
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            spaceAfter=2,
+        )
+        desc_style = ParagraphStyle(
+            "CatDesc",
+            parent=styles["Normal"],
+            fontSize=7,
+            fontName="Helvetica",
+            spaceAfter=2,
+            textColor=colors.HexColor("#555555"),
+        )
+        price_style = ParagraphStyle(
+            "CatPrice",
+            parent=styles["Normal"],
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            textColor=primary,
+        )
+
+        def build_product_cell(p: dict) -> list:
+            cell: list = []
+            # Try S3 image
+            if p.get("imagen_s3_key") and storage.is_enabled:
+                img_bytes = storage.obtener_imagen_bytes(p["imagen_s3_key"])
+                if img_bytes:
+                    try:
+                        cell.append(RLImage(io.BytesIO(img_bytes), width=3.5 * cm, height=3.5 * cm))
+                    except Exception:
+                        pass
+            cell.append(Paragraph(p.get("nombre", ""), name_style))
+            if p.get("descripcion"):
+                desc = (p["descripcion"] or "")[:80]
+                cell.append(Paragraph(desc, desc_style))
+            # precio_venta is Decimal — f-string handles it natively
+            precio = p.get("precio_venta", 0)
+            cell.append(Paragraph(f"${precio:,.0f}", price_style))
+            return cell
+
+        # ── 2-column grid ──
+        rows = []
+        for i in range(0, len(productos), 2):
+            left = build_product_cell(productos[i])
+            right = (
+                build_product_cell(productos[i + 1]) if i + 1 < len(productos) else [Paragraph("", styles["Normal"])]
+            )
+            rows.append([left, right])
+
+        if rows:
+            table = Table(rows, colWidths=[9 * cm, 9 * cm])
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("PADDING", (0, 0), (-1, -1), 8),
+                        ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#DDDDDD")),
+                        ("LINEAFTER", (0, 0), (0, -1), 0.5, colors.HexColor("#DDDDDD")),
+                    ]
+                )
+            )
+            story.append(table)
+
+        doc.build(story)
+        return buffer.getvalue()
 
     def generar_factura_pdf(
         self,

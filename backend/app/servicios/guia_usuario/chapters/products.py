@@ -59,7 +59,7 @@ class ProductsChapter:
 
         chapter.add_section(
             "3.1.1 Campos del Formulario",
-            "• <b>SKU:</b> Código único del producto (ej: VEL-LAV-200)\n"
+            "• <b>SKU:</b> Código único del producto (ej: PROD-001)\n"
             "• <b>Nombre:</b> Nombre descriptivo del producto\n"
             "• <b>Tipo:</b> Producto terminado o Materia prima\n"
             "• <b>Categoría:</b> Clasificación del producto (opcional)\n"
@@ -78,12 +78,12 @@ class ProductsChapter:
             [
                 {
                     "name": "Producto Terminado",
-                    "description": "Artículos listos para venta (ej: Vela de soja 200g, Pack regalo)",
+                    "description": "Artículos listos para venta (ej: Crema Corporal 200ml, Pack regalo)",
                     "available": True,
                 },
                 {
                     "name": "Materia Prima",
-                    "description": "Insumos para producción (ej: Cera de soja, Pabilo, Fragancia lavanda)",
+                    "description": "Insumos para producción (ej: Harina de trigo, Mantequilla, Saborizante)",
                     "available": True,
                 },
             ],

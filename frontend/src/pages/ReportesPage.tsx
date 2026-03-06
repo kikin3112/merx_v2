@@ -19,13 +19,13 @@ type Tab = 'comparativa' | 'rentabilidad' | 'flujo' | 'margenes';
 
 function KpiCard({ label, value, variacion }: { label: string; value: string; variacion?: number }) {
   return (
-    <div className="cv-card p-4">
-      <p className="text-xs font-medium cv-muted mb-1">{label}</p>
-      <p className="text-xl font-bold cv-text">{value}</p>
+    <div className="bento-cell">
+      <div className="bento-kpi-label">{label}</div>
+      <div className="bento-kpi-val">{value}</div>
       {variacion !== undefined && (
-        <p className={`text-xs font-medium mt-1 ${variacion >= 0 ? 'cv-positive' : 'cv-negative'}`}>
-          {variacion >= 0 ? '+' : ''}{variacion}% vs mes anterior
-        </p>
+        <div className={`bento-kpi-delta ${variacion >= 0 ? 'text-[var(--cv-positive)]' : 'text-[var(--cv-negative)]'}`}>
+          {variacion >= 0 ? '▲' : '▼'} {Math.abs(variacion)}% vs mes anterior
+        </div>
       )}
     </div>
   );
