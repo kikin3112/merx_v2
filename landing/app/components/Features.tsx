@@ -48,37 +48,65 @@ const features: Feature[] = [
 
 export function Features() {
   return (
-    <section id="funciones" className="py-20 sm:py-28 bg-white">
+    <section id="funciones" className="py-20 sm:py-28" style={{ background: 'var(--surface)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+          <p
+            className="text-xs font-semibold tracking-[0.18em] uppercase mb-4"
+            style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}
+          >
+            Módulos
+          </p>
+          <h2
+            className="text-3xl sm:text-4xl leading-tight"
+            style={{ fontFamily: 'var(--font-brand)', fontWeight: 500, color: 'var(--text)' }}
+          >
             Todo lo que necesitas para tu negocio
           </h2>
-          <p className="mt-4 text-lg text-gray-500">
-            Módulos diseñados para el flujo de trabajo real de solopreneurs — desde la producción hasta la venta.
+          <p className="mt-4 text-base" style={{ color: 'var(--text-muted)' }}>
+            Diseñado para el flujo de trabajo real de solopreneurs — desde la producción hasta la cobranza.
           </p>
         </div>
 
         {/* Feature grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((feature, i) => {
             const Icon = feature.icon;
             return (
               <div
                 key={feature.name}
-                className="group relative p-8 rounded-2xl border border-gray-100 bg-white hover:border-amber-200 hover:shadow-lg transition-all duration-300"
+                className="group p-7 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5"
+                style={{
+                  background: 'var(--bg)',
+                  borderColor: 'var(--border)',
+                  animationDelay: `${i * 0.05}s`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,155,101,0.3)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 32px rgba(255,155,101,0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                }}
               >
                 {/* Icon */}
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 group-hover:bg-amber-200 transition-colors">
-                  <Icon className="h-6 w-6 text-amber-600" />
+                <div
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-lg mb-5"
+                  style={{ background: 'var(--primary-dim)' }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: 'var(--primary)' } as React.CSSProperties} />
                 </div>
 
                 {/* Content */}
-                <h3 className="mt-5 text-lg font-bold text-gray-900">
+                <h3
+                  className="text-base font-semibold mb-2"
+                  style={{ color: 'var(--text)' }}
+                >
                   {feature.name}
                 </h3>
-                <p className="mt-2 text-gray-500 leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                   {feature.description}
                 </p>
               </div>

@@ -1,33 +1,98 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-body {
-  font-family: var(--font-pjs), sans-serif;
+/* ── Carbon Vivo Fonts ── */
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('/fonts/CreatoDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 @theme {
-  /* === BRAND: Ámbar Profundo === */
-  --color-amber-50:  #FDF5EA;
-  --color-amber-100: #FAE8CE;
-  --color-amber-200: #F5D1A0;
-  --color-amber-300: #EDBA70;
-  --color-amber-400: #E0A04E;
-  --color-amber-500: #C17B2B;
-  --color-amber-600: #A56824;
-  --color-amber-700: #8A5520;
-  --color-amber-800: #6E4219;
-  --color-amber-900: #52300F;
+  /* Carbon Vivo — dark palette */
+  --color-cv-bg:           #484848;
+  --color-cv-surface:      #3A3A3A;
+  --color-cv-surface-high: #525252;
+  --color-cv-primary:      #FF9B65;
+  --color-cv-accent:       #FFE680;
+  --color-cv-positive:     #BDFFA8;
+  --color-cv-negative:     #FF7A7A;
+  --color-cv-text:         #F5F5F5;
+  --color-cv-muted:        #A8A8A8;
 
-  /* === BRAND: Flat tokens === */
+  /* Legacy aliases */
   --color-midnight: #1A1A2E;
   --color-cream:    #FAF3E8;
-
-  /* === BRAND: Oro === */
-  --color-gold-500: #D4A843;
-  --color-gold-600: #B8903A;
-
-  /* === BRAND: Verde Salvia === */
-  --color-sage-500: #6B7F5E;
-  --color-sage-600: #5A6D4E;
-  --color-sage-700: #4A5A40;
 }
+
+/* ── CSS Custom Properties (runtime) ── */
+:root {
+  --bg:           #484848;
+  --surface:      #3A3A3A;
+  --surface-high: #525252;
+  --border:       rgba(255,255,255,0.08);
+  --border-mid:   rgba(255,255,255,0.14);
+  --text:         #F5F5F5;
+  --text-muted:   #A8A8A8;
+  --primary:      #FF9B65;
+  --primary-dim:  rgba(255,155,101,0.15);
+  --accent:       #FFE680;
+  --positive:     #BDFFA8;
+  --negative:     #FF7A7A;
+  --font-brand:   'CreatoDisplay', 'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Landing utilities ── */
+.font-brand { font-family: var(--font-brand); }
+.font-mono  { font-family: var(--font-mono); }
+.cv-surface { background: var(--surface); }
+.cv-border  { border-color: var(--border); }
+
+/* ── Keyframes ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
