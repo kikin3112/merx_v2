@@ -84,6 +84,16 @@ body::before {
 .cv-surface { background: var(--surface); }
 .cv-border  { border-color: var(--border); }
 
+/* ── Feature card hover ── */
+.feature-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.feature-card:hover {
+  border-color: rgba(255,155,101,0.3) !important;
+  box-shadow: 0 8px 32px rgba(255,155,101,0.08);
+  transform: translateY(-2px);
+}
+
 /* ── Keyframes ── */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(20px); }
