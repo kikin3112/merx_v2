@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carbón Vivo — ChandeliERP Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'CreatoDisplay';
+  src: url('../../.claude/marketing/assets/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+:root {
+  /* Base dark */
+  --bg:           #484848;
+  --surface:      #3A3A3A;
+  --surface-high: #525252;
+  --border:       rgba(255,255,255,0.08);
+  --border-mid:   rgba(255,255,255,0.14);
+
+  /* Text */
+  --text:         #F5F5F5;
+  --text-muted:   #A8A8A8;
+
+  /* Brand */
+  --primary:      #FF9B65;
+  --primary-dim:  rgba(255,155,101,0.15);
+  --accent:       #FFE680;
+  --accent-dim:   rgba(255,230,128,0.15);
+  --positive:     #BDFFA8;
+  --positive-dim: rgba(189,255,168,0.15);
+  --negative:     #FF7A7A;
+  --negative-dim: rgba(255,122,122,0.15);
+  --gris-medio:   #A8A8A8;
+
+  /* Typography */
+  --font-brand: 'CreatoDisplay', 'Plus Jakarta Sans', sans-serif;
+  --font-body:  'Inter', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+
+  /* Spacing */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ── */
+.wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+/* ── Section ── */
+.section {
+  margin-top: 72px;
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.section-title {
+  font-family: var(--font-brand);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 28px;
+  line-height: 1.2;
+}
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 32px;
+}
+
+/* ── Grid helpers ── */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.items-center { align-items: center; }
+
+/* ══════════════════════════════════
+   HEADER
+══════════════════════════════════ */
+.header {
+  padding: 64px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.header-isotipo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.header-isotipo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.header-name {
+  font-family: var(--font-brand);
+  font-size: 36px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.header-name span { color: var(--primary); }
+.header-tagline {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 520px;
+  line-height: 1.7;
+  margin-top: 4px;
+}
+.header-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+.header-badge {
+  display: inline-block;
+  background: var(--primary-dim);
+  border: 1px solid rgba(255,155,101,0.3);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  margin-bottom: 10px;
+}
+.header-version {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.header-rule {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 40%, transparent 100%);
+  margin-top: 40px;
+  opacity: 0.6;
+}
+
+/* ══════════════════════════════════
+   COLOR SWATCHES
+══════════════════════════════════ */
+.swatch {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.swatch-color {
+  height: 96px;
+  position: relative;
+}
+.swatch-color::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+}
+.swatch-info {
+  background: var(--surface);
+  padding: 12px 14px;
+}
+.swatch-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.swatch-hex {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.swatch-role {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.derived-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.derived-swatch {
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.derived-swatch .swatch-color { height: 56px; }
+.derived-swatch .swatch-info { padding: 8px 10px; }
+
+/* ══════════════════════════════════
+   TYPOGRAPHY
+══════════════════════════════════ */
+.type-specimen {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 32px 36px;
+  margin-bottom: 16px;
+}
+.type-specimen + .type-specimen { margin-bottom: 0; }
+.type-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.type-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.tag-brand { background: var(--primary-dim); color: var(--primary); }
+.tag-body  { background: var(--accent-dim);  color: var(--accent); }
+.tag-mono  { background: var(--positive-dim); color: var(--positive); }
+.type-meta-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.specimen-display {
+  font-family: var(--font-brand);
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.specimen-display em { color: var(--primary); font-style: normal; }
+.specimen-body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.75;
+  max-width: 560px;
+}
+.specimen-body strong { color: var(--text); font-weight: 600; }
+.specimen-mono {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+.specimen-mono span { color: var(--text-muted); font-size: 14px; font-weight: 400; margin-left: 8px; }
+.type-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.type-scale-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.type-scale-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════
+   BUTTONS
+══════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s ease;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #1A1A1A;
+}
+.btn-primary:hover { background: #ffad80; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,155,101,0.35); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-mid);
+}
+.btn-secondary:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+
+.btn-accent {
+  background: var(--accent);
+  color: #1A1A1A;
+}
+.btn-accent:hover { background: #ffec99; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,230,128,0.3); }
+
+.btn-positive {
+  background: var(--positive);
+  color: #1A1A1A;
+}
+.btn-positive:hover { background: #ceffb8; transform: translateY(-1px); }
+
+.btn-destructive {
+  background: var(--negative-dim);
+  color: var(--negative);
+  border: 1px solid rgba(255,122,122,0.2);
+}
+.btn-destructive:hover { background: rgba(255,122,122,0.25); }
+
+.btn-dark {
+  background: var(--surface-high);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.btn-dark:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+.btn-sm { height: 32px; padding: 0 14px; font-size: 13px; }
+.btn-lg { height: 48px; padding: 0 28px; font-size: 15px; border-radius: var(--r-lg); }
+
+.btn-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 4px;
+  display: inline-flex;
+  gap: 2px;
+}
+
+/* ══════════════════════════════════
+   BADGES
+══════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.badge-positive { background: var(--positive-dim); color: var(--positive); border: 1px solid rgba(189,255,168,0.2); }
+.badge-positive::before { background: var(--positive); }
+.badge-negative { background: var(--negative-dim); color: var(--negative); border: 1px solid rgba(255,122,122,0.2); }
+.badge-negative::before { background: var(--negative); }
+.badge-warning  { background: var(--accent-dim);  color: var(--accent);  border: 1px solid rgba(255,230,128,0.2); }
+.badge-warning::before  { background: var(--accent); }
+.badge-neutral  { background: rgba(168,168,168,0.12); color: var(--gris-medio); border: 1px solid rgba(168,168,168,0.15); }
+.badge-neutral::before  { background: var(--gris-medio); }
+.badge-primary  { background: var(--primary-dim); color: var(--primary); border: 1px solid rgba(255,155,101,0.2); }
+.badge-primary::before  { background: var(--primary); }
+
+/* ══════════════════════════════════
+   INPUTS
+══════════════════════════════════ */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.input {
+  height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-md);
+  padding: 0 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.input::placeholder { color: rgba(168,168,168,0.5); }
+.input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); }
+.input.input-mono {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.input-prefix {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.input-prefix-symbol {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--surface-high);
+  border-right: 1px solid var(--border-mid);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.input-prefix input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0 14px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+.input-hint {
+  font-size: 11px;
+  color: rgba(168,168,168,0.6);
+}
+.input-error-msg {
+  font-size: 11px;
+  color: var(--negative);
+}
+.input.input-error { border-color: rgba(255,122,122,0.5); }
+.input.input-error:focus { box-shadow: 0 0 0 3px var(--negative-dim); }
+
+/* ══════════════════════════════════
+   TABS
+══════════════════════════════════ */
+.tabs {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 6px 0;
+  gap: 2px;
+}
+.tab-btn {
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  background: var(--surface-high);
+  color: var(--primary);
+  border: 1px solid var(--border-mid);
+  border-bottom: none;
+  position: relative;
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--surface-high);
+}
+.tabs-content {
+  padding: 24px 28px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+.tabs-content strong { color: var(--text); }
+
+/* ══════════════════════════════════
+   KPI CARDS
+══════════════════════════════════ */
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+.kpi-card.kpi-primary::before { background: var(--primary); }
+.kpi-card.kpi-accent::before  { background: var(--accent); }
+.kpi-card.kpi-positive::before { background: var(--positive); }
+.kpi-card.kpi-muted::before   { background: var(--gris-medio); }
+.kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+.kpi-value.color-primary { color: var(--primary); }
+.kpi-value.color-accent  { color: var(--accent); }
+.kpi-value.color-positive { color: var(--positive); }
+.kpi-delta {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.kpi-delta.up   { color: var(--positive); }
+.kpi-delta.down { color: var(--negative); }
+.kpi-spark {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0.12;
+}
+
+/* ══════════════════════════════════
+   DATA TABLE
+══════════════════════════════════ */
+.data-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table thead th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-high);
+}
+.data-table tbody td {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+.table-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.table-cell-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.table-cell-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.table-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* ══════════════════════════════════
+   SPECIAL CARDS
+══════════════════════════════════ */
+.socia-card {
+  background: var(--surface);
+  border: 1px solid rgba(255,155,101,0.2);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.socia-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(255,155,101,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.socia-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.socia-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-dim);
+  border: 1px solid rgba(255,155,101,0.25);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.socia-title {
+  font-family: var(--font-brand);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+.socia-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.socia-message {
+  background: var(--surface-high);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.socia-message strong { color: var(--accent); }
+.socia-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.socia-chip {
+  padding: 5px 12px;
+  background: var(--surface-high);
+  border: 1px solid var(--border-mid);
+  border-radius: 100px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.socia-chip:hover { border-color: var(--primary); color: var(--primary); }
+
+.alert-card {
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-left: 3px solid;
+}
+.alert-card.alert-info    { background: var(--primary-dim); border-color: var(--primary); }
+.alert-card.alert-warning { background: var(--accent-dim);  border-color: var(--accent); }
+.alert-card.alert-success { background: var(--positive-dim); border-color: var(--positive); }
+.alert-card.alert-error   { background: var(--negative-dim); border-color: var(--negative); }
+.alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.alert-text { font-size: 13px; line-height: 1.55; }
+.alert-text strong { font-weight: 600; display: block; margin-bottom: 2px; }
+.alert-card.alert-info    .alert-text { color: var(--primary); }
+.alert-card.alert-warning .alert-text { color: var(--accent); }
+.alert-card.alert-success .alert-text { color: var(--positive); }
+.alert-card.alert-error   .alert-text { color: var(--negative); }
+
+/* Mini chart */
+.mini-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px;
+}
+.mini-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.mini-chart-title { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.mini-chart-value { font-family: var(--font-mono); font-size: 22px; color: var(--text); font-weight: 600; }
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 64px;
+}
+.chart-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  transition: opacity 0.2s;
+}
+.chart-bar:hover { opacity: 0.8; }
+.chart-labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chart-label {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* ══════════════════════════════════
+   NAVIGATION
+══════════════════════════════════ */
+.nav-demo {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  min-height: 420px;
+}
+.sidebar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.sidebar-logo img { width: 28px; height: 28px; border-radius: 6px; object-fit: contain; }
+.sidebar-logo-name {
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+.sidebar-section {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(168,168,168,0.45);
+  padding: 12px 10px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.nav-item.active {
+  background: var(--primary-dim);
+  color: var(--primary);
+  font-weight: 500;
+}
+.nav-item-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--primary);
+  color: #1A1A1A;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+}
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.user-pill:hover { background: rgba(255,255,255,0.05); }
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-dim);
+  border: 1px solid rgba(255,155,101,0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.user-role { font-size: 11px; color: var(--text-muted); }
+.nav-main-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px;
+}
+.nav-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.nav-page-title {
+  font-family: var(--font-brand);
+  font-size: 22px;
+  color: var(--text);
+}
+.nav-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.nav-kpi {
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+.nav-kpi-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+.nav-kpi-val { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
+.placeholder-chart {
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Bottom nav mobile */
+.bottom-nav-demo {
+  max-width: 375px;
+  margin: 0 auto;
+}
+.bottom-nav {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bottom-nav-item.active .bottom-nav-icon { color: var(--primary); }
+.bottom-nav-item.active .bottom-nav-label { color: var(--primary); }
+.bottom-nav-icon { font-size: 20px; color: var(--text-muted); }
+.bottom-nav-label { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+.bottom-nav-fab {
+  width: 48px;
+  height: 48px;
+  background: var(--primary);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255,155,101,0.4);
+  transition: transform 0.2s;
+}
+.bottom-nav-fab:hover { transform: scale(1.05); }
+
+/* ══════════════════════════════════
+   DASHBOARD BENTO
+══════════════════════════════════ */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: 72px;
+  gap: 14px;
+}
+.bento-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 20px 22px;
+  overflow: hidden;
+  position: relative;
+}
+.bento-cell:hover { border-color: var(--border-mid); }
+
+/* Spans */
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-5 { grid-column: span 5; }
+.col-6 { grid-column: span 6; }
+.col-7 { grid-column: span 7; }
+.col-8 { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+.row-2 { grid-row: span 2; }
+.row-3 { grid-row: span 3; }
+.row-4 { grid-row: span 4; }
+
+.bento-kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.bento-kpi-val   { font-family: var(--font-mono); font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+.bento-kpi-delta { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+
+/* Donut chart */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+svg.donut {
+  transform: rotate(-90deg);
+  flex-shrink: 0;
+}
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+.donut-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Progress bars */
+.progress-list { display: flex; flex-direction: column; gap: 14px; height: 100%; justify-content: center; }
+.progress-item {}
+.progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+.progress-name { color: var(--text-muted); }
+.progress-val  { color: var(--text); font-family: var(--font-mono); font-size: 11px; }
+.progress-track {
+  height: 5px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 1s ease;
+}
+
+/* Recetas mini table */
+.bento-table { width: 100%; border-collapse: collapse; }
+.bento-table th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(168,168,168,0.5);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.bento-table td {
+  padding: 10px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+.bento-table tr:last-child td { border-bottom: none; }
+.bento-table .mono { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+
+/* Activity feed */
+.activity-feed { display: flex; flex-direction: column; gap: 10px; }
+.activity-item { display: flex; align-items: flex-start; gap: 10px; }
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.activity-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.activity-text strong { color: var(--text); font-weight: 500; }
+.activity-time { font-family: var(--font-mono); font-size: 10px; color: rgba(168,168,168,0.4); margin-top: 2px; }
+
+/* Big headline cell */
+.headline-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  background: linear-gradient(135deg, var(--surface) 0%, #2E2E2E 100%);
+  border-color: rgba(255,155,101,0.15) !important;
+}
+.headline-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at top right, rgba(255,155,101,0.08) 0%, transparent 65%);
+}
+.headline-super { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; }
+.headline-h1 { font-family: var(--font-brand); font-size: 40px; font-weight: 500; color: var(--text); line-height: 1.1; letter-spacing: -0.03em; }
+.headline-h1 em { color: var(--primary); font-style: normal; }
+.headline-sub { font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+
+/* ══════════════════════════════════
+   UTILITY
+══════════════════════════════════ */
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.label-row-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.showcase-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+}
+.card-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px 28px;
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ══════════════════════════════════
+       HEADER
+  ══════════════════════════════════ -->
+  <header class="header">
+    <div>
+      <div class="header-brand">
+        <div class="header-isotipo">
+          <img src="../../.claude/marketing/assets/logo/isotipo.png" alt="ChandeliERP">
+        </div>
+        <span class="header-name">Carbón <em>Vivo</em></span>
+      </div>
+      <p class="header-tagline">
+        Sistema de diseño para <strong style="color:var(--text)">ChandeliERP</strong>.
+        Carbón oscuro como base, acentos eléctricos como vida. Diseñado para claridad extrema
+        en contextos financieros y operativos de alta densidad.
+      </p>
+    </div>
+    <div class="header-meta">
+      <span class="header-badge">DESIGN SYSTEM v2.0</span>
+      <span class="header-version">2026 · ChandeliERP</span>
+    </div>
+  </header>
+  <div class="header-rule"></div>
+
+  <!-- ══════════════════════════════════
+       1. COLOR TOKENS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">01 — Paleta</div>
+    <h2 class="section-title">Tokens de Color</h2>
+    <div class="section-divider"></div>
+
+    <div class="grid-5">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#484848;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Carbón</div>
+          <div class="swatch-hex">#484848</div>
+          <div class="swatch-role">Fondo base principal</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#A8A8A8;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Gris Medio</div>
+          <div class="swatch-hex">#A8A8A8</div>
+          <div class="swatch-role">Texto muted, bordes, placeholders</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FF9B65;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Coral Vivo</div>
+          <div class="swatch-hex">#FF9B65</div>
+          <div class="swatch-role">Color de marca primario</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FFE680;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Limón</div>
+          <div class="swatch-hex">#FFE680</div>
+          <div class="swatch-role">Acento premium / datos reveladores</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#BDFFA8;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Menta</div>
+          <div class="swatch-hex">#BDFFA8</div>
+          <div class="swatch-role">Acento orgánico / estados positivos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="derived-grid">
+      <div class="derived-swatch">
+        <div class="swatch-color" style="background:#3A3A3A;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Surface</div>
+          <div class="swatch-hex">#3A3A3A</div>
+        </div>
+      </div>
+      <div class="derived-swatch">
+        <div class="swatch-color" style="background:#525252;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Surface Elevated</div>
+          <div class="swatch-hex">#525252</div>
+        </div>
+      </div>
+      <div class="derived-swatch">
+        <div class="swatch-color" style="background:#F5F5F5;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Texto Principal</div>
+          <div class="swatch-hex">#F5F5F5</div>
+        </div>
+      </div>
+      <div class="derived-swatch">
+        <div class="swatch-color" style="background:rgba(255,255,255,0.08); border:1px dashed rgba(255,255,255,0.1);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Border Sutil</div>
+          <div class="swatch-hex">rgba(255,255,255,0.08)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       2. TYPOGRAPHY
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">02 — Tipografía</div>
+    <h2 class="section-title">Sistema Tipográfico</h2>
+    <div class="section-divider"></div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="type-specimen">
+        <div class="type-meta">
+          <span class="type-tag tag-brand">CreatoDisplay Medium</span>
+          <span class="type-meta-detail">font-weight: 500 · headings · marca</span>
+        </div>
+        <div class="specimen-display">Inteligencia<br>Operativa <em>Viva</em></div>
+        <div class="type-scale">
+          <div class="type-scale-row">
+            <span class="type-scale-label">52px</span>
+            <span style="font-family:var(--font-brand);font-size:52px;font-weight:500;letter-spacing:-0.03em;line-height:1;">Display Hero</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">36px</span>
+            <span style="font-family:var(--font-brand);font-size:36px;font-weight:500;letter-spacing:-0.02em;line-height:1;">Page Heading</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">24px</span>
+            <span style="font-family:var(--font-brand);font-size:24px;font-weight:500;line-height:1;">Section Title</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">18px</span>
+            <span style="font-family:var(--font-brand);font-size:18px;font-weight:500;line-height:1;">Card Heading</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="type-specimen">
+        <div class="type-meta">
+          <span class="type-tag tag-body">Inter</span>
+          <span class="type-meta-detail">Google Fonts · body / UI · 300–700</span>
+        </div>
+        <p class="specimen-body">
+          <strong>Merx transforma la gestión operativa</strong> de pequeñas y medianas empresas.
+          Cada módulo está diseñado para eliminar la fricción cognitiva, unificar flujos de trabajo
+          y entregar claridad en tiempo real. Sin fragmentación. Sin cambio de contexto innecesario.
+        </p>
+        <div class="type-scale" style="margin-top:16px;">
+          <div class="type-scale-row">
+            <span class="type-scale-label">15px/500</span>
+            <span style="font-size:15px;font-weight:500;">Label / Navigation active</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">14px/400</span>
+            <span style="font-size:14px;">Body text / Table cells</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">13px/400</span>
+            <span style="font-size:13px;color:var(--text-muted);">Secondary / Helper text</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">11px/600</span>
+            <span style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">SECTION LABELS · CAPS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="type-specimen">
+        <div class="type-meta">
+          <span class="type-tag tag-mono">JetBrains Mono</span>
+          <span class="type-meta-detail">valores financieros · IDs · código</span>
+        </div>
+        <div class="specimen-mono">$12.847.350<span>COP / unidad</span></div>
+        <div class="type-scale" style="margin-top:16px;">
+          <div class="type-scale-row">
+            <span class="type-scale-label">30px</span>
+            <span style="font-family:var(--font-mono);font-size:30px;color:var(--accent);">$48.250.000</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">18px</span>
+            <span style="font-family:var(--font-mono);font-size:18px;color:var(--positive);">+$2.340.000 ▲ 12.4%</span>
+          </div>
+          <div class="type-scale-row">
+            <span class="type-scale-label">13px</span>
+            <span style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">ID: d1bd31b8-4a21-4f9c</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       3. BUTTONS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">03 — Acciones</div>
+    <h2 class="section-title">Botones</h2>
+    <div class="section-divider"></div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="showcase-row">
+        <div class="label-row-title" style="min-width:80px;font-size:11px;color:var(--text-muted);">Default</div>
+        <button class="btn btn-primary">Guardar receta</button>
+        <button class="btn btn-secondary">Cancelar</button>
+        <button class="btn btn-accent">Calcular costo</button>
+        <button class="btn btn-positive">Confirmar venta</button>
+        <button class="btn btn-destructive">Eliminar</button>
+        <button class="btn btn-dark">Ver historial</button>
+      </div>
+      <div class="showcase-row">
+        <div class="label-row-title" style="min-width:80px;font-size:11px;color:var(--text-muted);">Small</div>
+        <button class="btn btn-primary btn-sm">Guardar</button>
+        <button class="btn btn-secondary btn-sm">Cancelar</button>
+        <button class="btn btn-accent btn-sm">Calcular</button>
+        <button class="btn btn-dark btn-sm">Filtrar</button>
+      </div>
+      <div class="showcase-row">
+        <div class="label-row-title" style="min-width:80px;font-size:11px;color:var(--text-muted);">Large</div>
+        <button class="btn btn-primary btn-lg">Crear nueva receta</button>
+        <button class="btn btn-accent btn-lg">Consultar a Socia →</button>
+      </div>
+      <div class="showcase-row">
+        <div class="label-row-title" style="min-width:80px;font-size:11px;color:var(--text-muted);">Group</div>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm">Día</button>
+          <button class="btn btn-dark btn-sm">Semana</button>
+          <button class="btn btn-dark btn-sm">Mes</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-dark btn-sm">Todos</button>
+          <button class="btn btn-accent btn-sm">Activos</button>
+          <button class="btn btn-dark btn-sm">Archivados</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       4. BADGES
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">04 — Estados</div>
+    <h2 class="section-title">Badges y Estados</h2>
+    <div class="section-divider"></div>
+
+    <div class="showcase-row">
+      <span class="badge badge-positive">Activo</span>
+      <span class="badge badge-negative">Cancelado</span>
+      <span class="badge badge-warning">Pendiente</span>
+      <span class="badge badge-neutral">Borrador</span>
+      <span class="badge badge-primary">En proceso</span>
+      <span class="badge badge-positive">Pagado</span>
+      <span class="badge badge-negative">Vencido</span>
+      <span class="badge badge-warning">Revisar</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       5. INPUTS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">05 — Formularios</div>
+    <h2 class="section-title">Inputs</h2>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="input-group">
+          <label class="input-label">Nombre del producto</label>
+          <input class="input" type="text" placeholder="Ej: Vela Vaso Choco Berry">
+          <span class="input-hint">Máx. 120 caracteres</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Precio de venta (COP)</label>
+          <div class="input-prefix">
+            <span class="input-prefix-symbol">$</span>
+            <input type="text" value="20.000" placeholder="0">
+          </div>
+          <span class="input-hint">Precio sugerido: $38.753</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Código interno</label>
+          <input class="input input-error" type="text" value="PROD-001" placeholder="Ej: PROD-001">
+          <span class="input-error-msg">Este código ya existe en el sistema</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="input-group">
+          <label class="input-label">Costo unitario</label>
+          <input class="input input-mono" type="text" value="$15.501.34" readonly>
+          <span class="input-hint">Calculado automáticamente</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Margen objetivo (%)</label>
+          <div class="input-prefix">
+            <span class="input-prefix-symbol">%</span>
+            <input type="number" value="60" min="0" max="100" style="color:var(--positive);">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Producción mensual esperada</label>
+          <input class="input" type="number" value="20" min="1">
+          <span class="input-hint">Unidades/lotes por mes</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       6. TABS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">06 — Navegación por contexto</div>
+    <h2 class="section-title">Tabs</h2>
+    <div class="section-divider"></div>
+
+    <div class="tabs">
+      <div class="tabs-header">
+        <button class="tab-btn active">Resumen</button>
+        <button class="tab-btn">Ingredientes</button>
+        <button class="tab-btn">Costos</button>
+        <button class="tab-btn">Historial</button>
+        <button class="tab-btn">Análisis CVU</button>
+      </div>
+      <div class="tabs-content">
+        <strong>Vela Vaso Choco Berry Fantasy</strong> — La receta produce 1 unidad por lote.
+        Con una producción mensual de 20 unidades, el costo unitario es de <strong>$15,501.34 COP</strong>
+        incluyendo materia directa, mano de obra y costos indirectos distribuidos.
+        El margen objetivo del 60% sugiere un precio de venta de <strong>$38,753.35 COP</strong>.
+        Punto de equilibrio: <strong>7.14 unidades/mes</strong>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       7. KPI CARDS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">07 — Métricas</div>
+    <h2 class="section-title">KPI Cards</h2>
+    <div class="section-divider"></div>
+
+    <div class="grid-4">
+      <div class="kpi-card kpi-primary">
+        <div class="kpi-label">Ventas del mes</div>
+        <div class="kpi-value color-primary">$48.2M</div>
+        <div class="kpi-delta up">▲ 12.4% vs mes anterior</div>
+        <svg class="kpi-spark" width="80" height="40" viewBox="0 0 80 40">
+          <polyline points="0,35 15,28 30,32 45,18 60,22 75,10 80,12" fill="none" stroke="#FF9B65" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="kpi-card kpi-accent">
+        <div class="kpi-label">Costo receta top</div>
+        <div class="kpi-value color-accent">$15.5K</div>
+        <div class="kpi-delta up" style="color:var(--text-muted);">Vela Vaso · 20 uds/mes</div>
+      </div>
+      <div class="kpi-card kpi-positive">
+        <div class="kpi-label">Margen bruto</div>
+        <div class="kpi-value color-positive">64.3%</div>
+        <div class="kpi-delta up">▲ 2.1pp vs objetivo</div>
+      </div>
+      <div class="kpi-card kpi-muted">
+        <div class="kpi-label">Recetas activas</div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-delta" style="color:var(--text-muted);">3 nuevas este mes</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       8. DATA TABLE
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">08 — Datos</div>
+    <h2 class="section-title">Tabla de Datos</h2>
+    <div class="section-divider"></div>
+
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Receta / Producto</th>
+            <th>Categoría</th>
+            <th>Costo Unitario</th>
+            <th>Precio Venta</th>
+            <th>Margen</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="table-cell-name">
+                <div class="table-avatar" style="background:var(--primary-dim);color:var(--primary);">VV</div>
+                <div>
+                  <div>Vela Vaso Choco Berry</div>
+                  <div class="table-cell-sub">d1bd31b8 · 20 uds/mes</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);">Velas artesanales</td>
+            <td class="table-mono" style="color:var(--accent);">$15.501</td>
+            <td class="table-mono">$38.753</td>
+            <td><span style="font-family:var(--font-mono);font-size:13px;color:var(--positive);">60.0%</span></td>
+            <td><span class="badge badge-positive">Activa</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="table-cell-name">
+                <div class="table-avatar" style="background:var(--accent-dim);color:var(--accent);">VR</div>
+                <div>
+                  <div>Vela Roll-On Lavanda</div>
+                  <div class="table-cell-sub">a8f9c2e1 · 15 uds/mes</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);">Velas artesanales</td>
+            <td class="table-mono" style="color:var(--accent);">$8.220</td>
+            <td class="table-mono">$20.550</td>
+            <td><span style="font-family:var(--font-mono);font-size:13px;color:var(--positive);">60.0%</span></td>
+            <td><span class="badge badge-positive">Activa</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="table-cell-name">
+                <div class="table-avatar" style="background:rgba(168,168,168,0.1);color:var(--gris-medio);">CB</div>
+                <div>
+                  <div>Crema Botánica</div>
+                  <div class="table-cell-sub">f3a1d7b9 · 0 uds/mes</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);">Cosmética</td>
+            <td class="table-mono" style="color:var(--text-muted);">$22.800</td>
+            <td class="table-mono" style="color:var(--text-muted);">—</td>
+            <td><span style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">—</span></td>
+            <td><span class="badge badge-neutral">Borrador</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="table-cell-name">
+                <div class="table-avatar" style="background:var(--negative-dim);color:var(--negative);">DE</div>
+                <div>
+                  <div>Difusor Eucalipto</div>
+                  <div class="table-cell-sub">c9e5f2a4 · 5 uds/mes</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);">Aromaterapia</td>
+            <td class="table-mono" style="color:var(--accent);">$31.400</td>
+            <td class="table-mono">$52.333</td>
+            <td><span style="font-family:var(--font-mono);font-size:13px;color:var(--negative);">40.0%</span></td>
+            <td><span class="badge badge-warning">Revisar</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       9. SPECIAL CARDS
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">09 — Componentes especiales</div>
+    <h2 class="section-title">Cards Especiales</h2>
+    <div class="section-divider"></div>
+
+    <div class="grid-3" style="margin-bottom:16px;">
+      <!-- Socia card -->
+      <div class="socia-card" style="grid-column:span 2;">
+        <div class="socia-header">
+          <div class="socia-icon">🤖</div>
+          <div>
+            <div class="socia-title">Socia — Asistente de Costeo</div>
+            <div class="socia-subtitle">IA especializada en precios y márgenes</div>
+          </div>
+          <span class="badge badge-positive" style="margin-left:auto;">En línea</span>
+        </div>
+        <div class="socia-message">
+          Tu receta <strong>Vela Vaso</strong> tiene un costo unitario de $15,501. Con un margen del 60%,
+          el precio sugerido es <strong>$38,753</strong>. El punto de equilibrio es 7.14 unidades/mes.
+          Con producción de 20 unidades, tu utilidad mensual estimada es <strong>$89,973</strong>.
+        </div>
+        <div class="socia-chips">
+          <span class="socia-chip">¿Cómo bajo el costo?</span>
+          <span class="socia-chip">¿Cuál es mi PE en ingresos?</span>
+          <span class="socia-chip">Comparar con receta similar</span>
+          <span class="socia-chip">Simular volumen diferente</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <input class="input" type="text" placeholder="Pregunta algo sobre esta receta..." style="flex:1;">
+          <button class="btn btn-primary">Preguntar</button>
+        </div>
+      </div>
+
+      <!-- Mini chart card -->
+      <div class="mini-chart-card">
+        <div class="mini-chart-header">
+          <div>
+            <div class="mini-chart-title">Ventas últimos 7 días</div>
+            <div class="mini-chart-value">$8.4M</div>
+          </div>
+          <span class="badge badge-positive">▲ 8.2%</span>
+        </div>
+        <div class="chart-bars">
+          <div class="chart-bar" style="height:40%;background:var(--surface-high);"></div>
+          <div class="chart-bar" style="height:60%;background:var(--surface-high);"></div>
+          <div class="chart-bar" style="height:45%;background:var(--surface-high);"></div>
+          <div class="chart-bar" style="height:80%;background:var(--primary);opacity:0.7;"></div>
+          <div class="chart-bar" style="height:55%;background:var(--surface-high);"></div>
+          <div class="chart-bar" style="height:90%;background:var(--primary);"></div>
+          <div class="chart-bar" style="height:100%;background:var(--accent);"></div>
+        </div>
+        <div class="chart-labels">
+          <span class="chart-label">L</span>
+          <span class="chart-label">M</span>
+          <span class="chart-label">X</span>
+          <span class="chart-label">J</span>
+          <span class="chart-label">V</span>
+          <span class="chart-label">S</span>
+          <span class="chart-label" style="color:var(--accent);">D</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert cards -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="alert-card alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <div class="alert-text"><strong>Actualización disponible</strong>Los costos de materia prima han cambiado. Recalcula tus recetas activas.</div>
+      </div>
+      <div class="alert-card alert-warning">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text"><strong>Margen bajo el objetivo</strong>Difusor Eucalipto tiene 40% de margen. Objetivo: 60%.</div>
+      </div>
+      <div class="alert-card alert-success">
+        <span class="alert-icon">✓</span>
+        <div class="alert-text"><strong>Punto de equilibrio superado</strong>Este mes ya produjiste 8 unidades de Vela Vaso. ¡Zona de utilidad!</div>
+      </div>
+      <div class="alert-card alert-error">
+        <span class="alert-icon">✕</span>
+        <div class="alert-text"><strong>Error de conversión</strong>No se encontró equivalencia para GRAMO en el producto "Cera Naranja". Configura la unidad base.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       10. NAVIGATION
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">10 — Navegación</div>
+    <h2 class="section-title">Sidebar Desktop + Bottom Nav Mobile</h2>
+    <div class="section-divider"></div>
+
+    <div class="nav-demo">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <img src="../../.claude/marketing/assets/logo/isotipo.png" alt="ChandeliERP">
+          <span class="sidebar-logo-name">ChandeliERP</span>
+        </div>
+
+        <div class="sidebar-section">Principal</div>
+        <div class="nav-item active">
+          <span class="nav-item-icon">📊</span> Dashboard
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-icon">📦</span> Recetas
+          <span class="nav-badge">24</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-icon">🏷️</span> Productos
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-icon">🧾</span> Facturas
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-icon">💰</span> POS
+        </div>
+
+        <div class="sidebar-section">Análisis</div>
+        <div class="nav-item">
+          <span class="nav-item-icon">📈</span> Reportes
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-icon">🤖</span> Socia IA
+        </div>
+
+        <div class="sidebar-section">Config</div>
+        <div class="nav-item">
+          <span class="nav-item-icon">⚙️</span> Configuración
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="user-pill">
+            <div class="user-avatar">LD</div>
+            <div>
+              <div class="user-name">Luz De Luna</div>
+              <div class="user-role">Administrador</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-main-content">
+        <div class="nav-page-header">
+          <span class="nav-page-title">Dashboard</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-dark btn-sm">Este mes</button>
+            <button class="btn btn-primary btn-sm">+ Nueva venta</button>
+          </div>
+        </div>
+        <div class="nav-kpi-row">
+          <div class="nav-kpi">
+            <div class="nav-kpi-label">Ventas</div>
+            <div class="nav-kpi-val" style="color:var(--primary);">$48.2M</div>
+          </div>
+          <div class="nav-kpi">
+            <div class="nav-kpi-label">Margen</div>
+            <div class="nav-kpi-val" style="color:var(--positive);">64.3%</div>
+          </div>
+          <div class="nav-kpi">
+            <div class="nav-kpi-label">Recetas</div>
+            <div class="nav-kpi-val">24</div>
+          </div>
+        </div>
+        <div class="placeholder-chart">
+          <span>📊 Gráfico de ventas por período</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="label-row-title" style="margin-bottom:12px;font-size:11px;color:var(--text-muted);">BOTTOM NAV — MOBILE</div>
+      <div class="bottom-nav-demo">
+        <div class="bottom-nav">
+          <div class="bottom-nav-item active">
+            <span class="bottom-nav-icon">📊</span>
+            <span class="bottom-nav-label">Inicio</span>
+          </div>
+          <div class="bottom-nav-item">
+            <span class="bottom-nav-icon">📦</span>
+            <span class="bottom-nav-label">Recetas</span>
+          </div>
+          <div class="bottom-nav-fab">+</div>
+          <div class="bottom-nav-item">
+            <span class="bottom-nav-icon">🧾</span>
+            <span class="bottom-nav-label">Facturas</span>
+          </div>
+          <div class="bottom-nav-item">
+            <span class="bottom-nav-icon">👤</span>
+            <span class="bottom-nav-label">Perfil</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════
+       11. DASHBOARD BENTO
+  ══════════════════════════════════ -->
+  <section class="section">
+    <div class="section-label">11 — Vista completa</div>
+    <h2 class="section-title">Dashboard Bento Grid</h2>
+    <div class="section-divider"></div>
+
+    <div class="bento">
+
+      <!-- Hero headline cell -->
+      <div class="bento-cell col-5 row-3 headline-cell">
+        <div class="headline-super">ChandeliERP · Marzo 2026</div>
+        <div class="headline-h1">Tu negocio,<br>en <em>claridad</em><br>total.</div>
+        <div class="headline-sub">Gestión inteligente de recetas, costos y precios para PyMEs artesanales.</div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn btn-primary btn-sm">Ver recetas</button>
+          <button class="btn btn-dark btn-sm">Consultar Socia</button>
+        </div>
+      </div>
+
+      <!-- KPI ventas -->
+      <div class="bento-cell col-4 row-2">
+        <div class="bento-kpi-label">Ventas del mes</div>
+        <div class="bento-kpi-val" style="font-family:var(--font-mono);font-size:32px;font-weight:600;color:var(--primary);letter-spacing:-0.03em;">$48.2M</div>
+        <div class="bento-kpi-delta up" style="color:var(--positive);margin-top:8px;">▲ 12.4% vs mes anterior</div>
+        <svg width="100%" height="50" viewBox="0 0 200 50" style="margin-top:12px;" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FF9B65" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#FF9B65" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,45 C30,40 50,30 80,25 S130,15 160,10 S185,8 200,5 L200,50 L0,50 Z" fill="url(#sg1)"/>
+          <path d="M0,45 C30,40 50,30 80,25 S130,15 160,10 S185,8 200,5" fill="none" stroke="#FF9B65" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <!-- KPI margen -->
+      <div class="bento-cell col-3 row-2">
+        <div class="bento-kpi-label">Margen bruto</div>
+        <div class="bento-kpi-val" style="font-family:var(--font-mono);font-size:32px;font-weight:600;color:var(--positive);letter-spacing:-0.03em;">64.3%</div>
+        <div class="bento-kpi-delta up" style="color:var(--positive);margin-top:8px;">▲ 2.1pp</div>
+        <div style="margin-top:16px;">
+          <div class="progress-track">
+            <div class="progress-fill" style="width:64.3%;background:var(--positive);"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">0%</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">Obj 60%</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donut chart — mix de recetas -->
+      <div class="bento-cell col-4 row-3">
+        <div class="bento-kpi-label" style="margin-bottom:16px;">Mix de producción</div>
+        <div class="donut-wrap">
+          <svg class="donut" width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#525252" stroke-width="14"/>
+            <!-- segments: total circumference ≈ 238.76 -->
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#FF9B65" stroke-width="14"
+              stroke-dasharray="95.5 143.26" stroke-dashoffset="0"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#FFE680" stroke-width="14"
+              stroke-dasharray="71.6 167.16" stroke-dashoffset="-95.5"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#BDFFA8" stroke-width="14"
+              stroke-dasharray="47.75 191" stroke-dashoffset="-167.1"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#A8A8A8" stroke-width="14"
+              stroke-dasharray="23.86 214.9" stroke-dashoffset="-214.85"/>
+          </svg>
+          <div class="donut-legend">
+            <div class="donut-legend-item"><div class="donut-dot" style="background:var(--primary);"></div>Vela Vaso 40%</div>
+            <div class="donut-legend-item"><div class="donut-dot" style="background:var(--accent);"></div>Roll-On 30%</div>
+            <div class="donut-legend-item"><div class="donut-dot" style="background:var(--positive);"></div>Difusor 20%</div>
+            <div class="donut-legend-item"><div class="donut-dot" style="background:var(--gris-medio);"></div>Otros 10%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress list — top ingredientes -->
+      <div class="bento-cell col-3 row-3">
+        <div class="bento-kpi-label" style="margin-bottom:16px;">Top ingredientes</div>
+        <div class="progress-list">
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-name">Choco Berry</span>
+              <span class="progress-val">49.3%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:49.3%;background:var(--primary);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-name">Cera de Soya</span>
+              <span class="progress-val">28.1%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:28.1%;background:var(--accent);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-name">Pabilo #6</span>
+              <span class="progress-val">14.2%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:14.2%;background:var(--positive);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-name">Fragancia</span>
+              <span class="progress-val">8.4%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:8.4%;background:var(--gris-medio);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recetas mini table -->
+      <div class="bento-cell col-5 row-3">
+        <div class="bento-kpi-label" style="margin-bottom:14px;">Recetas activas</div>
+        <table class="bento-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>CVU</th>
+              <th>Precio</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Vela Vaso Choco</td>
+              <td class="mono" style="color:var(--accent);">$13,001</td>
+              <td class="mono">$38,753</td>
+              <td><span class="badge badge-positive" style="font-size:10px;">60%</span></td>
+            </tr>
+            <tr>
+              <td>Roll-On Lavanda</td>
+              <td class="mono" style="color:var(--accent);">$7,100</td>
+              <td class="mono">$20,550</td>
+              <td><span class="badge badge-positive" style="font-size:10px;">65%</span></td>
+            </tr>
+            <tr>
+              <td>Difusor Eucalipto</td>
+              <td class="mono" style="color:var(--accent);">$29,800</td>
+              <td class="mono">$52,333</td>
+              <td><span class="badge badge-warning" style="font-size:10px;">43%</span></td>
+            </tr>
+            <tr>
+              <td>Crema Botánica</td>
+              <td class="mono" style="color:var(--text-muted);">$21,400</td>
+              <td class="mono" style="color:var(--text-muted);">—</td>
+              <td><span class="badge badge-neutral" style="font-size:10px;">Borrador</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:14px;text-align:right;">
+          <button class="btn btn-dark btn-sm">Ver todas las recetas →</button>
+        </div>
+      </div>
+
+      <!-- Activity feed -->
+      <div class="bento-cell col-4 row-3">
+        <div class="bento-kpi-label" style="margin-bottom:14px;">Actividad reciente</div>
+        <div class="activity-feed">
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--positive);"></div>
+            <div>
+              <div class="activity-text"><strong>Venta registrada</strong> — Vela Vaso ×3</div>
+              <div class="activity-time">Hace 12 min</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--primary);"></div>
+            <div>
+              <div class="activity-text"><strong>Receta actualizada</strong> — Nuevo costo CIF</div>
+              <div class="activity-time">Hace 1 hora</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--accent);"></div>
+            <div>
+              <div class="activity-text"><strong>Socia consultada</strong> — Análisis precio Difusor</div>
+              <div class="activity-time">Hace 2 horas</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--negative);"></div>
+            <div>
+              <div class="activity-text"><strong>Alerta margen</strong> — Difusor bajo objetivo 60%</div>
+              <div class="activity-time">Hace 3 horas</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--gris-medio);"></div>
+            <div>
+              <div class="activity-text"><strong>Producto creado</strong> — Cera de Palma ASHAS</div>
+              <div class="activity-time">Ayer, 4:30 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Punto de equilibrio mini card -->
+      <div class="bento-cell col-3 row-2">
+        <div class="bento-kpi-label">Punto de equilibrio</div>
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:600;color:var(--accent);margin-top:4px;letter-spacing:-0.03em;">7.14 <span style="font-size:14px;color:var(--text-muted);font-weight:400;">uds/mes</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">= $142,898 en ingresos</div>
+        <div style="margin-top:12px;" class="progress-track">
+          <div class="progress-fill" style="width:100%;background:linear-gradient(90deg,var(--negative) 35%,var(--positive) 35%);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;">
+          <span style="font-size:10px;color:var(--negative);font-family:var(--font-mono);">0 — 7.14</span>
+          <span style="font-size:10px;color:var(--positive);font-family:var(--font-mono);">7.14+ ✓</span>
+        </div>
+      </div>
+
+      <!-- CIF distribuido -->
+      <div class="bento-cell col-5 row-2">
+        <div class="bento-kpi-label">CIF distribuido · Energía</div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px;">
+          <div style="font-family:var(--font-mono);font-size:24px;font-weight:600;color:var(--text);">$2,500<span style="font-size:13px;color:var(--text-muted);font-weight:400;">/unidad</span></div>
+          <div style="font-size:12px;color:var(--text-muted);">de $50,000 CIF fijo ÷ 20 uds</div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:16px;">
+          <div style="flex:1;background:var(--surface-high);border-radius:var(--r-md);padding:10px 14px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">MD</div>
+            <div style="font-family:var(--font-mono);font-size:14px;color:var(--primary);margin-top:4px;">$10,001</div>
+          </div>
+          <div style="flex:1;background:var(--surface-high);border-radius:var(--r-md);padding:10px 14px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">MOD</div>
+            <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent);margin-top:4px;">$3,000</div>
+          </div>
+          <div style="flex:1;background:var(--surface-high);border-radius:var(--r-md);padding:10px 14px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">CIF</div>
+            <div style="font-family:var(--font-mono);font-size:14px;color:var(--gris-medio);margin-top:4px;">$2,500</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /bento -->
+  </section>
+
+  <!-- Footer -->
+  <footer style="margin-top:72px;padding:32px 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img src="../../.claude/marketing/assets/logo/isotipo.png" width="24" height="24" alt="ChandeliERP" style="border-radius:5px;object-fit:contain;">
+      <span style="font-family:var(--font-brand);font-size:14px;color:var(--text-muted);">ChandeliERP · Carbón Vivo Design System</span>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:rgba(168,168,168,0.4);">v2.0 · 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>
