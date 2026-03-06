@@ -179,6 +179,25 @@ async def obtener_tenant_actual(
     return TenantResponse.model_validate(tenant)
 
 
+@router.patch("/me", summary="Actualizar branding del tenant")
+async def actualizar_branding(
+    datos: dict,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin")),
+):
+    """Actualiza color_primario y/o color_secundario del tenant actual."""
+    tenant = db.query(Tenants).filter(Tenants.id == ctx.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    if "color_primario" in datos:
+        tenant.color_primario = datos["color_primario"]
+    if "color_secundario" in datos:
+        tenant.color_secundario = datos["color_secundario"]
+    db.commit()
+    db.refresh(tenant)
+    return tenant
+
+
 @router.post("/me/logo", summary="Subir logo del tenant")
 async def upload_logo(
     file: UploadFile = File(...),

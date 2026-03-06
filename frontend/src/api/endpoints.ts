@@ -344,6 +344,16 @@ export const tenants = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  getMe: (tenantId: string) => client.get<TenantDetail>('/tenants/me', { params: { tenant_id: tenantId } }),
+  updateMe: (data: { color_primario?: string; color_secundario?: string }) =>
+    client.patch<TenantDetail>('/tenants/me', data),
+  uploadLogoMe: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return client.post<{ url_logo: string; message: string }>('/tenants/me/logo', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   dashboard: () =>
     client.get<SaaSDashboardKPIs>('/tenants/dashboard/'),
   planes: {
