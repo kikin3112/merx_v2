@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
@@ -30,10 +31,24 @@ from ..datos.modelos import (
     Usuarios,
 )
 from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
+from ..servicios.servicio_ia_costeo import ServicioIACosteo
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_productos import CalculadoraMargenes
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
+
+# ── Pydantic models for asistente-ia endpoint ─────────────────────────────────
+
+
+class MensajeChat(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class AsistenteCosteoRequest(BaseModel):
+    precio_referencia: Optional[Decimal] = None
+    messages: list[MensajeChat] = []
+
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -680,3 +695,48 @@ async def obtener_costo_estandar(
         vigente_desde=historico.vigente_desde,
         notas_confirmacion=historico.notas_confirmacion,
     )
+
+
+# ============================================================================
+# ASISTENTE IA — SOCIA
+# ============================================================================
+
+
+@router.post("/{receta_id}/asistente-ia")
+async def consultar_socia(
+    receta_id: UUID,
+    request: AsistenteCosteoRequest,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "operador")),
+):
+    """
+    Consulta a Socia — asistente IA de costeo y pricing.
+
+    **Fase 1** (messages vacío): Retorna análisis estructurado con 6 campos.
+    **Fase 2** (messages con historial): Retorna respuesta conversacional libre.
+
+    El historial de conversación NO se persiste en DB — solo en sesión del frontend.
+    """
+    servicio = ServicioIACosteo(db=db, tenant_id=ctx.tenant_id)
+    try:
+        if not request.messages:
+            # Fase 1: análisis inicial estructurado
+            return await servicio.analisis_inicial(
+                receta_id=receta_id,
+                precio_referencia=request.precio_referencia,
+            )
+        else:
+            # Fase 2: chat conversacional libre
+            messages_dicts = [{"role": m.role, "content": m.content} for m in request.messages]
+            return await servicio.chat_libre(
+                receta_id=receta_id,
+                messages=messages_dicts,
+            )
+    except HTTPException:
+        raise  # Re-raise 404 (tenant isolation) and 503 (Anthropic failure) unchanged
+    except Exception as e:
+        logger.error("Error inesperado en asistente-ia", exc_info=e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Socia no pudo responder en este momento. Intenta de nuevo.",
+        )

@@ -11,6 +11,8 @@ interface POSState {
   cart: CartItem[];
   clienteId: string;
   descuentoGlobal: number;
+  /** Tenant this cart belongs to — used to detect cross-tenant stale state */
+  cartTenantId: string;
 
   addToCart: (producto: Producto) => void;
   removeFromCart: (productoId: string) => void;
@@ -18,6 +20,8 @@ interface POSState {
   setCliente: (clienteId: string) => void;
   setDescuento: (descuento: number) => void;
   clearCart: () => void;
+  reset: () => void;
+  setCartTenant: (tenantId: string) => void;
 }
 
 export const usePOSStore = create<POSState>()(
@@ -26,6 +30,7 @@ export const usePOSStore = create<POSState>()(
       cart: [],
       clienteId: '',
       descuentoGlobal: 0,
+      cartTenantId: '',
 
       addToCart: (producto) => set((state) => {
         const existing = state.cart.find(i => i.producto.id === producto.id);
@@ -59,13 +64,16 @@ export const usePOSStore = create<POSState>()(
       setCliente: (clienteId) => set({ clienteId }),
       setDescuento: (descuento) => set({ descuentoGlobal: descuento }),
       clearCart: () => set({ cart: [], clienteId: '', descuentoGlobal: 0 }),
+      reset: () => set({ cart: [], clienteId: '', descuentoGlobal: 0, cartTenantId: '' }),
+      setCartTenant: (tenantId) => set({ cartTenantId: tenantId }),
     }),
     {
       name: 'chandelier-pos',
       partialize: (state) => ({
         cart: state.cart,
         clienteId: state.clienteId,
-        descuentoGlobal: state.descuentoGlobal
+        descuentoGlobal: state.descuentoGlobal,
+        cartTenantId: state.cartTenantId,
       })
     }
   )

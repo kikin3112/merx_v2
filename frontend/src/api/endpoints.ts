@@ -79,6 +79,9 @@ import type {
   SociaProgreso,
   EquivalenciaUnidad,
   CostoEstandar,
+  ChatMessage,
+  SociaAnalisisResponse,
+  SociaChatResponse,
 } from '../types';
 
 // Auth
@@ -129,6 +132,8 @@ export const ventas = {
     client.post<Venta>(`/ventas/${id}/anular`, null, { params: { motivo } }),
   pos: (data: unknown) => client.post<Venta>('/ventas/pos', data),
   facturar: (id: string) => client.post<Venta>(`/ventas/${id}/facturar`),
+  registrarEnvio: (id: string, data: { canal: string; destinatario: string }) =>
+    client.post<Venta>(`/ventas/${id}/registrar-envio`, data),
 };
 
 // Inventario
@@ -195,6 +200,14 @@ export const recetas = {
     client.post<CostoEstandar>(`/recetas/${id}/fijar-costo`, data),
   costoEstandar: (id: string) =>
     client.get<CostoEstandar | null>(`/recetas/${id}/costo-estandar`),
+  consultarSocia: (
+    id: string,
+    data: { precio_referencia?: number; messages?: ChatMessage[] }
+  ) =>
+    client.post<SociaAnalisisResponse | SociaChatResponse>(
+      `/recetas/${id}/asistente-ia`,
+      data
+    ),
 };
 
 // Equivalencias de unidad por producto
@@ -228,8 +241,15 @@ export const cotizaciones = {
   get: (id: string) => client.get<Cotizacion>(`/cotizaciones/${id}`),
   create: (data: unknown) => client.post<Cotizacion>('/cotizaciones/', data),
   convertir: (id: string) => client.post(`/cotizaciones/${id}/convertir`),
+  rechazar: (id: string) => client.patch(`/cotizaciones/${id}/rechazar`),
+  renovar: (id: string, dias = 15) =>
+    client.patch(`/cotizaciones/${id}/renovar`, null, { params: { dias } }),
   descargarPdf: (id: string) =>
     client.get(`/cotizaciones/${id}/pdf`, { responseType: 'blob' }),
+};
+
+export const comercial = {
+  pipeline: () => client.get('/comercial/pipeline'),
 };
 
 // Contabilidad

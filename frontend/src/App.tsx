@@ -15,6 +15,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProductosPage from './pages/ProductosPage';
 import TercerosPage from './pages/TercerosPage';
 import VentasPage from './pages/VentasPage';
+import ComercialPage from './pages/ComercialPage';
 import InventarioPage from './pages/InventarioPage';
 import RecetasPage from './pages/RecetasPage';
 import { RentabilidadPage } from './pages/RentabilidadPage';
@@ -87,7 +88,10 @@ export default function App() {
             <Route element={<AppShell />}>
               <Route path="/" element={<DashboardPage />} />
 
-              {/* Open to all authenticated roles */}
+              {/* Pipeline Comercial Unificado */}
+              <Route path="/comercial" element={<ComercialPage />} />
+
+              {/* Legacy routes — kept for backward compat, redirect to /comercial */}
               <Route path="/ventas" element={<VentasPage />} />
               <Route path="/facturas" element={<FacturasPage />} />
               <Route path="/cotizaciones" element={<CotizacionesPage />} />

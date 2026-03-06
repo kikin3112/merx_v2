@@ -14,6 +14,7 @@ import { TutorialTooltip } from '../components/tutorial/TutorialTooltip';
 import { TutorialGuide } from '../components/tutorial/TutorialGuide';
 import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { SociaOnboarding } from '../socia/components/SociaOnboarding';
+import { AsistenteCosteoPanel } from '../components/recetas/AsistenteCosteoPanel';
 
 type Tab = 'recetas' | 'analisis' | 'indirectos';
 
@@ -43,6 +44,7 @@ export default function RecetasPage() {
   const [costoInfo, setCostoInfo] = useState<RecetaCosto | null>(null);
   const [costoEstandar, setCostoEstandar] = useState<CostoEstandar | null>(null);
   const [showProducir, setShowProducir] = useState(false);
+  const [showSocia, setShowSocia] = useState(false);
   const [cantidadProducir, setCantidadProducir] = useState(1);
   const [obsProducir, setObsProducir] = useState('');
 
@@ -222,20 +224,20 @@ export default function RecetasPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Recetas para producción</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Costos, precios y análisis con tu Socia</p>
+          <h1 className="font-brand text-xl font-medium cv-text">Recetas para producción</h1>
+          <p className="text-xs cv-muted mt-0.5">Costos, precios y análisis con tu Socia</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowTour(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-1"
+            className="text-xs px-3 py-1.5 rounded-lg cv-badge cv-badge-primary flex items-center gap-1 cursor-pointer"
           >
             📖 Tutorial
           </button>
           <button
             id="btn-nueva-receta"
             onClick={() => setShowForm(true)}
-            className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
+            className="cv-btn cv-btn-primary"
           >
             + Nueva receta
           </button>
@@ -243,20 +245,20 @@ export default function RecetasPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4 gap-1">
+      <div className="flex border-b cv-divider mb-4 gap-1 overflow-x-auto">
         {([
           { id: 'recetas', label: '🕯️ Recetas' },
-          { id: 'analisis', label: '📊 Análisis de precios' },
-          { id: 'indirectos', label: '💡 Gastos adicionales' },
+          { id: 'analisis', label: '📊 Análisis' },
+          { id: 'indirectos', label: '💡 Gastos' },
         ] as const).map((tab) => (
           <button
             key={tab.id}
             id={tab.id === 'analisis' ? 'tab-analisis' : tab.id === 'indirectos' ? 'tab-indirectos' : undefined}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
-                ? 'border-amber-500 text-amber-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-[var(--cv-primary)] cv-primary'
+                : 'border-transparent cv-muted hover:cv-text'
             }`}
           >
             {tab.label}
@@ -268,22 +270,22 @@ export default function RecetasPage() {
       {activeTab === 'recetas' && (
         isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-20 cv-elevated rounded-lg animate-pulse" />)}
           </div>
         ) : (
           <div className="space-y-3">
             {recetasList?.map((r) => (
-              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+              <div key={r.id} className="cv-card-hover p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-semibold text-gray-900">{r.nombre}</h3>
+                      <h3 className="text-sm font-semibold cv-text">{r.nombre}</h3>
                       {r.margen_objetivo != null && (
                         <MargenIndicator margen={r.margen_objetivo} />
                       )}
                     </div>
-                    {r.descripcion && <p className="text-xs text-gray-500 mt-0.5">{r.descripcion}</p>}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
+                    {r.descripcion && <p className="text-xs cv-muted mt-0.5">{r.descripcion}</p>}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs cv-muted">
                       <span>Rinde: <strong>{r.cantidad_resultado}</strong> uds</span>
                       <span>Ingredientes: <strong>{r.ingredientes.length}</strong></span>
                       {r.tiempo_produccion_minutos && (
@@ -295,19 +297,19 @@ export default function RecetasPage() {
                     <button
                       onClick={() => costoMutation.mutate(r.id)}
                       disabled={costoMutation.isPending}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-accent-dim)] text-[var(--cv-accent)] hover:opacity-80 transition-opacity"
                     >
                       {costoMutation.isPending ? '...' : 'Calcular costo'}
                     </button>
                     <button
                       onClick={() => { setSelectedReceta(r); setShowProducir(true); }}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-positive-dim)] text-[var(--cv-positive)] hover:opacity-80 transition-opacity"
                     >
                       Producir
                     </button>
                     <button
                       onClick={() => { if (confirm(`Eliminar receta "${r.nombre}"?`)) deleteMutation.mutate(r.id); }}
-                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                      className="rounded px-2.5 py-1.5 text-xs font-medium bg-[var(--cv-negative-dim)] text-[var(--cv-negative)] hover:opacity-80 transition-opacity"
                     >
                       Eliminar
                     </button>
@@ -316,7 +318,7 @@ export default function RecetasPage() {
                 {r.ingredientes.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {r.ingredientes.map((ing) => (
-                      <span key={ing.id} className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
+                      <span key={ing.id} className="cv-badge cv-badge-neutral">
                         {ing.producto_nombre ? `${ing.producto_nombre} · ` : ''}{ing.cantidad} {ing.unidad.toLowerCase()}
                         {ing.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">({ing.porcentaje_merma}% merma)</span>}
                       </span>
@@ -326,7 +328,7 @@ export default function RecetasPage() {
               </div>
             ))}
             {recetasList?.length === 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+              <div className="cv-card p-12 text-center cv-muted">
                 <p className="text-lg mb-2">🕯️ Sin recetas todavía</p>
                 <p className="text-sm">Define materias primas y crea tu primera receta</p>
               </div>
@@ -342,11 +344,11 @@ export default function RecetasPage() {
             <>
               {/* Selector de receta */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Selecciona una receta para analizar</label>
+                <label className="block text-sm font-medium cv-text mb-1">Selecciona una receta para analizar</label>
                 <select
                   value={selectedReceta?.id ?? ''}
                   onChange={(e) => setSelectedReceta(recetasList.find((r) => r.id === e.target.value) ?? null)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400"
+                  className="cv-input"
                 >
                   <option value="">— Elige una receta —</option>
                   {recetasList.map((r) => (
@@ -359,9 +361,9 @@ export default function RecetasPage() {
                 <div className="space-y-6">
                   {/* Costo breakdown si ya se calculó */}
                   {costoInfo && costoInfo.receta_id === selectedReceta.id && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="cv-card p-4">
                       <div className="flex items-center gap-2 mb-4">
-                        <h3 className="text-sm font-semibold text-gray-900">Desglose de costos</h3>
+                        <h3 className="text-sm font-semibold cv-text">Desglose de costos</h3>
                         <TutorialTooltip concepto="costoIngredientes" />
                       </div>
                       <CostoBreakdownChart
@@ -373,12 +375,12 @@ export default function RecetasPage() {
                     </div>
                   )}
                   {!costoInfo && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                      <p className="text-sm text-amber-700 mb-3">Primero calcula el costo de esta receta para ver el desglose completo</p>
+                    <div className="cv-card cv-alert-accent p-4 text-center">
+                      <p className="text-sm mb-3">Primero calcula el costo de esta receta para ver el desglose completo</p>
                       <button
                         onClick={() => costoMutation.mutate(selectedReceta.id)}
                         disabled={costoMutation.isPending}
-                        className="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                        className="cv-btn cv-btn-primary"
                       >
                         {costoMutation.isPending ? 'Calculando...' : 'Calcular costo ahora'}
                       </button>
@@ -386,7 +388,7 @@ export default function RecetasPage() {
                   )}
 
                   {/* Punto de equilibrio */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="cv-card p-4">
                     <PuntoEquilibrioPanel
                       recetaId={selectedReceta.id}
                       precioVentaDefault={costoInfo?.precio_venta_actual ?? 0}
@@ -394,19 +396,27 @@ export default function RecetasPage() {
                   </div>
 
                   {/* Escenarios de precio */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="cv-card p-4">
                     <EscenariosPrecios recetaId={selectedReceta.id} />
                   </div>
+
+                  {/* Socia — asistente IA de costeo */}
+                  <button
+                    onClick={() => setShowSocia(true)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold rounded-xl hover:from-amber-500 hover:to-amber-600 transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    Consultar a Socia
+                  </button>
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+                <div className="cv-card text-center py-12 cv-muted">
                   <p className="text-lg mb-2">📊</p>
                   <p className="text-sm">Selecciona una receta para ver su análisis de precios</p>
                 </div>
               )}
             </>
           ) : (
-            <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+            <div className="cv-card text-center py-12 cv-muted">
               <p className="text-lg mb-2">🕯️</p>
               <p className="text-sm">Crea tu primera receta para acceder al análisis de precios</p>
             </div>
@@ -416,7 +426,7 @@ export default function RecetasPage() {
 
       {/* === TAB: Costos Indirectos === */}
       {activeTab === 'indirectos' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="cv-card p-4">
           <CostoIndirectoManager />
         </div>
       )}
@@ -424,10 +434,10 @@ export default function RecetasPage() {
       {/* === Modal: Costo calculado === */}
       {costoInfo && activeTab === 'recetas' && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
-          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Costo: {costoInfo.receta_nombre}</h2>
-              <button onClick={() => setCostoInfo(null)} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b cv-divider">
+              <h2 className="text-lg font-semibold cv-text">Costo: {costoInfo.receta_nombre}</h2>
+              <button onClick={() => setCostoInfo(null)} className="cv-icon-btn p-2 -mr-1 text-xl">&times;</button>
             </div>
             <div className="p-4 md:p-6 overflow-y-auto flex-1">
               <CostoBreakdownChart
@@ -436,10 +446,10 @@ export default function RecetasPage() {
                         onFijarCosto={() => fijarCostoMutation.mutate(costoInfo.receta_id)}
                         fijarLoading={fijarCostoMutation.isPending}
                       />
-              <div className="mt-4 border-t border-gray-100 pt-3 space-y-1.5">
+              <div className="mt-4 border-t cv-divider pt-3 space-y-1.5">
                 {costoInfo.detalle_ingredientes.map((d, i) => (
                   <div key={i} className="flex justify-between text-sm">
-                    <span className="text-gray-600">
+                    <span className="cv-muted">
                       {d.producto_nombre}
                       {' '}({d.cantidad_bruta.toFixed(4)} {d.unidad.toLowerCase()}
                       {d.porcentaje_merma > 0 && <span className="text-orange-500 ml-1">+{d.porcentaje_merma}% merma</span>})
@@ -451,11 +461,11 @@ export default function RecetasPage() {
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => { setActiveTab('analisis'); setCostoInfo(costoInfo); }}
-                  className="flex-1 py-2 text-sm font-semibold bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors border border-amber-200"
+                  className="flex-1 cv-btn cv-btn-primary"
                 >
                   Ver análisis completo →
                 </button>
-                <button onClick={() => setCostoInfo(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                <button onClick={() => setCostoInfo(null)} className="cv-btn cv-btn-ghost">
                   Cerrar
                 </button>
               </div>
@@ -467,45 +477,45 @@ export default function RecetasPage() {
       {/* === Modal: Producir === */}
       {showProducir && selectedReceta && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
-          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-sm md:mx-4 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Producir</h2>
-              <button onClick={() => { setShowProducir(false); setSelectedReceta(null); }} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-sm md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b cv-divider">
+              <h2 className="text-lg font-semibold cv-text">Producir</h2>
+              <button onClick={() => { setShowProducir(false); setSelectedReceta(null); }} className="cv-icon-btn p-2 -mr-1 text-xl">&times;</button>
             </div>
             <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
-              <p className="text-sm text-gray-600">
-                Receta: <strong>{selectedReceta.nombre}</strong><br />
+              <p className="text-sm cv-muted">
+                Receta: <strong className="cv-text">{selectedReceta.nombre}</strong><br />
                 Rinde: {selectedReceta.cantidad_resultado} uds por lote
               </p>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lotes a producir</label>
+                <label className="block text-sm font-medium cv-text mb-1">Lotes a producir</label>
                 <input
                   type="number"
                   min={1}
                   value={cantidadProducir}
                   onChange={(e) => setCantidadProducir(Math.max(1, Number(e.target.value)))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="cv-input"
                 />
-                <p className="text-xs text-gray-500 mt-1">Total: {cantidadProducir * selectedReceta.cantidad_resultado} unidades</p>
+                <p className="text-xs cv-muted mt-1">Total: {cantidadProducir * selectedReceta.cantidad_resultado} unidades</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                <label className="block text-sm font-medium cv-text mb-1">Observaciones</label>
                 <textarea
                   value={obsProducir}
                   onChange={(e) => setObsProducir(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  className="cv-input resize-none"
                 />
               </div>
               {producirMutation.isError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+                <div className="cv-alert-error text-sm px-3 py-2">
                   {(producirMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al producir'}
                 </div>
               )}
               <button
                 onClick={() => producirMutation.mutate({ id: selectedReceta.id, cantidad: cantidadProducir, obs: obsProducir })}
                 disabled={producirMutation.isPending}
-                className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="cv-btn cv-btn-primary w-full"
               >
                 {producirMutation.isPending ? 'Produciendo...' : 'Confirmar Produccion'}
               </button>
@@ -517,41 +527,41 @@ export default function RecetasPage() {
       {/* === Modal: Crear receta === */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-start justify-center bg-black/50 md:overflow-y-auto md:py-8">
-          <div className="bg-white w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-2xl md:mx-4 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Nueva receta</h2>
-              <button onClick={resetForm} className="p-2 -mr-1 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-2xl md:mx-4 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b cv-divider">
+              <h2 className="text-lg font-semibold cv-text">Nueva receta</h2>
+              <button onClick={resetForm} className="cv-icon-btn p-2 -mr-1 text-xl">&times;</button>
             </div>
             <div className="px-4 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre receta *</label>
+                <label className="block text-sm font-medium cv-text mb-1">Nombre receta *</label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej: Vela Aromatica Lavanda 200g"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="cv-input"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                <label className="block text-sm font-medium cv-text mb-1">Descripcion</label>
                 <textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  className="cv-input resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Producto resultado *</label>
+                <label className="block text-sm font-medium cv-text mb-1">Producto resultado *</label>
                 {productoSeleccionado ? (
-                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center justify-between cv-elevated rounded-lg px-3 py-2">
                     <div>
-                      <p className="text-sm font-medium">{productoSeleccionado.nombre}</p>
-                      <p className="text-xs text-gray-500">{productoSeleccionado.codigo_interno}</p>
+                      <p className="text-sm font-medium cv-text">{productoSeleccionado.nombre}</p>
+                      <p className="text-xs cv-muted">{productoSeleccionado.codigo_interno}</p>
                     </div>
-                    <button onClick={() => setProductoResultadoId('')} className="text-xs text-red-500">Cambiar</button>
+                    <button onClick={() => setProductoResultadoId('')} className="text-xs text-[var(--cv-negative)]">Cambiar</button>
                   </div>
                 ) : (
                   <div>
@@ -560,15 +570,15 @@ export default function RecetasPage() {
                       placeholder="Buscar producto terminado..."
                       value={busquedaProducto}
                       onChange={(e) => setBusquedaProducto(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="cv-input"
                     />
                     {busquedaProducto && productosResultado.length > 0 && (
-                      <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-md">
+                      <div className="mt-1 cv-card max-h-40 overflow-y-auto shadow-md">
                         {productosResultado.map((p) => (
                           <button key={p.id} onClick={() => { setProductoResultadoId(p.id); setBusquedaProducto(''); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50">
-                            <span className="font-medium">{p.nombre}</span>
-                            <span className="text-gray-500 ml-2 text-xs">{p.codigo_interno}</span>
+                            className="w-full text-left px-3 py-2 text-sm cv-nav-item border-b cv-divider last:border-0">
+                            <span className="font-medium cv-text">{p.nombre}</span>
+                            <span className="cv-muted ml-2 text-xs">{p.codigo_interno}</span>
                           </button>
                         ))}
                       </div>
@@ -579,43 +589,43 @@ export default function RecetasPage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Rendimiento (uds)</label>
+                  <label className="block text-xs font-medium cv-text mb-1">Rendimiento (uds)</label>
                   <input type="number" min={1} value={cantidadResultado}
                     onChange={(e) => setCantidadResultado(Math.max(1, Number(e.target.value)))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    className="cv-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <label className="block text-xs font-medium cv-text mb-1 flex items-center gap-1">
                     Mano de obra <TutorialTooltip concepto="costoManoObra" />
                   </label>
                   <input type="number" min={0} step={100} value={costoManoObra}
                     onChange={(e) => setCostoManoObra(Number(e.target.value) || 0)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    className="cv-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Tiempo (min)</label>
+                  <label className="block text-xs font-medium cv-text mb-1">Tiempo (min)</label>
                   <input type="number" min={0} value={tiempoMinutos}
                     onChange={(e) => setTiempoMinutos(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    className="cv-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <label className="block text-xs font-medium cv-text mb-1 flex items-center gap-1">
                     Margen (%) <TutorialTooltip concepto="margenObjetivo" />
                   </label>
                   <input type="number" min={1} max={99} step={1} placeholder="60"
                     value={margenObjetivo}
                     onChange={(e) => setMargenObjetivo(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    className="cv-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium cv-text mb-1">
                     Prod. mensual (uds)
                   </label>
                   <input type="number" min={1} step={1} placeholder="200"
                     value={produccionMensualEsperada}
                     onChange={(e) => setProduccionMensualEsperada(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                  <p className="text-xs text-gray-400 mt-0.5">Para distribuir CIF fijo mensual</p>
+                    className="cv-input" />
+                  <p className="text-xs cv-muted mt-0.5">Para distribuir CIF fijo mensual</p>
                 </div>
               </div>
 
@@ -626,14 +636,14 @@ export default function RecetasPage() {
                 <div className="mb-3">
                   <input type="text" placeholder="Buscar materia prima..." value={busquedaIngrediente}
                     onChange={(e) => setBusquedaIngrediente(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    className="cv-input" />
                   {busquedaIngrediente && productosIngrediente.length > 0 && (
-                    <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-md">
+                    <div className="mt-1 cv-card max-h-40 overflow-y-auto shadow-md">
                       {productosIngrediente.map((p) => (
                         <button key={p.id} onClick={() => agregarIngrediente(p)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50">
-                          <span className="font-medium">{p.nombre}</span>
-                          <span className="text-gray-500 ml-2 text-xs">{p.codigo_interno}</span>
+                          className="w-full text-left px-3 py-2 text-sm cv-nav-item border-b cv-divider last:border-0">
+                          <span className="font-medium cv-text">{p.nombre}</span>
+                          <span className="cv-muted ml-2 text-xs">{p.codigo_interno}</span>
                         </button>
                       ))}
                     </div>
@@ -642,15 +652,15 @@ export default function RecetasPage() {
                 {ingredientes.length > 0 ? (
                   <div className="space-y-2">
                     {ingredientes.map((ing, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                        <span className="flex-1 min-w-[120px] text-sm font-medium text-gray-900 truncate">{ing.nombre}</span>
+                      <div key={i} className="flex flex-wrap items-center gap-2 cv-elevated rounded-lg px-3 py-2">
+                        <span className="flex-1 min-w-[120px] text-sm font-medium cv-text truncate">{ing.nombre}</span>
                         <input type="number" min={0.01} step={0.01} value={ing.cantidad}
                           onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, cantidad: Number(e.target.value) || 0 } : item))}
-                          className="w-20 text-center rounded border border-gray-200 px-2 py-1 text-sm"
+                          className="w-20 text-center cv-input px-2 py-1 text-sm"
                           title="Cantidad neta" />
                         <select value={ing.unidad}
                           onChange={(e) => setIngredientes((prev) => prev.map((item, idx) => idx === i ? { ...item, unidad: e.target.value } : item))}
-                          className="rounded border border-gray-200 px-2 py-1 text-sm">
+                          className="cv-input px-2 py-1 text-sm w-auto">
                           {UNIDADES.map((u) => <option key={u} value={u}>{u.toLowerCase()}</option>)}
                         </select>
                         <div className="flex items-center gap-1">
@@ -666,19 +676,19 @@ export default function RecetasPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="border border-dashed border-gray-300 rounded-lg py-6 text-center text-sm text-gray-400">
+                  <div className="border border-dashed rounded-lg py-6 text-center text-sm cv-muted" style={{ borderColor: 'var(--cv-border-mid)' }}>
                     Busca y agrega materias primas
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-4 py-4 md:px-6 border-t border-gray-100">
-              <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-4 py-4 md:px-6 border-t cv-divider">
+              <button onClick={resetForm} className="cv-btn cv-btn-ghost">Cancelar</button>
               <button
                 onClick={handleCrear}
                 disabled={!nombre || !productoResultadoId || ingredientes.length === 0 || crearMutation.isPending}
-                className="px-5 py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+                className="cv-btn cv-btn-primary"
               >
                 {crearMutation.isPending ? 'Creando...' : 'Crear Receta'}
               </button>
@@ -705,6 +715,28 @@ export default function RecetasPage() {
           onOmitir={() => { tutorial.omitir(); setShowTour(false); }}
           onCompletar={() => { tutorial.completar(); setShowTour(false); }}
         />
+      )}
+
+      {/* === Modal: Socia — Asistente IA === */}
+      {showSocia && selectedReceta && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+          <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-lg md:mx-4 flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b cv-divider flex-shrink-0">
+              <h2 className="text-lg font-semibold cv-text">Socia</h2>
+              <button
+                onClick={() => setShowSocia(false)}
+                className="cv-icon-btn p-2 -mr-1 text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            <AsistenteCosteoPanel
+              key={selectedReceta.id}
+              recetaId={selectedReceta.id}
+              onClose={() => setShowSocia(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* === Help Panel flotante === */}

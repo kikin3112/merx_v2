@@ -58,6 +58,7 @@ from .rutas import (
     auth,
     calificaciones,
     cartera,
+    comercial,
     compras,
     configuracion_contable,
     contabilidad,
@@ -452,6 +453,9 @@ app.include_router(tenants.router, prefix=f"{prefix}/tenants", tags=["Tenants"])
 app.include_router(usuarios.router, prefix=f"{prefix}/usuarios", tags=["Usuarios"])
 app.include_router(terceros.router, prefix=f"{prefix}/terceros", tags=["Terceros"])
 app.include_router(productos.router, prefix=f"{prefix}/productos", tags=["Productos"])
+
+# Pipeline Comercial Unificado
+app.include_router(comercial.router, prefix=f"{prefix}/comercial", tags=["Comercial"])
 
 # Operaciones
 app.include_router(ventas.router, prefix=f"{prefix}/ventas", tags=["Ventas"])

@@ -8,9 +8,9 @@ import type { DashboardKPIs, AlertaStock, VentaDiaria, ProductoMasVendido, TopCl
 import { useAuthStore } from '../stores/authStore';
 import { useSSE } from '../hooks/useSSE';
 import { useDashboardStore } from '../stores/dashboardStore';
-import type { FacturaEvento } from '../stores/dashboardStore';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
+import NextActionsPanel from '../components/dashboard/NextActionsPanel';
 import {
   ResponsiveContainer,
   LineChart,
@@ -24,7 +24,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from 'recharts';
 
 function KPICard({ title, value, subtitle, color }: {
@@ -34,10 +33,10 @@ function KPICard({ title, value, subtitle, color }: {
   color: string;
 }) {
   return (
-    <div className="rounded-xl bg-white border border-gray-200 p-5">
-      <p className="text-sm font-medium text-gray-500">{title}</p>
+    <div className="cv-card p-5">
+      <p className="text-sm font-medium cv-muted">{title}</p>
       <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+      <p className="text-xs cv-muted mt-1">{subtitle}</p>
     </div>
   );
 }
@@ -45,46 +44,14 @@ function KPICard({ title, value, subtitle, color }: {
 function SSEIndicator({ connected }: { connected: boolean }) {
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
-      connected ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+      connected ? 'cv-badge-positive' : 'cv-badge-neutral'
     }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[var(--cv-positive)] animate-pulse' : 'bg-[var(--cv-muted)]'}`} />
       {connected ? 'En vivo' : 'Desconectado'}
     </span>
   );
 }
 
-function FacturaEventFeed({ events }: { events: FacturaEvento[] }) {
-  if (events.length === 0) {
-    return (
-      <p className="text-xs text-gray-400 py-4 text-center">
-        Sin actividad reciente. Los eventos aparecen en tiempo real.
-      </p>
-    );
-  }
-  const ESTADO_STYLES: Record<string, string> = {
-    emitida: 'bg-green-100 text-green-700',
-    anulada: 'bg-red-100 text-red-700',
-    pagada: 'bg-blue-100 text-blue-700',
-  };
-  return (
-    <ul className="space-y-2">
-      {events.map((ev) => (
-        <li key={`${ev.factura_id}-${ev.timestamp}`} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-          <div>
-            <span className="text-sm font-medium text-gray-900">{ev.numero}</span>
-            <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_STYLES[ev.estado] ?? 'bg-gray-100 text-gray-600'}`}>
-              {ev.estado}
-            </span>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900">{formatCurrency(ev.total)}</p>
-            <p className="text-xs text-gray-400">{new Date(ev.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function formatShortDate(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -105,14 +72,10 @@ export default function DashboardPage() {
   const { user, impersonation, rolEnTenant } = useAuthStore();
   const onboarding = useOnboarding();
 
-  // Determinar rol efectivo: impersonación > rol en tenant > rol global
   const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
-
-  // Solo admin y contador pueden ver reportes detallados
   const canViewReports = effectiveRole === 'admin' || effectiveRole === 'contador';
 
-  // SSE: tiempo real
-  const { setSSEConnected, addFacturaEvento, addAlertaEvento, sseConnected, recentFacturaEvents } = useDashboardStore();
+  const { setSSEConnected, addFacturaEvento, addAlertaEvento, sseConnected } = useDashboardStore();
   useSSE({
     onConnect: () => setSSEConnected(true),
     onDisconnect: () => setSSEConnected(false),
@@ -127,7 +90,7 @@ export default function DashboardPage() {
   const { data: kpis, isLoading: kpisLoading } = useQuery<DashboardKPIs>({
     queryKey: ['dashboard-kpis', dateParams],
     queryFn: () => reportes.dashboard(dateParams).then((r) => r.data),
-    enabled: canViewReports, // Solo ejecutar si tiene permisos
+    enabled: canViewReports,
   });
 
   const { data: alertas } = useQuery<AlertaStock[]>({
@@ -138,13 +101,13 @@ export default function DashboardPage() {
   const { data: ventasDiarias } = useQuery<VentaDiaria[]>({
     queryKey: ['ventas-diarias', dateParams],
     queryFn: () => reportes.ventasDiarias(dateParams).then((r) => r.data),
-    enabled: canViewReports, // Solo ejecutar si tiene permisos
+    enabled: canViewReports,
   });
 
   const { data: topProductos } = useQuery<ProductoMasVendido[]>({
     queryKey: ['productos-mas-vendidos', dateParams],
     queryFn: () => reportes.productosMasVendidos({ limite: 5, ...dateParams }).then((r) => r.data),
-    enabled: canViewReports, // Solo ejecutar si tiene permisos
+    enabled: canViewReports,
   });
 
   const { data: topClientes } = useQuery<TopCliente[]>({
@@ -162,32 +125,31 @@ export default function DashboardPage() {
   if (kpisLoading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded" />
+        <div className="h-8 w-48 cv-elevated rounded" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-gray-200 rounded-xl" />
+            <div key={i} className="h-28 cv-elevated rounded-xl" />
           ))}
         </div>
-        <div className="h-64 bg-gray-200 rounded-xl" />
+        <div className="h-64 cv-elevated rounded-xl" />
       </div>
     );
   }
 
-  // Mensaje para usuarios sin permisos de reportes
   if (!canViewReports) {
     return (
       <div>
-        <h1 className="text-xl font-bold text-gray-900 mb-6">Dashboard</h1>
+        <h1 className="font-brand text-xl font-medium cv-text mb-6">Dashboard</h1>
 
-        <div className="rounded-xl bg-blue-50 border border-blue-200 p-6 text-center">
-          <svg className="w-16 h-16 mx-auto text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="cv-card cv-alert-accent p-6 text-center">
+          <svg className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--cv-accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Bienvenido, {user?.nombre}</h2>
-          <p className="text-gray-600 mb-4">
-            Tu rol de <span className="font-medium text-blue-600">{effectiveRole}</span> te permite gestionar operaciones del día a día.
+          <h2 className="text-lg font-semibold cv-text mb-2">Bienvenido, {user?.nombre}</h2>
+          <p className="cv-muted mb-4">
+            Tu rol de <span className="font-medium cv-primary">{effectiveRole}</span> te permite gestionar operaciones del día a día.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm cv-muted mb-6">
             Los reportes detallados están disponibles para roles de Admin y Contador.
             <br />
             Usa el menú lateral para acceder a tus funciones.
@@ -195,20 +157,20 @@ export default function DashboardPage() {
           <div className="flex flex-wrap justify-center gap-3">
             {effectiveRole === 'vendedor' && (
               <>
-                <a href="/pos" className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
+                <a href="/pos" className="cv-btn cv-btn-primary">
                   Ir al POS
                 </a>
-                <a href="/ventas" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                <a href="/ventas" className="cv-btn cv-btn-secondary">
                   Ver ventas
                 </a>
               </>
             )}
             {effectiveRole === 'operador' && (
               <>
-                <a href="/productos" className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
+                <a href="/productos" className="cv-btn cv-btn-primary">
                   Gestionar productos
                 </a>
-                <a href="/inventario" className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                <a href="/inventario" className="cv-btn cv-btn-secondary">
                   Ver inventario
                 </a>
               </>
@@ -216,23 +178,22 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Alertas de stock - todos pueden verlas */}
         {alertas && alertas.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">⚠️ Alertas de stock</h2>
+            <h2 className="text-sm font-semibold cv-text mb-3">⚠️ Alertas de stock</h2>
             <div className="space-y-2">
               {alertas.slice(0, 5).map((alerta) => (
                 <div
                   key={alerta.producto_id}
-                  className="flex items-center justify-between rounded-lg bg-red-50 border border-red-200 p-3"
+                  className="flex items-center justify-between rounded-lg cv-alert-error p-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{alerta.nombre}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium cv-text">{alerta.nombre}</p>
+                    <p className="text-xs cv-muted">
                       Stock: {alerta.stock_actual} / Mínimo: {alerta.stock_minimo}
                     </p>
                   </div>
-                  <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                  <span className="cv-badge cv-badge-negative">
                     Bajo stock
                   </span>
                 </div>
@@ -256,113 +217,69 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="font-brand text-xl font-medium cv-text">Dashboard</h1>
           <SSEIndicator connected={sseConnected} />
         </div>
         <PeriodSelector value={period} onChange={setPeriod} />
       </div>
 
-      {/* KPI Cards - Row 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <KPICard
-          title="Ventas en periodo"
-          value={formatCurrency(kpis?.total_ventas ?? 0)}
-          subtitle={`${kpis?.cantidad_ventas ?? 0} ventas`}
-          color="text-primary-600"
-        />
-        <KPICard
-          title="Ventas hoy"
-          value={formatCurrency(kpis?.ventas_hoy ?? 0)}
-          subtitle={`${kpis?.cantidad_hoy ?? 0} ventas`}
-          color="text-green-600"
-        />
-        <KPICard
-          title="Promedio por venta"
-          value={formatCurrency(kpis?.promedio_venta ?? 0)}
-          subtitle={`${kpis?.cantidad_ventas ?? 0} ventas en periodo`}
-          color="text-blue-600"
-        />
-        <KPICard
-          title="Alertas stock"
-          value={String(kpis?.alertas_stock_bajo ?? 0)}
-          subtitle="productos bajo minimo"
-          color={kpis?.alertas_stock_bajo ? 'text-red-600' : 'text-gray-600'}
-        />
-      </div>
+      <NextActionsPanel />
 
-      {/* KPI Cards - Row 2 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPICard
-          title="Ventas últ. 30 días"
-          value={formatCurrency(kpis?.ventas_mes ?? 0)}
-          subtitle={`${kpis?.cantidad_mes ?? 0} ventas`}
-          color="text-secondary-600"
-        />
-        <KPICard
-          title="Facturas pendientes"
-          value={formatCurrency(kpis?.facturas_pendientes ?? 0)}
-          subtitle={`${kpis?.cantidad_facturas_pendientes ?? 0} facturas por cobrar`}
-          color={kpis?.cantidad_facturas_pendientes ? 'text-orange-600' : 'text-gray-600'}
-        />
-      </div>
-
-      {/* Chart: Ventas Diarias */}
-      {ventasDiarias && ventasDiarias.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Ventas diarias ({period.label})</h2>
-          <div className="h-52 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={ventasDiarias}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="fecha"
-                  tickFormatter={formatShortDate}
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
-                  width={55}
-                />
-                <Tooltip
-                  formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), 'Ventas']}
-                  labelFormatter={(label: unknown) => formatShortDate(String(label))}
-                  contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="#EC4899"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* KPI Cards + Ingresos vs Gastos — desktop: 2/3 + 1/3 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        {/* KPI 2×3 */}
+        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+          <KPICard
+            title="Ventas en periodo"
+            value={formatCurrency(kpis?.total_ventas ?? 0)}
+            subtitle={`${kpis?.cantidad_ventas ?? 0} ventas`}
+            color="cv-primary"
+          />
+          <KPICard
+            title="Ventas hoy"
+            value={formatCurrency(kpis?.ventas_hoy ?? 0)}
+            subtitle={`${kpis?.cantidad_hoy ?? 0} ventas`}
+            color="text-[var(--cv-positive)]"
+          />
+          <KPICard
+            title="Promedio por venta"
+            value={formatCurrency(kpis?.promedio_venta ?? 0)}
+            subtitle={`${kpis?.cantidad_ventas ?? 0} ventas en periodo`}
+            color="text-[var(--cv-accent)]"
+          />
+          <KPICard
+            title="Alertas stock"
+            value={String(kpis?.alertas_stock_bajo ?? 0)}
+            subtitle="productos bajo minimo"
+            color={kpis?.alertas_stock_bajo ? 'text-[var(--cv-negative)]' : 'cv-muted'}
+          />
+          <KPICard
+            title="Ventas últ. 30 días"
+            value={formatCurrency(kpis?.ventas_mes ?? 0)}
+            subtitle={`${kpis?.cantidad_mes ?? 0} ventas`}
+            color="cv-text"
+          />
+          <KPICard
+            title="Facturas pendientes"
+            value={formatCurrency(kpis?.facturas_pendientes ?? 0)}
+            subtitle={`${kpis?.cantidad_facturas_pendientes ?? 0} facturas por cobrar`}
+            color={kpis?.cantidad_facturas_pendientes ? 'text-[var(--cv-primary)]' : 'cv-muted'}
+          />
         </div>
-      )}
 
-      {/* Gastos vs Ingresos */}
-      {canViewReports && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-1">Ingresos vs gastos ({period.label})</h2>
-          {gastosLoading ? (
-            <div className="h-48 flex items-center justify-center text-sm text-gray-400">Cargando...</div>
-          ) : gastosError ? (
-            <div className="h-48 flex items-center justify-center text-sm text-red-400">No se pudieron cargar los datos financieros.</div>
-          ) : gastosVsIngresos && (gastosVsIngresos.ingresos > 0 || gastosVsIngresos.gastos > 0) ? (
-            <>
-              <p className="text-xs text-gray-400 mb-4">
-                Margen: <span className={gastosVsIngresos.margen >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                  {formatTooltipValue(gastosVsIngresos.margen)} ({gastosVsIngresos.margen_porcentaje}%)
-                </span>
-              </p>
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="h-48 w-full sm:w-64 shrink-0">
+        {/* Ingresos vs Gastos — columna derecha */}
+        {canViewReports && (
+          <div className="cv-card p-5 flex flex-col">
+            <h2 className="text-sm font-semibold cv-text mb-1">Ingresos vs gastos</h2>
+            {gastosLoading ? (
+              <div className="flex-1 flex items-center justify-center text-sm cv-muted">Cargando...</div>
+            ) : gastosError ? (
+              <div className="flex-1 flex items-center justify-center text-sm text-[var(--cv-negative)]">Sin datos financieros.</div>
+            ) : gastosVsIngresos && (gastosVsIngresos.ingresos > 0 || gastosVsIngresos.gastos > 0) ? (
+              <>
+                <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -372,117 +289,156 @@ export default function DashboardPage() {
                         ]}
                         cx="50%"
                         cy="50%"
-                        innerRadius={52}
-                        outerRadius={80}
+                        innerRadius={48}
+                        outerRadius={72}
                         dataKey="value"
                         startAngle={90}
                         endAngle={-270}
                       >
-                        <Cell fill="#C17B2B" />
-                        <Cell fill="#EF4444" />
+                        <Cell fill="#FF9B65" />
+                        <Cell fill="#FF7A7A" />
                       </Pie>
                       <Tooltip
                         formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), '']}
-                        contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                      />
-                      <Legend
-                        iconType="circle"
-                        iconSize={8}
-                        formatter={(value: string) => <span style={{ fontSize: 12, color: '#374151' }}>{value}</span>}
+                        contentStyle={{ fontSize: 12, borderRadius: 8, backgroundColor: 'var(--cv-surface)', border: '1px solid var(--cv-border-mid)', color: 'var(--cv-text)' }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex-1 space-y-3 w-full">
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between py-1.5 border-b cv-divider">
                     <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-[#C17B2B]" />
-                      <span className="text-sm text-gray-600">Ingresos</span>
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: '#FF9B65' }} />
+                      <span className="text-xs cv-muted">Ingresos</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.ingresos)}</span>
+                    <span className="text-xs font-semibold cv-text">{formatTooltipValue(gastosVsIngresos.ingresos)}</span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div className="flex items-center justify-between py-1.5 border-b cv-divider">
                     <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-red-500" />
-                      <span className="text-sm text-gray-600">Gastos</span>
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: '#FF7A7A' }} />
+                      <span className="text-xs cv-muted">Gastos</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">{formatTooltipValue(gastosVsIngresos.gastos)}</span>
+                    <span className="text-xs font-semibold cv-text">{formatTooltipValue(gastosVsIngresos.gastos)}</span>
                   </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm font-medium text-gray-700">Margen neto</span>
-                    <span className={`text-sm font-bold ${gastosVsIngresos.margen >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-xs font-medium cv-text">Margen neto</span>
+                    <span className={`text-xs font-bold ${gastosVsIngresos.margen >= 0 ? 'text-[var(--cv-positive)]' : 'text-[var(--cv-negative)]'}`}>
                       {formatTooltipValue(gastosVsIngresos.margen)}
                     </span>
                   </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-sm text-gray-400">Sin movimientos en este período.</div>
-          )}
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-sm cv-muted">Sin movimientos en este período.</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Chart: Ventas Diarias */}
+      {ventasDiarias && ventasDiarias.length > 0 && (() => {
+        const TICK_COUNT = 7;
+        const n = ventasDiarias.length;
+        const evenTicks = Array.from({ length: Math.min(TICK_COUNT, n) }, (_, i) =>
+          ventasDiarias[Math.round(i * (n - 1) / (Math.min(TICK_COUNT, n) - 1))]?.fecha
+        ).filter(Boolean);
+        return (
+        <div className="cv-card p-5 mb-6">
+          <h2 className="text-sm font-semibold cv-text mb-4">Ventas diarias ({period.label})</h2>
+          <div className="h-52 sm:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={ventasDiarias}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--cv-border-mid)" />
+                <XAxis
+                  dataKey="fecha"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 11, fill: 'var(--cv-muted)' }}
+                  ticks={evenTicks}
+                />
+                <YAxis
+                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 11, fill: 'var(--cv-muted)' }}
+                  width={55}
+                />
+                <Tooltip
+                  formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), 'Ventas']}
+                  labelFormatter={(label: unknown) => formatShortDate(String(label))}
+                  contentStyle={{ fontSize: 13, borderRadius: 8, backgroundColor: 'var(--cv-surface)', border: '1px solid var(--cv-border-mid)', color: 'var(--cv-text)' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="var(--cv-primary)"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      )}
+        );
+      })()}
+
 
       {/* Two columns: Top Productos + Top Clientes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Top Productos */}
         {topProductos && topProductos.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top productos ({period.label})</h2>
+          <div className="cv-card p-5">
+            <h2 className="text-sm font-semibold cv-text mb-4">Top productos ({period.label})</h2>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topProductos} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--cv-border)" horizontal={false} />
                   <XAxis
                     type="number"
                     tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    tick={{ fontSize: 11, fill: 'var(--cv-muted)' }}
                   />
                   <YAxis
                     type="category"
                     dataKey="nombre"
                     width={100}
-                    tick={{ fontSize: 11, fill: '#374151' }}
+                    tick={{ fontSize: 11, fill: 'var(--cv-text)' }}
                   />
                   <Tooltip
                     formatter={(value: number | undefined) => [formatTooltipValue(value ?? 0), 'Ingresos']}
-                    contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                    contentStyle={{ fontSize: 13, borderRadius: 8, backgroundColor: 'var(--cv-surface)', border: '1px solid var(--cv-border-mid)', color: 'var(--cv-text)' }}
                   />
-                  <Bar dataKey="total_ingresos" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="total_ingresos" fill="var(--cv-accent)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-3 space-y-1.5">
               {topProductos.map((p, i) => (
                 <div key={p.producto_id} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
-                    <span className="font-medium text-gray-400 mr-2">{i + 1}.</span>
+                  <span className="cv-muted">
+                    <span className="font-medium mr-2">{i + 1}.</span>
                     {p.nombre}
                   </span>
-                  <span className="text-gray-900 font-medium">{formatNumber(p.total_cantidad)} uds</span>
+                  <span className="cv-text font-medium">{formatNumber(p.total_cantidad)} uds</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Top Clientes */}
         {topClientes && topClientes.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Top clientes ({period.label})</h2>
+          <div className="cv-card p-5">
+            <h2 className="text-sm font-semibold cv-text mb-4">Top clientes ({period.label})</h2>
             <div className="space-y-3">
               {topClientes.map((c, i) => (
-                <div key={c.tercero_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={c.tercero_id} className="flex items-center justify-between py-2 border-b cv-divider last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-secondary-100 flex items-center justify-center">
-                      <span className="text-secondary-700 text-xs font-semibold">{i + 1}</span>
+                    <div className="h-8 w-8 rounded-full cv-elevated flex items-center justify-center">
+                      <span className="cv-primary text-xs font-semibold">{i + 1}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{c.nombre}</p>
-                      <p className="text-xs text-gray-500">{c.cantidad_ventas} compras</p>
+                      <p className="text-sm font-medium cv-text">{c.nombre}</p>
+                      <p className="text-xs cv-muted">{c.cantidad_ventas} compras</p>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(c.total_ventas)}</p>
+                  <p className="text-sm font-semibold cv-text">{formatCurrency(c.total_ventas)}</p>
                 </div>
               ))}
             </div>
@@ -492,18 +448,18 @@ export default function DashboardPage() {
 
       {/* Alertas de stock */}
       {alertas && alertas.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Alertas de stock bajo</h2>
+        <div className="cv-card p-5">
+          <h2 className="text-sm font-semibold cv-text mb-3">Alertas de stock bajo</h2>
           <div className="space-y-2">
             {alertas.slice(0, 8).map((a) => (
-              <div key={a.producto_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={a.producto_id} className="flex items-center justify-between py-2 border-b cv-divider last:border-0">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{a.nombre}</p>
-                  <p className="text-xs text-gray-500">{a.codigo}</p>
+                  <p className="text-sm font-medium cv-text">{a.nombre}</p>
+                  <p className="text-xs cv-muted">{a.codigo}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-red-600">{a.stock_actual}</p>
-                  <p className="text-xs text-gray-400">min: {a.stock_minimo}</p>
+                  <p className="text-sm font-semibold text-[var(--cv-negative)]">{a.stock_actual}</p>
+                  <p className="text-xs cv-muted">min: {a.stock_minimo}</p>
                 </div>
               </div>
             ))}
@@ -511,14 +467,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Feed SSE de eventos en tiempo real */}
-      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-900">Actividad en vivo</h2>
-          <SSEIndicator connected={sseConnected} />
-        </div>
-        <FacturaEventFeed events={recentFacturaEvents} />
-      </div>
     </div>
   );
 }

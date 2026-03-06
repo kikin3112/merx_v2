@@ -352,9 +352,9 @@ class ServicioContabilidad:
                         "nombre": row.nombre,
                         "tipo_cuenta": row.tipo_cuenta,
                         "naturaleza": row.naturaleza,
-                        "total_debito": float(total_debito),
-                        "total_credito": float(total_credito),
-                        "saldo": float(saldo),
+                        "total_debito": str(total_debito),
+                        "total_credito": str(total_credito),
+                        "saldo": str(saldo),
                     }
                 )
 

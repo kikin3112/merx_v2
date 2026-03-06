@@ -44,16 +44,16 @@ function StepIndicator({ current }: { current: Step }) {
           <div
             className={`flex items-center justify-center h-8 w-8 rounded-full text-sm font-semibold transition-colors ${
               s.num === current
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--cv-primary)] text-white'
                 : s.num < current
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-gray-100 text-gray-400'
+                  ? 'bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]'
+                  : 'cv-elevated cv-muted'
             }`}
           >
             {s.num < current ? '✓' : s.num}
           </div>
-          <span className="ml-1.5 text-xs text-gray-500 hidden sm:inline">{s.label}</span>
-          {i < steps.length - 1 && <div className="w-8 h-px bg-gray-200 mx-2" />}
+          <span className="ml-1.5 text-xs cv-muted hidden sm:inline">{s.label}</span>
+          {i < steps.length - 1 && <div className="w-8 h-px bg-[var(--cv-divider)] mx-2" />}
         </div>
       ))}
     </div>
@@ -85,8 +85,7 @@ export default function EmpresaWizardPage() {
     return null;
   }
 
-  const inputClass =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none';
+  const inputClass = 'cv-input';
 
   const handleNombreChange = (value: string) => {
     setNombreEmpresa(value);
@@ -138,25 +137,25 @@ export default function EmpresaWizardPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)] px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
             <img src="/logo.png" alt="ChandeliERP logo" className="h-10 w-10 rounded-full object-cover" />
-            <span className="text-3xl font-bold text-amber-500">ChandeliERP</span>
+            <span className="font-brand text-3xl font-medium text-[var(--cv-primary)]">ChandeliERP</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Registra tu empresa</h1>
-          <p className="text-sm text-gray-500 mt-1">14 días de prueba gratuita</p>
+          <h1 className="font-brand text-2xl font-medium cv-text">Registra tu empresa</h1>
+          <p className="text-sm cv-muted mt-1">14 días de prueba gratuita</p>
         </div>
 
         <StepIndicator current={step} />
 
         <form
           onSubmit={step === 2 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4"
+          className="cv-card p-6 space-y-4"
         >
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+            <div className="cv-alert-error px-3 py-2 text-sm">
               {error}
             </div>
           )}
@@ -164,7 +163,7 @@ export default function EmpresaWizardPage() {
           {step === 1 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la empresa *</label>
+                <label className="block text-sm font-medium cv-text mb-1">Nombre de la empresa *</label>
                 <input
                   type="text"
                   value={nombreEmpresa}
@@ -176,12 +175,12 @@ export default function EmpresaWizardPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium cv-text mb-1">
                   Slug (URL) *
                   <button
                     type="button"
                     onClick={() => setSlugManual(!slugManual)}
-                    className="ml-2 text-xs text-primary-500 hover:underline"
+                    className="ml-2 text-xs text-[var(--cv-primary)] hover:underline"
                   >
                     {slugManual ? 'Auto-generar' : 'Editar manual'}
                   </button>
@@ -192,14 +191,14 @@ export default function EmpresaWizardPage() {
                   onChange={(e) => { setSlugManual(true); setSlug(e.target.value.toLowerCase()); }}
                   readOnly={!slugManual}
                   required
-                  className={`${inputClass} ${!slugManual ? 'bg-gray-50' : ''}`}
+                  className={`${inputClass} ${!slugManual ? 'opacity-75' : ''}`}
                   placeholder="mi-candeleria"
                 />
-                <p className="text-xs text-gray-400 mt-1">Solo letras minúsculas, números y guiones</p>
+                <p className="text-xs cv-muted mt-1">Solo letras minúsculas, números y guiones</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">NIT</label>
+                <label className="block text-sm font-medium cv-text mb-1">NIT</label>
                 <input
                   type="text"
                   value={nit}
@@ -210,7 +209,7 @@ export default function EmpresaWizardPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email de la empresa *</label>
+                <label className="block text-sm font-medium cv-text mb-1">Email de la empresa *</label>
                 <input
                   type="email"
                   value={emailEmpresa}
@@ -222,7 +221,7 @@ export default function EmpresaWizardPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-medium cv-text mb-1">Teléfono</label>
                 <input
                   type="tel"
                   value={telefono}
@@ -234,7 +233,7 @@ export default function EmpresaWizardPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                  <label className="block text-sm font-medium cv-text mb-1">Ciudad</label>
                   <input
                     type="text"
                     value={ciudad}
@@ -244,7 +243,7 @@ export default function EmpresaWizardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                  <label className="block text-sm font-medium cv-text mb-1">Departamento</label>
                   <select
                     value={departamento}
                     onChange={(e) => setDepartamento(e.target.value)}
@@ -262,36 +261,36 @@ export default function EmpresaWizardPage() {
 
           {step === 2 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">Resumen de tu empresa</h3>
+              <h3 className="text-sm font-semibold cv-text">Resumen de tu empresa</h3>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="cv-elevated rounded-lg p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Empresa:</span>
-                  <span className="font-medium text-gray-900">{nombreEmpresa}</span>
+                  <span className="cv-muted">Empresa:</span>
+                  <span className="font-medium cv-text">{nombreEmpresa}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Slug:</span>
-                  <span className="font-mono text-gray-700">{slug}</span>
+                  <span className="cv-muted">Slug:</span>
+                  <span className="font-mono cv-text">{slug}</span>
                 </div>
                 {nit && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">NIT:</span>
-                    <span className="text-gray-700">{nit}</span>
+                    <span className="cv-muted">NIT:</span>
+                    <span className="cv-text">{nit}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Email empresa:</span>
-                  <span className="text-gray-700">{emailEmpresa}</span>
+                  <span className="cv-muted">Email empresa:</span>
+                  <span className="cv-text">{emailEmpresa}</span>
                 </div>
                 {ciudad && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Ubicación:</span>
-                    <span className="text-gray-700">{ciudad}{departamento ? `, ${departamento}` : ''}</span>
+                    <span className="cv-muted">Ubicación:</span>
+                    <span className="cv-text">{ciudad}{departamento ? `, ${departamento}` : ''}</span>
                   </div>
                 )}
               </div>
 
-              <div className="bg-primary-50 rounded-lg p-3 text-sm text-primary-700">
+              <div className="cv-elevated border border-[var(--cv-primary)]/30 rounded-lg p-3 text-sm cv-text">
                 Se creará tu empresa con 14 días de prueba gratuita. Accederás inmediatamente.
               </div>
             </div>
@@ -302,7 +301,7 @@ export default function EmpresaWizardPage() {
               <button
                 type="button"
                 onClick={() => { setError(''); setStep(1); }}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                className="cv-btn cv-btn-ghost flex-1"
               >
                 Atrás
               </button>
@@ -310,7 +309,7 @@ export default function EmpresaWizardPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="cv-btn cv-btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Registrando...' : step === 2 ? 'Crear empresa' : 'Siguiente'}
             </button>
@@ -318,9 +317,9 @@ export default function EmpresaWizardPage() {
         </form>
 
         {tenants.length > 0 && (
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm cv-muted mt-4">
             ¿Ya tienes una empresa?{' '}
-            <Link to="/select-tenant" className="text-primary-500 hover:text-primary-600 font-medium">
+            <Link to="/select-tenant" className="text-[var(--cv-primary)] hover:underline font-medium">
               Seleccionarla
             </Link>
           </p>

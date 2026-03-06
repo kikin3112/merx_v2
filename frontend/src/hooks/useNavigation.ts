@@ -1,12 +1,9 @@
 import {
   ChartBarIcon,
-  ShoppingCartIcon,
   CubeIcon,
   BeakerIcon,
   CalculatorIcon,
   CogIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
   UserGroupIcon,
   BuildingOffice2Icon,
   BanknotesIcon,
@@ -15,6 +12,8 @@ import {
   BriefcaseIcon,
   ArchiveBoxIcon,
   LifebuoyIcon,
+  QueueListIcon,
+  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/authStore';
 
@@ -25,15 +24,21 @@ export interface NavItem {
   roles: string[];
 }
 
+export interface NavGroup {
+  id: string;
+  label: string | null;
+  items: NavItem[];
+}
+
+// All items with their group membership
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: ChartBarIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
+  { to: '/comercial', label: 'Comercial', icon: QueueListIcon, roles: ['admin', 'vendedor', 'operador'] },
+  { to: '/ventas', label: 'Ventas', icon: ShoppingBagIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
   { to: '/pos', label: 'POS', icon: BanknotesIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/ventas', label: 'Ventas', icon: ShoppingCartIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/facturas', label: 'Facturas', icon: DocumentTextIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/cotizaciones', label: 'Cotizaciones', icon: ClipboardDocumentListIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/crm', label: 'CRM', icon: BriefcaseIcon, roles: ['admin', 'vendedor', 'operador'] },
-  { to: '/productos', label: 'Productos', icon: CubeIcon, roles: ['admin', 'operador'] },
   { to: '/terceros', label: 'Terceros', icon: UserGroupIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
+  { to: '/productos', label: 'Productos', icon: CubeIcon, roles: ['admin', 'operador'] },
   { to: '/inventario', label: 'Inventario', icon: ArchiveBoxIcon, roles: ['admin', 'operador'] },
   { to: '/recetas', label: 'Recetas', icon: BeakerIcon, roles: ['admin', 'operador'] },
   { to: '/cartera', label: 'Cartera', icon: CreditCardIcon, roles: ['admin', 'contador'] },
@@ -43,12 +48,20 @@ const navItems: NavItem[] = [
   { to: '/soporte', label: 'Soporte', icon: LifebuoyIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
 ];
 
+// Group structure — semantic sections of the sidebar
+const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> = [
+  { id: 'overview', label: null, paths: ['/'] },
+  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros'] },
+  { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/recetas'] },
+  { id: 'finanzas', label: 'Finanzas', paths: ['/cartera', '/contabilidad', '/reportes'] },
+  { id: 'empresa', label: 'Empresa', paths: ['/config', '/soporte'] },
+];
+
 const superadminItems: NavItem[] = [
   { to: '/tenants', label: 'Tenants', icon: BuildingOffice2Icon, roles: [] },
 ];
 
-// Bottom nav shows a curated subset (max 4 + "More" handled by the component)
-const BOTTOM_NAV_PATHS = ['/', '/pos', '/ventas', '/productos'];
+const BOTTOM_NAV_PATHS = ['/', '/comercial', '/pos', '/productos'];
 
 export function useNavigation() {
   const { user, tenantId, impersonation, rolEnTenant } = useAuthStore();
@@ -56,21 +69,32 @@ export function useNavigation() {
   const isSuperadminOnly = user?.es_superadmin && !tenantId;
   const effectiveRole = impersonation ? impersonation.rolEnTenant : (rolEnTenant ?? user?.rol);
 
-  const filterByRole = (items: NavItem[]) => {
+  const filterByRole = (items: NavItem[]): NavItem[] => {
     if (user?.es_superadmin && !impersonation) return [];
     return items.filter(item => effectiveRole && item.roles.includes(effectiveRole));
   };
 
-  const mainItems = filterByRole(navItems);
+  const allowedItems = filterByRole(navItems);
+
+  // Build groups with only allowed items
+  const navGroups: NavGroup[] = NAV_GROUPS.map((group) => ({
+    id: group.id,
+    label: group.label,
+    items: group.paths
+      .map((path) => allowedItems.find((item) => item.to === path))
+      .filter((item): item is NavItem => !!item),
+  })).filter((group) => group.items.length > 0);
+
+  const mainItems = allowedItems;
   const superItems = user?.es_superadmin ? superadminItems : [];
 
-  // Bottom nav: subset of mainItems that are in BOTTOM_NAV_PATHS, preserving order
   const bottomNavItems = BOTTOM_NAV_PATHS
-    .map(path => mainItems.find(item => item.to === path))
+    .map(path => allowedItems.find(item => item.to === path))
     .filter((item): item is NavItem => !!item);
 
   return {
     mainItems,
+    navGroups,
     superadminItems: superItems,
     bottomNavItems,
     isSuperadminOnly: !!isSuperadminOnly,

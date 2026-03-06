@@ -123,10 +123,10 @@ export default function ProductInventoryModule() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-gray-900">Productos</h1>
+        <h1 className="text-xl font-bold cv-text font-brand">Productos</h1>
         <div className="flex items-center gap-3">
           <SuccessBadge show={showSuccess} message="Guardado" />
-          <button onClick={openCreate} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 transition-colors">
+          <button onClick={openCreate} className="cv-btn cv-btn-primary">
             + Nuevo producto
           </button>
         </div>
@@ -136,7 +136,7 @@ export default function ProductInventoryModule() {
         <div className="flex-1 max-w-sm">
           <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre o código..." />
         </div>
-        <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+        <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="cv-input">
           <option value="">Todas las categorías</option>
           {CATEGORIAS.map((c) => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
         </select>
@@ -144,16 +144,16 @@ export default function ProductInventoryModule() {
 
       {/* Desktop virtualized table */}
       <div className="hidden md:block">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cv-card overflow-hidden">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Código</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Nombre</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Categoría</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Precio</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">Acciones</th>
+            <thead className="cv-table-header">
+              <tr>
+                <th className="text-left">Código</th>
+                <th className="text-left">Nombre</th>
+                <th className="text-left">Categoría</th>
+                <th className="text-right">Precio</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
           </table>
@@ -166,19 +166,19 @@ export default function ProductInventoryModule() {
             hasMore={hasMore}
             onLoadMore={() => { void loadMore(); }}
             renderRow={(p, _i, style) => (
-              <div key={p.id} style={style} className="flex items-center border-b border-gray-50 hover:bg-gray-50 transition-colors px-4 text-sm">
-                <span className="w-28 font-mono text-xs text-gray-600 shrink-0">{p.codigo_interno}</span>
-                <span className="flex-1 font-medium text-gray-900 truncate pr-4">{p.nombre}</span>
-                <span className="w-32 text-gray-600 shrink-0 hidden lg:block">{CAT_LABELS[p.categoria] ?? p.categoria}</span>
-                <span className="w-28 text-right text-gray-900 shrink-0">{formatCurrency(p.precio_venta)}</span>
+              <div key={p.id} style={style} className="flex items-center border-b border-[var(--cv-border)] hover:bg-[var(--cv-elevated)] transition-colors px-4 text-sm">
+                <span className="w-28 font-mono text-xs cv-muted shrink-0">{p.codigo_interno}</span>
+                <span className="flex-1 font-medium cv-text truncate pr-4">{p.nombre}</span>
+                <span className="w-32 cv-muted shrink-0 hidden lg:block">{CAT_LABELS[p.categoria] ?? p.categoria}</span>
+                <span className="w-28 text-right cv-text shrink-0">{formatCurrency(p.precio_venta)}</span>
                 <span className="w-20 text-center shrink-0">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${p.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`cv-badge ${p.estado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>
                     {p.estado ? 'Activo' : 'Inactivo'}
                   </span>
                 </span>
                 <span className="w-24 text-center shrink-0">
-                  <button onClick={() => openEdit(p)} className="text-xs text-primary-600 hover:text-primary-800 font-medium mr-2">Editar</button>
-                  <button onClick={() => { if (confirm('¿Desactivar este producto?')) deleteMut.mutate(p.id); }} className="text-xs text-red-500 hover:text-red-700 font-medium">Eliminar</button>
+                  <button onClick={() => openEdit(p)} className="text-xs font-medium mr-2" style={{ color: 'var(--cv-primary)' }}>Editar</button>
+                  <button onClick={() => { if (confirm('¿Desactivar este producto?')) deleteMut.mutate(p.id); }} className="text-xs font-medium" style={{ color: 'var(--cv-negative)' }}>Eliminar</button>
                 </span>
               </div>
             )}
@@ -186,7 +186,7 @@ export default function ProductInventoryModule() {
         </div>
         {hasMore && (
           <div className="text-center mt-3">
-            <button onClick={() => { void loadMore(); }} className="text-sm text-primary-600 hover:text-primary-800 font-medium">
+            <button onClick={() => { void loadMore(); }} className="text-sm font-medium" style={{ color: 'var(--cv-primary)' }}>
               Cargar más productos…
             </button>
           </div>
@@ -196,34 +196,34 @@ export default function ProductInventoryModule() {
       {/* Mobile cards */}
       <div className="md:hidden">
         {isLoading ? (
-          <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />)}</div>
+          <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-20 cv-elevated rounded-lg animate-pulse" />)}</div>
         ) : allItems.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">Sin productos</div>
+          <div className="text-center py-12 cv-muted">Sin productos</div>
         ) : (
           <div className="space-y-3">
             {allItems.map((p) => (
               <FadeIn key={p.id}>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="cv-card p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="font-medium text-gray-900">{p.nombre}</p>
-                      <p className="text-xs text-gray-500 font-mono">{p.codigo_interno}</p>
+                      <p className="font-medium cv-text">{p.nombre}</p>
+                      <p className="text-xs cv-muted font-mono">{p.codigo_interno}</p>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.estado ? 'Activo' : 'Inactivo'}</span>
+                    <span className={`cv-badge ${p.estado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>{p.estado ? 'Activo' : 'Inactivo'}</span>
                   </div>
-                  <div className="flex gap-4 text-sm text-gray-600 mb-3">
+                  <div className="flex gap-4 text-sm cv-muted mb-3">
                     <span>{formatCurrency(p.precio_venta)}</span>
                     <span>{CAT_LABELS[p.categoria] ?? p.categoria}</span>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(p)} className="flex-1 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-lg">Editar</button>
-                    <button onClick={() => { if (confirm('¿Desactivar?')) deleteMut.mutate(p.id); }} className="flex-1 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded-lg">Eliminar</button>
+                    <button onClick={() => openEdit(p)} className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]">Editar</button>
+                    <button onClick={() => { if (confirm('¿Desactivar?')) deleteMut.mutate(p.id); }} className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-[var(--cv-negative-dim)] text-[var(--cv-negative)]">Eliminar</button>
                   </div>
                 </div>
               </FadeIn>
             ))}
             {hasMore && (
-              <button onClick={() => { void loadMore(); }} className="w-full py-3 text-sm text-primary-600 font-medium">Cargar más…</button>
+              <button onClick={() => { void loadMore(); }} className="w-full py-3 text-sm font-medium" style={{ color: 'var(--cv-primary)' }}>Cargar más…</button>
             )}
           </div>
         )}
@@ -233,74 +233,74 @@ export default function ProductInventoryModule() {
       <Modal open={modalOpen} onClose={closeModal} title={invStep ? 'Inventario Inicial (Opcional)' : editing ? 'Editar Producto' : 'Nuevo Producto'} maxWidth="max-w-xl">
         {!invStep ? (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>}
+            {error && <div className="cv-alert-error px-4 py-2 text-sm">{error}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código interno *</label>
-                <input type="text" required disabled value={form.codigo_interno} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-100 text-gray-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Código interno *</label>
+                <input type="text" required disabled value={form.codigo_interno} className="cv-input opacity-50" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código de barras</label>
-                <input type="text" value={form.codigo_barras ?? ''} onChange={(e) => setForm({ ...form, codigo_barras: e.target.value || null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Código de barras</label>
+                <input type="text" value={form.codigo_barras ?? ''} onChange={(e) => setForm({ ...form, codigo_barras: e.target.value || null })} className="cv-input" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-              <input type="text" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className="block text-sm font-medium cv-text mb-1">Nombre *</label>
+              <input type="text" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="cv-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                <select value={form.categoria} onChange={(e) => { setForm({ ...form, categoria: e.target.value }); if (!editing) productos.siguienteCodigo(e.target.value).then((r) => setForm((f) => ({ ...f, codigo_interno: r.data.codigo_interno }))).catch(() => {}); }} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <label className="block text-sm font-medium cv-text mb-1">Categoría *</label>
+                <select value={form.categoria} onChange={(e) => { setForm({ ...form, categoria: e.target.value }); if (!editing) productos.siguienteCodigo(e.target.value).then((r) => setForm((f) => ({ ...f, codigo_interno: r.data.codigo_interno }))).catch(() => {}); }} className="cv-input">
                   {CATEGORIAS.map((c) => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unidad *</label>
-                <select value={form.unidad_medida} onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <label className="block text-sm font-medium cv-text mb-1">Unidad *</label>
+                <select value={form.unidad_medida} onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} className="cv-input">
                   {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de IVA</label>
-                <select value={form.tipo_iva} onChange={(e) => setForm({ ...form, tipo_iva: e.target.value, porcentaje_iva: e.target.value === 'Gravado' ? 19 : 0 })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <label className="block text-sm font-medium cv-text mb-1">Tipo de IVA</label>
+                <select value={form.tipo_iva} onChange={(e) => setForm({ ...form, tipo_iva: e.target.value, porcentaje_iva: e.target.value === 'Gravado' ? 19 : 0 })} className="cv-input">
                   {['Excluido','Exento','Gravado'].map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">IVA (%)</label>
-                <input type="number" min={0} max={100} step={0.01} value={form.porcentaje_iva ?? 0} onChange={(e) => setForm({ ...form, porcentaje_iva: parseFloat(e.target.value) || 0 })} disabled={form.tipo_iva !== 'Gravado'} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100" />
+                <label className="block text-sm font-medium cv-text mb-1">IVA (%)</label>
+                <input type="number" inputMode="decimal" min={0} max={100} step={0.01} value={form.porcentaje_iva ?? 0} onChange={(e) => setForm({ ...form, porcentaje_iva: parseFloat(e.target.value) || 0 })} disabled={form.tipo_iva !== 'Gravado'} className="cv-input disabled:opacity-50" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta</label>
-                <input type="number" min={0} step={0.01} value={form.precio_venta ?? 0} onChange={(e) => setForm({ ...form, precio_venta: parseFloat(e.target.value) || 0 })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Precio de venta</label>
+                <input type="number" inputMode="decimal" min={0} step={0.01} value={form.precio_venta ?? 0} onChange={(e) => setForm({ ...form, precio_venta: parseFloat(e.target.value) || 0 })} className="cv-input" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock mínimo</label>
-                <input type="number" min={0} value={form.stock_minimo ?? ''} onChange={(e) => setForm({ ...form, stock_minimo: e.target.value ? parseFloat(e.target.value) : null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Stock mínimo</label>
+                <input type="number" inputMode="numeric" min={0} value={form.stock_minimo ?? ''} onChange={(e) => setForm({ ...form, stock_minimo: e.target.value ? parseFloat(e.target.value) : null })} className="cv-input" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock máximo</label>
-                <input type="number" min={0} value={form.stock_maximo ?? ''} onChange={(e) => setForm({ ...form, stock_maximo: e.target.value ? parseFloat(e.target.value) : null })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Stock máximo</label>
+                <input type="number" inputMode="numeric" min={0} value={form.stock_maximo ?? ''} onChange={(e) => setForm({ ...form, stock_maximo: e.target.value ? parseFloat(e.target.value) : null })} className="cv-input" />
               </div>
               <div className="flex flex-col gap-2 justify-end pb-2">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={form.maneja_inventario ?? true} onChange={(e) => setForm({ ...form, maneja_inventario: e.target.checked })} className="rounded border-gray-300 text-primary-500" />
+                <label className="flex items-center gap-2 text-sm cv-text">
+                  <input type="checkbox" checked={form.maneja_inventario ?? true} onChange={(e) => setForm({ ...form, maneja_inventario: e.target.checked })} className="rounded" />
                   Inventario
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={form.estado ?? true} onChange={(e) => setForm({ ...form, estado: e.target.checked })} className="rounded border-gray-300 text-primary-500" />
+                <label className="flex items-center gap-2 text-sm cv-text">
+                  <input type="checkbox" checked={form.estado ?? true} onChange={(e) => setForm({ ...form, estado: e.target.checked })} className="rounded" />
                   Activo
                 </label>
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50">
+            <div className="flex justify-end gap-3 pt-4 border-t cv-divider">
+              <button type="button" onClick={closeModal} className="cv-btn cv-btn-ghost">Cancelar</button>
+              <button type="submit" disabled={saving} className="cv-btn cv-btn-primary disabled:opacity-50">
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : form.maneja_inventario ? 'Crear y configurar inventario →' : 'Crear'}
               </button>
             </div>
@@ -308,27 +308,27 @@ export default function ProductInventoryModule() {
         ) : (
           /* Step 2: Initial inventory */
           <form onSubmit={handleInvSubmit} className="space-y-4">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{error}</div>}
-            <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+            {error && <div className="cv-alert-error px-4 py-2 text-sm">{error}</div>}
+            <div className="cv-alert-positive px-4 py-3 text-sm">
               ✓ Producto creado. Ahora registra el inventario inicial (puedes omitirlo).
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad inicial *</label>
-                <input type="number" required min={0.01} step={0.01} value={invForm.cantidad} onChange={(e) => setInvForm({ ...invForm, cantidad: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Cantidad inicial *</label>
+                <input type="number" inputMode="decimal" required min={0.01} step={0.01} value={invForm.cantidad} onChange={(e) => setInvForm({ ...invForm, cantidad: e.target.value })} className="cv-input" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario *</label>
-                <input type="number" required min={0} step={0.01} value={invForm.costo_unitario} onChange={(e) => setInvForm({ ...invForm, costo_unitario: e.target.value })} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium cv-text mb-1">Costo unitario *</label>
+                <input type="number" inputMode="decimal" required min={0} step={0.01} value={invForm.costo_unitario} onChange={(e) => setInvForm({ ...invForm, costo_unitario: e.target.value })} className="cv-input" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-              <input type="text" value={invForm.observaciones} onChange={(e) => setInvForm({ ...invForm, observaciones: e.target.value })} placeholder="Ej. Stock inicial de apertura" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className="block text-sm font-medium cv-text mb-1">Observaciones</label>
+              <input type="text" value={invForm.observaciones} onChange={(e) => setInvForm({ ...invForm, observaciones: e.target.value })} placeholder="Ej. Stock inicial de apertura" className="cv-input" />
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={() => { flash(); closeModal(); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Omitir</button>
-              <button type="submit" disabled={entradaMut.isPending} className="px-4 py-2 text-sm font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50">
+            <div className="flex justify-end gap-3 pt-4 border-t cv-divider">
+              <button type="button" onClick={() => { flash(); closeModal(); }} className="cv-btn cv-btn-ghost">Omitir</button>
+              <button type="submit" disabled={entradaMut.isPending} className="cv-btn cv-btn-primary disabled:opacity-50">
                 {entradaMut.isPending ? 'Registrando...' : 'Registrar inventario'}
               </button>
             </div>

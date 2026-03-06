@@ -190,6 +190,26 @@ class Settings(BaseSettings):
     )
 
     # ============================================================================
+    # IA / LLM
+    # ============================================================================
+
+    ANTHROPIC_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Anthropic API key (legado). Usar OPENROUTER_API_KEY en su lugar.",
+    )
+
+    OPENROUTER_API_KEY: Optional[str] = Field(
+        default=None,
+        description="OpenRouter API key para Socia (asistente IA de costeo). "
+        "Requerido en producción. Agregar a Railway env vars.",
+    )
+
+    OPENROUTER_MODEL: str = Field(
+        default="arcee-ai/trinity-large-preview:free",
+        description="Modelo a usar en OpenRouter.",
+    )
+
+    # ============================================================================
     # TIMEOUTS
     # ============================================================================
 

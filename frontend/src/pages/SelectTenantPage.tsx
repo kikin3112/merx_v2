@@ -35,11 +35,11 @@ export default function SelectTenantPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)] px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-xl font-bold text-gray-900 text-center mb-6">Selecciona tu empresa</h1>
+        <h1 className="font-brand text-xl font-medium cv-text text-center mb-6">Selecciona tu empresa</h1>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>
+          <div className="cv-alert-error px-4 py-2 text-sm mb-4">{error}</div>
         )}
         <div className="space-y-3">
           {tenants.map((t) => (
@@ -47,10 +47,10 @@ export default function SelectTenantPage() {
               key={t.id}
               onClick={() => handleSelect(t.id)}
               disabled={loading}
-              className="w-full rounded-xl bg-white border border-gray-200 p-4 text-left hover:border-primary-300 hover:shadow-sm transition-all disabled:opacity-50"
+              className="cv-card w-full p-4 text-left hover:border-[var(--cv-primary)] hover:shadow-sm transition-all disabled:opacity-50"
             >
-              <p className="font-semibold text-gray-900">{t.nombre}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{t.slug}</p>
+              <p className="font-semibold cv-text">{t.nombre}</p>
+              <p className="text-xs cv-muted mt-0.5">{t.slug}</p>
             </button>
           ))}
         </div>

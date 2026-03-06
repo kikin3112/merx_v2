@@ -15,12 +15,12 @@ function AsientoRow({ asiento }: { asiento: AsientoContable }) {
     <>
       <tr
         onClick={() => setExpanded(!expanded)}
-        className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+        className="border-b cv-divider hover:bg-[var(--cv-elevated)] transition-colors cursor-pointer"
       >
-        <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">
+        <td className="px-4 py-3 font-mono text-xs font-medium">
           <span className="inline-flex items-center gap-1.5">
             <svg
-              className={`w-3.5 h-3.5 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+              className={`w-3.5 h-3.5 cv-muted transition-transform ${expanded ? 'rotate-90' : ''}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -28,24 +28,22 @@ function AsientoRow({ asiento }: { asiento: AsientoContable }) {
             {asiento.numero_asiento}
           </span>
         </td>
-        <td className="px-4 py-3 text-gray-600">{formatDate(asiento.fecha)}</td>
-        <td className="px-4 py-3 text-gray-600">{asiento.tipo_asiento}</td>
-        <td className="px-4 py-3 text-gray-900">{asiento.concepto}</td>
-        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{asiento.documento_referencia || '-'}</td>
-        <td className="px-4 py-3 text-right text-gray-600 font-mono text-xs">{formatCurrency(totalDebito)}</td>
+        <td className="px-4 py-3 cv-muted">{formatDate(asiento.fecha)}</td>
+        <td className="px-4 py-3 cv-muted">{asiento.tipo_asiento}</td>
+        <td className="px-4 py-3">{asiento.concepto}</td>
+        <td className="px-4 py-3 cv-muted font-mono text-xs">{asiento.documento_referencia || '-'}</td>
+        <td className="px-4 py-3 text-right cv-muted font-mono text-xs">{formatCurrency(totalDebito)}</td>
         <td className="px-4 py-3 text-center">
-          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(asiento.estado)}`}>
-            {asiento.estado}
-          </span>
+          <span className={`cv-badge ${statusColor(asiento.estado)}`}>{asiento.estado}</span>
         </td>
       </tr>
       {expanded && asiento.detalles && asiento.detalles.length > 0 && (
         <tr>
           <td colSpan={7} className="px-0 py-0">
-            <div className="bg-gray-50 border-y border-gray-100 px-8 py-3">
+            <div className="cv-elevated border-y cv-divider px-8 py-3">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-gray-500">
+                  <tr className="cv-muted">
                     <th className="text-left pb-2 font-medium">Codigo</th>
                     <th className="text-left pb-2 font-medium">Cuenta</th>
                     <th className="text-left pb-2 font-medium">Descripcion</th>
@@ -55,21 +53,21 @@ function AsientoRow({ asiento }: { asiento: AsientoContable }) {
                 </thead>
                 <tbody>
                   {asiento.detalles.map((d) => (
-                    <tr key={d.id} className="border-t border-gray-100">
-                      <td className="py-1.5 font-mono text-gray-700">{d.cuenta_codigo || '-'}</td>
-                      <td className="py-1.5 text-gray-900">{d.cuenta_nombre || '-'}</td>
-                      <td className="py-1.5 text-gray-500">{d.descripcion || '-'}</td>
-                      <td className="py-1.5 text-right font-mono text-gray-700">
+                    <tr key={d.id} className="border-t cv-divider">
+                      <td className="py-1.5 font-mono cv-muted">{d.cuenta_codigo || '-'}</td>
+                      <td className="py-1.5">{d.cuenta_nombre || '-'}</td>
+                      <td className="py-1.5 cv-muted">{d.descripcion || '-'}</td>
+                      <td className="py-1.5 text-right font-mono cv-muted">
                         {d.debito > 0 ? formatCurrency(d.debito) : '-'}
                       </td>
-                      <td className="py-1.5 text-right font-mono text-gray-700">
+                      <td className="py-1.5 text-right font-mono cv-muted">
                         {d.credito > 0 ? formatCurrency(d.credito) : '-'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-gray-200 font-semibold text-gray-900">
+                  <tr className="border-t cv-divider font-semibold cv-text">
                     <td colSpan={3} className="py-1.5 text-right">Totales:</td>
                     <td className="py-1.5 text-right font-mono">{formatCurrency(totalDebito)}</td>
                     <td className="py-1.5 text-right font-mono">{formatCurrency(totalCredito)}</td>
@@ -96,9 +94,7 @@ function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
         title={`Asiento #${asiento.numero_asiento}`}
         subtitle={`${formatDate(asiento.fecha)} · ${asiento.tipo_asiento}`}
         badge={
-          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(asiento.estado)}`}>
-            {asiento.estado}
-          </span>
+          <span className={`cv-badge ${statusColor(asiento.estado)}`}>{asiento.estado}</span>
         }
         fields={[
           { label: 'Concepto', value: asiento.concepto || '-' },
@@ -109,22 +105,22 @@ function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
         onClick={() => setExpanded(!expanded)}
       />
       {expanded && asiento.detalles && asiento.detalles.length > 0 && (
-        <div className="mx-2 -mt-1 bg-gray-50 rounded-b-xl border border-t-0 border-gray-200 px-4 py-3 space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Detalle lineas</p>
+        <div className="mx-2 -mt-1 cv-elevated rounded-b-xl border border-t-0 cv-divider px-4 py-3 space-y-2">
+          <p className="cv-label">Detalle lineas</p>
           {asiento.detalles.map((d) => (
-            <div key={d.id} className="flex items-start justify-between gap-2 text-xs border-t border-gray-100 pt-2">
+            <div key={d.id} className="flex items-start justify-between gap-2 text-xs border-t cv-divider pt-2">
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-gray-700">{d.cuenta_codigo || '-'}</p>
-                <p className="text-gray-900 font-medium">{d.cuenta_nombre || '-'}</p>
-                {d.descripcion && <p className="text-gray-500">{d.descripcion}</p>}
+                <p className="font-mono cv-muted">{d.cuenta_codigo || '-'}</p>
+                <p className="font-medium">{d.cuenta_nombre || '-'}</p>
+                {d.descripcion && <p className="cv-muted">{d.descripcion}</p>}
               </div>
               <div className="text-right shrink-0">
-                {d.debito > 0 && <p className="text-gray-700 font-mono">D: {formatCurrency(d.debito)}</p>}
-                {d.credito > 0 && <p className="text-gray-700 font-mono">C: {formatCurrency(d.credito)}</p>}
+                {d.debito > 0 && <p className="font-mono">D: {formatCurrency(d.debito)}</p>}
+                {d.credito > 0 && <p className="font-mono">C: {formatCurrency(d.credito)}</p>}
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-between text-xs font-semibold text-gray-900 border-t border-gray-200 pt-2">
+          <div className="flex items-center justify-between text-xs font-semibold cv-text border-t cv-divider pt-2">
             <span>Totales</span>
             <div className="text-right font-mono">
               <span className="mr-3">D: {formatCurrency(totalDebito)}</span>
@@ -168,10 +164,10 @@ export default function ContabilidadPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Contabilidad</h1>
+      <h1 className="font-brand text-xl font-medium cv-text mb-6">Contabilidad</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto pb-1 whitespace-nowrap">
+      <div className="flex gap-1 mb-4 border-b cv-divider overflow-x-auto pb-1 whitespace-nowrap">
         {[
           { id: 'asientos' as const, label: 'Asientos Contables' },
           { id: 'balance' as const, label: 'Balance de Prueba' },
@@ -183,7 +179,7 @@ export default function ContabilidadPage() {
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t.id
                 ? 'border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent cv-muted hover:cv-text'
             }`}
           >
             {t.label}
@@ -193,11 +189,11 @@ export default function ContabilidadPage() {
 
       {/* Asientos */}
       {tab === 'asientos' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cv-card overflow-hidden">
           {loadingAsientos ? (
             <div className="p-8 space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 cv-elevated rounded-lg animate-pulse" />
               ))}
             </div>
           ) : (
@@ -205,15 +201,15 @@ export default function ContabilidadPage() {
               {/* Desktop table */}
               <div className="hidden md:block">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Numero</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Fecha</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Concepto</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Referencia</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-500">Valor</th>
-                      <th className="text-center px-4 py-3 font-medium text-gray-500">Estado</th>
+                  <thead className="cv-table-header">
+                    <tr>
+                      <th className="text-left">Numero</th>
+                      <th className="text-left">Fecha</th>
+                      <th className="text-left">Tipo</th>
+                      <th className="text-left">Concepto</th>
+                      <th className="text-left">Referencia</th>
+                      <th className="text-right">Valor</th>
+                      <th className="text-center">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -232,7 +228,7 @@ export default function ContabilidadPage() {
               </div>
 
               {asientos?.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin asientos contables</p>
                   <p className="text-sm">Los asientos se crean automaticamente al emitir facturas</p>
                 </div>
@@ -244,33 +240,27 @@ export default function ContabilidadPage() {
 
       {/* Balance de Prueba */}
       {tab === 'balance' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cv-card overflow-hidden">
           {loadingBalance ? (
             <div className="p-8 space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 cv-elevated rounded-lg animate-pulse" />
               ))}
             </div>
           ) : balance ? (
             <>
               {/* Summary */}
-              <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <div className="flex flex-wrap items-center gap-4 px-4 py-3 cv-elevated border-b cv-divider">
                 <div className="flex-1 min-w-[100px]">
-                  <span className="text-xs text-gray-500">Total Debito</span>
-                  <p className="font-semibold text-gray-900">{formatCurrency(balance.total_debito)}</p>
+                  <span className="text-xs cv-muted">Total Debito</span>
+                  <p className="font-semibold cv-text">{formatCurrency(balance.total_debito)}</p>
                 </div>
                 <div className="flex-1 min-w-[100px]">
-                  <span className="text-xs text-gray-500">Total Credito</span>
-                  <p className="font-semibold text-gray-900">{formatCurrency(balance.total_credito)}</p>
+                  <span className="text-xs cv-muted">Total Credito</span>
+                  <p className="font-semibold cv-text">{formatCurrency(balance.total_credito)}</p>
                 </div>
                 <div className="flex-1 min-w-[100px]">
-                  <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
-                      balance.balanceado
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
+                  <span className={`cv-badge ${balance.balanceado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>
                     {balance.balanceado ? 'Balanceado' : `Diferencia: ${formatCurrency(balance.diferencia)}`}
                   </span>
                 </div>
@@ -279,25 +269,25 @@ export default function ContabilidadPage() {
               {/* Desktop table */}
               <div className="hidden md:block">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Codigo</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Tipo</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-500">Debito</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-500">Credito</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-500">Saldo</th>
+                  <thead className="cv-table-header">
+                    <tr>
+                      <th className="text-left">Codigo</th>
+                      <th className="text-left">Cuenta</th>
+                      <th className="text-left">Tipo</th>
+                      <th className="text-right">Debito</th>
+                      <th className="text-right">Credito</th>
+                      <th className="text-right">Saldo</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="cv-table-body">
                     {balance.cuentas.map((c) => (
-                      <tr key={c.cuenta_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900">{c.codigo}</td>
-                        <td className="px-4 py-3 text-gray-900">{c.nombre}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{c.tipo_cuenta}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_debito)}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.total_credito)}</td>
-                        <td className={`px-4 py-3 text-right font-semibold ${c.saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                      <tr key={c.cuenta_id}>
+                        <td className="font-mono text-xs font-medium">{c.codigo}</td>
+                        <td>{c.nombre}</td>
+                        <td className="text-xs cv-muted">{c.tipo_cuenta}</td>
+                        <td className="text-right cv-muted">{formatCurrency(c.total_debito)}</td>
+                        <td className="text-right cv-muted">{formatCurrency(c.total_credito)}</td>
+                        <td className={`text-right font-semibold ${c.saldo >= 0 ? '' : 'cv-negative'}`}>
                           {formatCurrency(c.saldo)}
                         </td>
                       </tr>
@@ -314,9 +304,7 @@ export default function ContabilidadPage() {
                     title={c.nombre}
                     subtitle={`${c.codigo} · ${c.tipo_cuenta}`}
                     badge={
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold font-mono ${
-                        c.saldo >= 0 ? 'bg-gray-100 text-gray-900' : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span className={`cv-badge font-mono ${c.saldo >= 0 ? 'cv-badge-neutral' : 'cv-badge-negative'}`}>
                         {formatCurrency(c.saldo)}
                       </span>
                     }
@@ -329,7 +317,7 @@ export default function ContabilidadPage() {
               </div>
 
               {balance.cuentas.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 cv-muted">
                   <p className="text-lg mb-2">Sin movimientos contables</p>
                   <p className="text-sm">Emite facturas para generar asientos automaticos</p>
                 </div>
@@ -341,40 +329,40 @@ export default function ContabilidadPage() {
 
       {/* Configuracion Contable */}
       {tab === 'configuracion' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cv-card overflow-hidden">
           {loadingConfigs ? (
             <div className="p-8 space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 cv-elevated rounded-lg animate-pulse" />
               ))}
             </div>
           ) : configs && configs.length > 0 ? (
             <>
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <p className="text-sm text-gray-600">
+              <div className="px-4 py-3 cv-elevated border-b cv-divider">
+                <p className="text-sm cv-muted">
                   Cuentas configuradas para asientos automaticos
                 </p>
               </div>
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Concepto</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta Debito</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Cuenta Credito</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Descripcion</th>
+                <thead className="cv-table-header">
+                  <tr>
+                    <th className="text-left">Concepto</th>
+                    <th className="text-left">Cuenta Debito</th>
+                    <th className="text-left">Cuenta Credito</th>
+                    <th className="text-left">Descripcion</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="cv-table-body">
                   {configs.map((c) => (
-                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{c.concepto}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                    <tr key={c.id}>
+                      <td className="font-medium">{c.concepto}</td>
+                      <td className="cv-muted">
                         {c.cuenta_debito_codigo ? `${c.cuenta_debito_codigo} - ${c.cuenta_debito_nombre}` : '-'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="cv-muted">
                         {c.cuenta_credito_codigo ? `${c.cuenta_credito_codigo} - ${c.cuenta_credito_nombre}` : '-'}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{c.descripcion || '-'}</td>
+                      <td className="text-xs cv-muted">{c.descripcion || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -382,19 +370,19 @@ export default function ContabilidadPage() {
             </>
           ) : (
             <div className="text-center py-12 px-4">
-              <p className="text-lg mb-2 text-gray-600">Configuracion contable no inicializada</p>
-              <p className="text-sm text-gray-400 mb-4">
+              <p className="text-lg mb-2 cv-muted">Configuracion contable no inicializada</p>
+              <p className="text-sm cv-muted mb-4">
                 Inicializa las cuentas contables para habilitar la contabilidad automatica
               </p>
               <button
                 onClick={() => inicializarMutation.mutate()}
                 disabled={inicializarMutation.isPending}
-                className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="cv-btn cv-btn-primary"
               >
                 {inicializarMutation.isPending ? 'Inicializando...' : 'Inicializar Configuracion'}
               </button>
               {inicializarMutation.isError && (
-                <p className="mt-3 text-sm text-red-600">
+                <p className="mt-3 text-sm cv-negative">
                   Error al inicializar. Intenta de nuevo.
                 </p>
               )}

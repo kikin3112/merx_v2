@@ -28,7 +28,7 @@ export default function KanbanBoard({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Permitir drop
+    e.preventDefault();
   };
 
   const handleDrop = (stageId: string) => {
@@ -54,15 +54,15 @@ export default function KanbanBoard({
         .map((stage) => (
           <div
             key={stage.id}
-            className="flex-shrink-0 w-80 bg-gray-50 rounded-lg p-4"
+            className="cv-card flex-shrink-0 w-80 p-4"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(stage.id)}
           >
             {/* Stage Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">{stage.nombre}</h3>
-                <p className="text-xs text-gray-500">
+                <h3 className="text-sm font-semibold cv-text">{stage.nombre}</h3>
+                <p className="text-xs cv-muted">
                   {dealsByStage[stage.id]?.length || 0} deals · {stage.probabilidad}%
                 </p>
               </div>
@@ -70,8 +70,8 @@ export default function KanbanBoard({
               <span
                 className="px-2 py-1 text-xs font-medium rounded"
                 style={{
-                  backgroundColor: `rgba(59, 130, 246, ${stage.probabilidad / 100})`,
-                  color: stage.probabilidad > 50 ? 'white' : '#1f2937',
+                  backgroundColor: `rgba(255, 155, 101, ${stage.probabilidad / 100 * 0.8})`,
+                  color: stage.probabilidad > 50 ? 'white' : 'var(--cv-text)',
                 }}
               >
                 {stage.probabilidad}%
@@ -81,7 +81,7 @@ export default function KanbanBoard({
             {/* Deals List */}
             <div className="space-y-3">
               {dealsByStage[stage.id]?.length === 0 ? (
-                <div className="text-center py-8 text-sm text-gray-400">
+                <div className="text-center py-8 text-sm cv-muted">
                   No hay deals en esta etapa
                 </div>
               ) : (
@@ -91,23 +91,23 @@ export default function KanbanBoard({
                     draggable
                     onDragStart={() => handleDragStart(deal.id)}
                     onClick={() => onDealClick(deal)}
-                    className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 cursor-move hover:shadow-md transition-shadow ${
+                    className={`cv-card p-4 cursor-move hover:shadow-md transition-shadow ${
                       draggedDealId === deal.id ? 'opacity-50' : ''
                     }`}
                   >
                     {/* Deal Header */}
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                      <h4 className="text-sm font-medium cv-text line-clamp-2">
                         {deal.nombre}
                       </h4>
                       {deal.estado_cierre !== 'ABIERTO' && (
                         <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded ${
+                          className={`cv-badge ${
                             deal.estado_cierre === 'GANADO'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'cv-badge-positive'
                               : deal.estado_cierre === 'PERDIDO'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'cv-badge-negative'
+                              : 'cv-badge-neutral'
                           }`}
                         >
                           {deal.estado_cierre}
@@ -117,18 +117,18 @@ export default function KanbanBoard({
 
                     {/* Cliente */}
                     {deal.tercero_nombre && (
-                      <p className="text-xs text-gray-600 mb-2">
+                      <p className="text-xs cv-muted mb-2">
                         👤 {deal.tercero_nombre}
                       </p>
                     )}
 
                     {/* Valor estimado */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-blue-600">
+                      <span className="text-sm font-semibold" style={{ color: 'var(--cv-primary)' }}>
                         {formatCurrency(deal.valor_estimado)}
                       </span>
                       {deal.usuario_nombre && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs cv-muted">
                           {deal.usuario_nombre.split(' ')[0]}
                         </span>
                       )}
@@ -136,7 +136,7 @@ export default function KanbanBoard({
 
                     {/* Fecha cierre estimada */}
                     {deal.fecha_cierre_estimada && (
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs cv-muted mt-2">
                         📅{' '}
                         {new Date(deal.fecha_cierre_estimada).toLocaleDateString('es-CO', {
                           day: 'numeric',
@@ -151,10 +151,10 @@ export default function KanbanBoard({
 
             {/* Total Stage */}
             {dealsByStage[stage.id]?.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-200">
+              <div className="mt-4 pt-3 border-t border-[var(--cv-divider)]">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 font-medium">Total:</span>
-                  <span className="text-gray-900 font-semibold">
+                  <span className="cv-muted font-medium">Total:</span>
+                  <span className="cv-text font-semibold">
                     {formatCurrency(
                       dealsByStage[stage.id]?.reduce(
                         (sum, deal) => sum + deal.valor_estimado,

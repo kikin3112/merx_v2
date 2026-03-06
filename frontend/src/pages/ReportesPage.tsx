@@ -19,11 +19,11 @@ type Tab = 'comparativa' | 'rentabilidad' | 'flujo' | 'margenes';
 
 function KpiCard({ label, value, variacion }: { label: string; value: string; variacion?: number }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
+    <div className="cv-card p-4">
+      <p className="text-xs font-medium cv-muted mb-1">{label}</p>
+      <p className="text-xl font-bold cv-text">{value}</p>
       {variacion !== undefined && (
-        <p className={`text-xs font-medium mt-1 ${variacion >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <p className={`text-xs font-medium mt-1 ${variacion >= 0 ? 'cv-positive' : 'cv-negative'}`}>
           {variacion >= 0 ? '+' : ''}{variacion}% vs mes anterior
         </p>
       )}
@@ -38,8 +38,8 @@ function ComparativaTab({ period }: { period: PeriodValue }) {
     queryFn: () => reportes.comparativaMensual({ fecha_referencia: period.fecha_fin }).then(r => r.data),
   });
 
-  if (isLoading) return <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
-  if (!data) return <p className="text-gray-400 text-center py-8">Sin datos</p>;
+  if (isLoading) return <div className="h-64 cv-elevated rounded-xl animate-pulse" />;
+  if (!data) return <p className="cv-muted text-center py-8">Sin datos</p>;
 
   const chartData = [
     { name: 'Mes Anterior', ventas: data.mes_anterior.total_ventas, cantidad: data.mes_anterior.cantidad_ventas },
@@ -66,9 +66,9 @@ function ComparativaTab({ period }: { period: PeriodValue }) {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Comparativa mensual</h3>
-        <div className="text-xs text-gray-500 mb-2">
+      <div className="cv-card p-4">
+        <h3 className="text-sm font-semibold cv-text mb-4">Comparativa mensual</h3>
+        <div className="text-xs cv-muted mb-2">
           {data.mes_actual.periodo}
         </div>
         <ResponsiveContainer width="100%" height={300}>
@@ -78,7 +78,7 @@ function ComparativaTab({ period }: { period: PeriodValue }) {
             <YAxis fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
             <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
             <Legend />
-            <Bar dataKey="ventas" name="Total Ventas" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="ventas" name="Total Ventas" fill="var(--cv-primary)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -92,48 +92,48 @@ function RentabilidadTab() {
     queryFn: () => reportes.rentabilidadCategoria().then(r => r.data),
   });
 
-  if (isLoading) return <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
-  if (!data?.length) return <p className="text-gray-400 text-center py-8">Sin datos</p>;
+  if (isLoading) return <div className="h-64 cv-elevated rounded-xl animate-pulse" />;
+  if (!data?.length) return <p className="cv-muted text-center py-8">Sin datos</p>;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Margen por categoría (%)</h3>
+      <div className="cv-card p-4">
+        <h3 className="text-sm font-semibold cv-text mb-4">Margen por categoría (%)</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" fontSize={12} unit="%" />
             <YAxis dataKey="categoria" type="category" fontSize={11} width={100} />
             <Tooltip formatter={(v) => `${Number(v ?? 0)}%`} />
-            <Bar dataKey="margen_promedio" name="Margen %" fill="#EC4899" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="margen_promedio" name="Margen %" fill="var(--cv-accent)" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="hidden md:block cv-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoría</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Productos</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Precio prom.</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Costo prom.</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen (%)</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Valor invertido</th>
+          <thead className="cv-table-header">
+            <tr>
+              <th className="text-left">Categoría</th>
+              <th className="text-right">Productos</th>
+              <th className="text-right">Precio prom.</th>
+              <th className="text-right">Costo prom.</th>
+              <th className="text-right">Margen (%)</th>
+              <th className="text-right">Valor invertido</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="cv-table-body">
             {data.map((row) => (
-              <tr key={row.categoria} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{row.categoria}</td>
-                <td className="px-4 py-3 text-right text-gray-600">{row.cantidad_productos}</td>
-                <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(row.precio_promedio)}</td>
-                <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(row.costo_promedio)}</td>
-                <td className={`px-4 py-3 text-right font-medium ${row.margen_promedio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <tr key={row.categoria}>
+                <td className="font-medium cv-text">{row.categoria}</td>
+                <td className="text-right cv-muted">{row.cantidad_productos}</td>
+                <td className="text-right cv-muted">{formatCurrency(row.precio_promedio)}</td>
+                <td className="text-right cv-muted">{formatCurrency(row.costo_promedio)}</td>
+                <td className={`text-right font-medium ${row.margen_promedio >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                   {row.margen_promedio}%
                 </td>
-                <td className="px-4 py-3 text-right text-gray-900 font-semibold">{formatCurrency(row.valor_inventario)}</td>
+                <td className="text-right cv-text font-semibold">{formatCurrency(row.valor_inventario)}</td>
               </tr>
             ))}
           </tbody>
@@ -143,18 +143,18 @@ function RentabilidadTab() {
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {data.map((row) => (
-          <div key={row.categoria} className="bg-white rounded-xl border border-gray-200 p-4">
+          <div key={row.categoria} className="cv-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">{row.categoria}</h4>
-              <span className={`text-sm font-bold ${row.margen_promedio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <h4 className="text-sm font-semibold cv-text">{row.categoria}</h4>
+              <span className={`text-sm font-bold ${row.margen_promedio >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                 {row.margen_promedio}%
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><span className="text-gray-500">Productos:</span> <span className="font-medium">{row.cantidad_productos}</span></div>
-              <div><span className="text-gray-500">Precio prom:</span> <span className="font-medium">{formatCurrency(row.precio_promedio)}</span></div>
-              <div><span className="text-gray-500">Costo prom:</span> <span className="font-medium">{formatCurrency(row.costo_promedio)}</span></div>
-              <div><span className="text-gray-500">Valor invertido</span> <span className="font-semibold">{formatCurrency(row.valor_inventario)}</span></div>
+              <div><span className="cv-muted">Productos:</span> <span className="font-medium">{row.cantidad_productos}</span></div>
+              <div><span className="cv-muted">Precio prom:</span> <span className="font-medium">{formatCurrency(row.precio_promedio)}</span></div>
+              <div><span className="cv-muted">Costo prom:</span> <span className="font-medium">{formatCurrency(row.costo_promedio)}</span></div>
+              <div><span className="cv-muted">Valor invertido</span> <span className="font-semibold">{formatCurrency(row.valor_inventario)}</span></div>
             </div>
           </div>
         ))}
@@ -169,8 +169,8 @@ function FlujoCajaTab() {
     queryFn: () => reportes.proyeccionFlujoCaja(30).then(r => r.data),
   });
 
-  if (isLoading) return <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
-  if (!data) return <p className="text-gray-400 text-center py-8">Sin datos</p>;
+  if (isLoading) return <div className="h-64 cv-elevated rounded-xl animate-pulse" />;
+  if (!data) return <p className="cv-muted text-center py-8">Sin datos</p>;
 
   return (
     <div className="space-y-6">
@@ -180,8 +180,8 @@ function FlujoCajaTab() {
         <KpiCard label="Proyectado (30d)" value={formatCurrency(data.total_proyectado)} />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Proyección acumulada (30 días)</h3>
+      <div className="cv-card p-4">
+        <h3 className="text-sm font-semibold cv-text mb-4">Proyección acumulada (30 días)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data.proyeccion}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -197,7 +197,7 @@ function FlujoCajaTab() {
               type="monotone"
               dataKey="acumulado"
               name="Acumulado"
-              stroke="#8B5CF6"
+              stroke="var(--cv-primary)"
               strokeWidth={2}
               dot={false}
             />
@@ -216,13 +216,13 @@ function MargenesTab({ period }: { period: PeriodValue }) {
     queryFn: () => reportes.margenesCategoria(dateParams).then(r => r.data),
   });
 
-  if (isLoading) return <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
-  if (!data?.length) return <p className="text-gray-400 text-center py-8">Sin datos de ventas en el periodo seleccionado</p>;
+  if (isLoading) return <div className="h-64 cv-elevated rounded-xl animate-pulse" />;
+  if (!data?.length) return <p className="cv-muted text-center py-8">Sin datos de ventas en el periodo seleccionado</p>;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Ingresos vs costo por categoría</h3>
+      <div className="cv-card p-4">
+        <h3 className="text-sm font-semibold cv-text mb-4">Ingresos vs costo por categoría</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -230,36 +230,36 @@ function MargenesTab({ period }: { period: PeriodValue }) {
             <YAxis fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
             <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
             <Legend />
-            <Bar dataKey="ingresos" name="Ingresos" fill="#10B981" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="costo" name="Costo" fill="#EF4444" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="ingresos" name="Ingresos" fill="var(--cv-positive)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="costo" name="Costo" fill="var(--cv-negative)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="hidden md:block cv-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Categoría</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Ingresos</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Costo</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Margen (%)</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Items</th>
+          <thead className="cv-table-header">
+            <tr>
+              <th className="text-left">Categoría</th>
+              <th className="text-right">Ingresos</th>
+              <th className="text-right">Costo</th>
+              <th className="text-right">Margen</th>
+              <th className="text-right">Margen (%)</th>
+              <th className="text-right">Items</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="cv-table-body">
             {data.map((row) => (
-              <tr key={row.categoria} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{row.categoria}</td>
-                <td className="px-4 py-3 text-right text-green-600">{formatCurrency(row.ingresos)}</td>
-                <td className="px-4 py-3 text-right text-red-600">{formatCurrency(row.costo)}</td>
-                <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(row.margen)}</td>
-                <td className={`px-4 py-3 text-right font-medium ${row.margen_porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <tr key={row.categoria}>
+                <td className="font-medium cv-text">{row.categoria}</td>
+                <td className="text-right cv-positive">{formatCurrency(row.ingresos)}</td>
+                <td className="text-right cv-negative">{formatCurrency(row.costo)}</td>
+                <td className="text-right font-semibold cv-text">{formatCurrency(row.margen)}</td>
+                <td className={`text-right font-medium ${row.margen_porcentaje >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                   {row.margen_porcentaje}%
                 </td>
-                <td className="px-4 py-3 text-right text-gray-600">{row.cantidad_items}</td>
+                <td className="text-right cv-muted">{row.cantidad_items}</td>
               </tr>
             ))}
           </tbody>
@@ -269,18 +269,18 @@ function MargenesTab({ period }: { period: PeriodValue }) {
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {data.map((row) => (
-          <div key={row.categoria} className="bg-white rounded-xl border border-gray-200 p-4">
+          <div key={row.categoria} className="cv-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">{row.categoria}</h4>
-              <span className={`text-sm font-bold ${row.margen_porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <h4 className="text-sm font-semibold cv-text">{row.categoria}</h4>
+              <span className={`text-sm font-bold ${row.margen_porcentaje >= 0 ? 'cv-positive' : 'cv-negative'}`}>
                 {row.margen_porcentaje}%
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><span className="text-gray-500">Ingresos:</span> <span className="font-medium text-green-600">{formatCurrency(row.ingresos)}</span></div>
-              <div><span className="text-gray-500">Costo:</span> <span className="font-medium text-red-600">{formatCurrency(row.costo)}</span></div>
-              <div><span className="text-gray-500">Margen:</span> <span className="font-semibold">{formatCurrency(row.margen)}</span></div>
-              <div><span className="text-gray-500">Items:</span> <span className="font-medium">{row.cantidad_items}</span></div>
+              <div><span className="cv-muted">Ingresos:</span> <span className="font-medium cv-positive">{formatCurrency(row.ingresos)}</span></div>
+              <div><span className="cv-muted">Costo:</span> <span className="font-medium cv-negative">{formatCurrency(row.costo)}</span></div>
+              <div><span className="cv-muted">Margen:</span> <span className="font-semibold">{formatCurrency(row.margen)}</span></div>
+              <div><span className="cv-muted">Items:</span> <span className="font-medium">{row.cantidad_items}</span></div>
             </div>
           </div>
         ))}
@@ -305,7 +305,7 @@ export default function ReportesPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Reportes avanzados</h1>
+        <h1 className="font-brand text-xl font-medium cv-text">Reportes avanzados</h1>
         {showPeriodSelector && (
           <PeriodSelector value={period} onChange={setPeriod} />
         )}
@@ -313,15 +313,15 @@ export default function ReportesPage() {
 
       {/* Tabs */}
       <div className="overflow-x-auto pb-1 mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-max">
+        <div className="flex gap-1 cv-elevated p-1 rounded-lg w-max">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'cv-card cv-text shadow-sm'
+                  : 'cv-muted'
               }`}
             >
               {tab.label}

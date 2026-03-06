@@ -9,9 +9,9 @@ export default function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden cv-bg">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-gray-50 pb-16 lg:pb-0">
+      <main className="flex-1 overflow-y-auto pb-24 lg:pb-0" style={{ backgroundColor: 'var(--cv-bg)', position: 'relative', zIndex: 1 }}>
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
           <Outlet />
         </div>

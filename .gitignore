@@ -81,3 +81,4 @@ uv.lock
 
 # CARL session runtime files (auto-generated, not for version control)
 .carl/sessions/*.json
+.worktrees/

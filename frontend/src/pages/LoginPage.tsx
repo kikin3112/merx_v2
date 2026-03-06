@@ -44,62 +44,53 @@ function LegacyLoginForm({ onBack }: LegacyFormProps) {
         <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500 flex items-center justify-center mb-4">
           <span className="text-white text-2xl font-bold">C</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">ChandeliERP</h1>
-        <p className="text-sm text-gray-500 mt-1">ERP para cerer@s hecho con &lt;3</p>
+        <h1 className="font-brand text-2xl font-medium cv-text">ChandeliERP</h1>
+        <p className="text-sm cv-muted mt-1">ERP para cerer@s hecho con &lt;3</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="cv-card p-6 space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-            {error}
-          </div>
+          <div className="cv-alert-error px-3 py-2 text-sm">{error}</div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label className="block text-sm font-medium cv-muted mb-1">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+            className="cv-input"
             placeholder="correo@ejemplo.com"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <label className="block text-sm font-medium cv-muted mb-1">Contraseña</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+            className="cv-input"
             placeholder="*******"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 focus:ring-2 focus:ring-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
+        <button type="submit" disabled={loading} className="cv-btn cv-btn-primary w-full">
           {loading ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
 
       <div className="mt-4 space-y-2 text-center">
         {onBack && (
-          <button
-            onClick={onBack}
-            className="block w-full text-sm text-primary-500 hover:text-primary-600 font-medium"
-          >
+          <button onClick={onBack} className="block w-full text-sm cv-primary font-medium">
             ← Volver a opciones de inicio de sesión
           </button>
         )}
-        <p className="text-sm text-gray-500">
+        <p className="text-sm cv-muted">
           ¿No tienes cuenta?{' '}
-          <Link to="/registro" className="text-primary-500 hover:text-primary-600 font-medium">
+          <Link to="/registro" className="cv-primary font-medium">
             Regístrate gratis
           </Link>
         </p>
@@ -108,7 +99,7 @@ function LegacyLoginForm({ onBack }: LegacyFormProps) {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)] px-4">
       {formContent}
     </div>
   );
@@ -127,7 +118,7 @@ function ClerkLoginView() {
   if (!isLoaded || isSignedIn) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--cv-bg)] px-4">
       <SignIn
         routing="path"
         path="/login"
