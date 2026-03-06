@@ -1,4 +1,4 @@
-# Merx v2 — Decisiones Técnicas Bloqueadas (Phase 1)
+# chandelierp — Decisiones Técnicas Bloqueadas (Phase 1)
 
 **Fecha:** 2026-03-04
 **Estado:** BLOQUEADO — Todas las decisiones son definitivas hasta Phase 7
@@ -15,7 +15,7 @@
 
 ### Contexto
 
-El módulo de recetas de Merx calcula CVU y costo unitario con precisión. El gap identificado en AUDIT.md (brecha R1.1-P0) es la ausencia de sugerencias de precio inteligentes basadas en márgenes, mercado y contexto del negocio. La solución requiere un LLM que devuelva outputs estructurados (Decimal-safe) a bajo costo y con latencia adecuada para interacción síncrona usuario-ERP.
+El módulo de recetas de chandelierp calcula CVU y costo unitario con precisión. El gap identificado en AUDIT.md (brecha R1.1-P0) es la ausencia de sugerencias de precio inteligentes basadas en márgenes, mercado y contexto del negocio. La solución requiere un LLM que devuelva outputs estructurados (Decimal-safe) a bajo costo y con latencia adecuada para interacción síncrona usuario-ERP.
 
 ### Opciones evaluadas
 
@@ -65,7 +65,7 @@ Fuente: [Anthropic official pricing](https://platform.claude.com/docs/en/about-c
 
 ### Contexto
 
-Merx ya genera PDFs de facturas y cotizaciones via `servicio_pdf.py` usando ReportLab. La brecha (R4.1-P0, R4.2-P1) es la ausencia de branding por tenant: actualmente todos los PDFs usan el mismo template genérico sin logo ni colores del negocio. La decisión técnica determina si extender ReportLab o migrar a una librería diferente para soportar CSS-based branding.
+chandelierp ya genera PDFs de facturas y cotizaciones via `servicio_pdf.py` usando ReportLab. La brecha (R4.1-P0, R4.2-P1) es la ausencia de branding por tenant: actualmente todos los PDFs usan el mismo template genérico sin logo ni colores del negocio. La decisión técnica determina si extender ReportLab o migrar a una librería diferente para soportar CSS-based branding.
 
 ### Opciones evaluadas
 
@@ -255,7 +255,7 @@ Límites almacenados en `publicMetadata.limits` como JSON — permiten ajuste po
 - Patrón: decorator lee `current_user.public_metadata.get("plan", "free")` — cero DB call
 - Frontend: `frontend/src/hooks/usePlanLimits.ts` — hook leyendo Clerk session claims
 - UI gates: `frontend/src/components/ui/UpgradePrompt.tsx` — paywall contextual in-app
-- Actualización de plan: Clerk backend API `PATCH /v1/users/{user_id}` con `public_metadata: {plan: 'pro'}` — ejecutable desde panel superadmin Merx
+- Actualización de plan: Clerk backend API `PATCH /v1/users/{user_id}` con `public_metadata: {plan: 'pro'}` — ejecutable desde panel superadmin chandelierp
 
 ### Acción previa requerida (owner action antes de Phase 6)
 
@@ -306,7 +306,7 @@ Recordatorios de declaración via Railway cron job (ya disponible en Railway —
 | 2 — IA Costeo | LLM Provider | claude-haiku-4-5 via Anthropic API (batch+caching) | LOCKED |
 | 3 — PDF Branding | PDF Engine | ReportLab extend + S3 activate (`S3_ENABLED=true`) | LOCKED |
 | 4 — Pagos Locales | Payment Gateway | Wompi gateway unificado (Nequi+Daviplata+PSE) | LOCKED |
-| 5 — WhatsApp | Channel | BSP (WATI/360dialog) + número compartido Merx | LOCKED |
+| 5 — WhatsApp | Channel | BSP (WATI/360dialog) + número compartido chandelierp | LOCKED |
 | 6 — Freemium | Feature Flags | Clerk publicMetadata + FastAPI decorator (zero migration) | LOCKED |
 | 7 — DIAN | Content Strategy | Markdown estático + LLM contextual claude-haiku-4-5 | LOCKED |
 

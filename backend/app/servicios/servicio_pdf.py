@@ -322,7 +322,7 @@ class ServicioPDF:
 
         elements.append(Spacer(1, 8 * mm))
         elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc"), spaceAfter=2 * mm))
-        elements.append(Paragraph("Generado con <3 por ChandeliERP", self.styles["FooterText"]))
+        elements.append(Paragraph("Generado con <3 por chandelierp", self.styles["FooterText"]))
 
         return elements
 

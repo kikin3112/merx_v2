@@ -1,6 +1,6 @@
 # L3 — Head of Security (SecOps)
 
-> Guardian of the 6 security pipelines and the overall security posture of MERX v2.
+> Guardian of the 6 security pipelines and the overall security posture of chandelierp.
 
 ---
 

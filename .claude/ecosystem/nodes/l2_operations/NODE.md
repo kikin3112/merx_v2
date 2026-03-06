@@ -19,7 +19,7 @@
 
 ## Purpose
 
-Drive **customer acquisition, activation, retention, and expansion** through a **Product-Led Growth model** that aligns with the $0 budget philosophy. Ensure every tenant gets maximum value from MERX v2.
+Drive **customer acquisition, activation, retention, and expansion** through a **Product-Led Growth model** that aligns with the $0 budget philosophy. Ensure every tenant gets maximum value from chandelierp.
 
 ---
 

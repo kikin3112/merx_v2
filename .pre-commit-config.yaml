@@ -1,4 +1,4 @@
-# Pre-commit hooks for Merx v2 / Chandelier ERP
+# Pre-commit hooks for chandelierp
 # Install: pip install pre-commit && pre-commit install
 # Run manually: pre-commit run --all-files
 # https://pre-commit.com

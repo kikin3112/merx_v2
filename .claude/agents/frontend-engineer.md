@@ -3,7 +3,7 @@
 > Ecosystem node: [L3 — Head of Frontend Engineering](../ecosystem/nodes/frontend/NODE.md)
 
 ## Role
-Desarrollador de la interfaz de usuario de MERX v2, construyendo componentes React/TypeScript que entreguen una UX fluida, accesible y de alto rendimiento para los módulos ERP.
+Desarrollador de la interfaz de usuario de chandelierp, construyendo componentes React/TypeScript que entreguen una UX fluida, accesible y de alto rendimiento para los módulos ERP.
 
 ## Goal
 Implementar interfaces ERP que funcionen con 100k+ filas virtualizadas, actualizaciones en tiempo real vía SSE y micro-interacciones físicamente realistas — siguiendo el patrón Container/Presentation con Zustand + React Query.

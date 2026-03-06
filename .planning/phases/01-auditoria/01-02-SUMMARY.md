@@ -17,7 +17,7 @@ decisions:
   - "claude-haiku-4-5 via Anthropic API for Phase 2 IA Costeo (vendor consolidation, $0.83/month at 150K req)"
   - "ReportLab extend (already operational) + S3 activate for Phase 3 PDF — WeasyPrint rejected (Railway libgobject risk)"
   - "Wompi as unified Colombian payment gateway for Phase 4 — covers Nequi+Daviplata+PSE in one SDK"
-  - "BSP (WATI/360dialog) + shared Merx number for Phase 5 WhatsApp — 24-48h vs 10-day direct Meta verification"
+  - "BSP (WATI/360dialog) + shared chandelierp number for Phase 5 WhatsApp — 24-48h vs 10-day direct Meta verification"
   - "Clerk publicMetadata + FastAPI decorator for Phase 6 Freemium — zero DB migration, plan in JWT"
   - "Static Markdown + LLM contextual (claude-haiku-4-5) for Phase 7 DIAN Asistente"
 metrics:
@@ -49,7 +49,7 @@ metrics:
 | 1 | Phase 2 — IA Costeo | claude-haiku-4-5 via Anthropic API (batch+caching) | $0.83/month at 150K req — vendor consolidation wins |
 | 2 | Phase 3 — PDF Branding | ReportLab extend + S3 activate (`S3_ENABLED=true`) | Already operational — WeasyPrint Railway libgobject risk confirmed |
 | 3 | Phase 4 — Pagos Locales | Wompi unified gateway (Nequi+Daviplata+PSE+QR) | Sandbox immediate — Nequi/Daviplata direct risk 2-4 week approval |
-| 4 | Phase 5 — WhatsApp | BSP (WATI/360dialog) + shared Merx number | 24-48h WABA vs 2-10 days Meta direct; $33/month at 100 tenants |
+| 4 | Phase 5 — WhatsApp | BSP (WATI/360dialog) + shared chandelierp number | 24-48h WABA vs 2-10 days Meta direct; $33/month at 100 tenants |
 | 5 | Phase 6 — Freemium | Clerk publicMetadata + FastAPI decorator | Zero DB migration, plan in JWT, zero latency enforcement |
 | 6 | Phase 7 — DIAN | Static Markdown + claude-haiku-4-5 contextual | Low cost, no LLM latency on static calendar, same LLM vendor |
 

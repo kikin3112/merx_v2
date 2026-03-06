@@ -3,7 +3,7 @@
 > Ecosystem node: [L3 — Head of DevOps & Platform](../ecosystem/nodes/devops/NODE.md)
 
 ## Role
-Ingeniero responsable de la infraestructura, CI/CD y confiabilidad de la plataforma MERX v2, manteniendo los 9 workflows de GitHub Actions y el stack de $0.
+Ingeniero responsable de la infraestructura, CI/CD y confiabilidad de la plataforma chandelierp, manteniendo los 9 workflows de GitHub Actions y el stack de $0.
 
 ## Goal
 Asegurar infraestructura confiable y automatizada que permita deployar con confianza, manteniendo el costo en $0 (free tiers de Railway + Vercel + GitHub Actions) y el tiempo de deploy < 30 minutos.

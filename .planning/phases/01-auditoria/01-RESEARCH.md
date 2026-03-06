@@ -71,7 +71,7 @@ The five technical areas have clear recommended paths: **Claude Haiku 4.5** for 
 
 Source: [Anthropic official pricing](https://platform.claude.com/docs/en/about-claude/pricing) | [Google AI pricing](https://ai.google.dev/gemini-api/docs/pricing)
 
-### Cost Model for Merx Use Case
+### Cost Model for chandelierp Use Case
 
 - Context per request: ~2K tokens input (receta + CVU + historial), ~500 tokens output
 - Volume: 1K–5K requests/day (100 tenants × 10–50/day)
@@ -91,7 +91,7 @@ All three are well below the $50/month ceiling at 100 tenants.
 
 - **Structured output:** Haiku 4.5 supports native JSON mode via `tool_use` or response format — HIGH confidence (same API as current codebase)
 - **Prompt caching:** Cache hits at 0.1× base price — receta system prompt (~500 tokens) is cacheable
-- **Ecosystem alignment:** Merx already uses Anthropic SDK (Claude Sonnet 4.6 — this very model). Zero new vendor onboarding.
+- **Ecosystem alignment:** chandelierp already uses Anthropic SDK (Claude Sonnet 4.6 — this very model). Zero new vendor onboarding.
 - **Gemini tradeoff:** 10× cheaper but requires Google Cloud credentials, separate SDK, new vendor relationship
 - **Latency:** Haiku 4.5 fastest in Anthropic lineup for synchronous requests
 
@@ -156,13 +156,13 @@ Sources: [Meta official WABA pricing](https://business.whatsapp.com/products/pla
 
 **BSP vs Direct:** Direct Meta Cloud API requires business verification (up to 10 business days + display name approval). BSP accelerates this to 24–48h. CONTEXT.md constraint: prefer solutions with immediate sandbox. **BSP wins on timeline.**
 
-**Shared number vs per-tenant:** Shared number (1 WABA, sender = "Merx" or tenant name in message body) = zero per-tenant setup. Per-tenant number requires each tenant to register their own WABA account (heavy UX burden). **Shared Merx number wins for MVP.**
+**Shared number vs per-tenant:** Shared number (1 WABA, sender = "chandelierp" or tenant name in message body) = zero per-tenant setup. Per-tenant number requires each tenant to register their own WABA account (heavy UX burden). **Shared chandelierp number wins for MVP.**
 
 **Cost at scale:** 100 tenants × 100 utility messages/month = 10K messages/month = $8/month. Marketing messages at $0.0125 each — 100 tenants × 20 promo messages = $25/month. Total: ~$33/month well under $50 ceiling.
 
 **Template requirements:** "Factura enviada", "Pago confirmado" = utility category. Meta template approval: 24–72h for standard utility templates with business verification.
 
-**Recommendation:** BSP (WATI or 360dialog) for accelerated WABA onboarding. Single shared Merx phone number. Utility template for invoice dispatch. Re-evaluate per-tenant WABA in Phase 5+ when tenant base grows.
+**Recommendation:** BSP (WATI or 360dialog) for accelerated WABA onboarding. Single shared chandelierp phone number. Utility template for invoice dispatch. Re-evaluate per-tenant WABA in Phase 5+ when tenant base grows.
 
 ---
 
@@ -369,7 +369,7 @@ async def crear_link_pago(monto_cop: Decimal, referencia: str) -> dict:
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact on Merx |
+| Old Approach | Current Approach | When Changed | Impact on chandelierp |
 |--------------|------------------|--------------|----------------|
 | WhatsApp conversation-based billing | Per-message billing | July 1, 2025 | Utility msgs at $0.0008 — 5× cheaper than old model |
 | On-Premises WhatsApp API | Cloud API only (Meta deprecated On-Prem) | 2024 | Must use Cloud API or BSP |

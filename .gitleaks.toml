@@ -1,7 +1,7 @@
-# Gitleaks configuration for Merx v2 / Chandelier ERP
+# Gitleaks configuration for chandelierp
 # https://github.com/gitleaks/gitleaks
 
-title = "Merx v2 Gitleaks Config"
+title = "chandelierp Gitleaks Config"
 
 [extend]
 # Extend the default ruleset

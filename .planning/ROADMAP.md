@@ -1,8 +1,8 @@
-# Roadmap: Alineación Propuesta de Valor Merx v2
+# Roadmap: Alineación Propuesta de Valor chandelierp
 
 **Milestone:** Propuesta de Valor 2026 (v2.0)
 **Base:** ERP multi-tenant maduro (PR #104 completo)
-**Objetivo:** Transformar Merx en el sistema operativo del Solopreneur Palmireño
+**Objetivo:** Transformar chandelierp en el sistema operativo del Solopreneur Palmireño
 
 ---
 
@@ -110,7 +110,7 @@ y links de pago por WhatsApp desde el ERP.
 
 **Key decisions (pending Phase 1):**
 - Proveedor: Meta Cloud API directo vs BSP (WATI, Infobip, Yalochat)
-- Configuración: número por tenant vs número compartido Merx + nombre tenant
+- Configuración: número por tenant vs número compartido chandelierp + nombre tenant
 - Templates: factura enviada, pago recibido, recordatorio
 
 **Deliverables:**

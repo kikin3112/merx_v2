@@ -5,7 +5,7 @@ export function VideoEmbed() {
         {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-            Mira ChandeliERP en acción
+            Mira chandelierp en acción
           </h2>
           <p className="mt-4 text-lg text-gray-500">
             Conoce la plataforma en menos de 5 minutos.
@@ -18,7 +18,7 @@ export function VideoEmbed() {
             <iframe
               className="absolute inset-0 w-full h-full"
               src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="Demo de ChandeliERP"
+              title="Demo de chandelierp"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

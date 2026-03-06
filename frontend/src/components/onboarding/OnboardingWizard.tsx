@@ -126,7 +126,7 @@ export default function OnboardingWizard({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold cv-text">Primeros pasos</h2>
-          <p className="text-sm cv-muted">Configura lo básico para empezar a usar ChandeliERP</p>
+          <p className="text-sm cv-muted">Configura lo básico para empezar a usar chandelierp</p>
         </div>
         <button onClick={onDismiss} className="text-xs cv-muted hover:text-[var(--cv-text)] underline">
           Saltar

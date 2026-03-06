@@ -14,7 +14,7 @@ from .mixins import SoftDeleteMixin, TenantMixin
 
 class Calificaciones(TenantMixin, SoftDeleteMixin, Base):
     """
-    Calificación de 1-5 estrellas que un tenant hace sobre ChandeliERP.
+    Calificación de 1-5 estrellas que un tenant hace sobre chandelierp.
     Solo una calificación activa por tenant (upsert).
     Estados: pendiente → aprobada | rechazada
     """

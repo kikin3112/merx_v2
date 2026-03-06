@@ -22,7 +22,7 @@ export default function Sidebar() {
   const [showCalificacion, setShowCalificacion] = useState(false);
 
   const logoSrc = buildLogoUrl(tenantLogo);
-  const logoAlt = tenantName || 'ChandeliERP';
+  const logoAlt = tenantName || 'chandelierp';
 
   return (
     <>
@@ -39,7 +39,7 @@ export default function Sidebar() {
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
         />
         <p className="text-[15px] font-medium truncate font-brand flex-1 min-w-0" style={{ color: 'var(--cv-text)' }}>
-          {isSuperadminOnly ? 'SuperAdmin' : (tenantName || 'ChandeliERP')}
+          {isSuperadminOnly ? 'SuperAdmin' : (tenantName || 'chandelierp')}
         </p>
         <button
           onClick={toggleTheme}

@@ -1,6 +1,6 @@
 # 09 — Change Policy (Trunk-Based Development)
 
-> How code changes are proposed, validated, and integrated into the MERX v2 codebase.
+> How code changes are proposed, validated, and integrated into the chandelierp codebase.
 
 ---
 

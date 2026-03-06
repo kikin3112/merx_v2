@@ -1,6 +1,6 @@
 # Chandelier - Generador de Endpoints API
 
-Crea endpoints FastAPI siguiendo los patrones exactos del proyecto Chandelier ERP.
+Crea endpoints FastAPI siguiendo los patrones exactos del proyecto chandelierp.
 
 ## Convenciones del Proyecto
 

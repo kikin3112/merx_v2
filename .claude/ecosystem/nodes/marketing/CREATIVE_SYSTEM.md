@@ -1,4 +1,4 @@
-# ChandeliERP — Sistema Creativo de Mejora Continua
+# chandelierp — Sistema Creativo de Mejora Continua
 ## Arquitectura de Autoridad Instagram 2026
 
 > **Versión:** 2.0 — Febrero 2026
@@ -14,7 +14,7 @@
 
 Instagram en 2026 es un **motor de búsqueda semántico**, no una galería estética.
 
-| Señal | Peso algorítmico | Implicación para ChandeliERP |
+| Señal | Peso algorítmico | Implicación para chandelierp |
 |---|---|---|
 | **Guardados (saves)** | Muy alto | Posts deben ser referencias reutilizables (cálculos, listas, guías) |
 | **Enviados por DM (shares)** | Muy alto | Contenido que resuena tan profundo que quieren compartirlo en privado |
@@ -27,10 +27,10 @@ Instagram en 2026 es un **motor de búsqueda semántico**, no una galería esté
 ### Cambios estructurales que afectan el sistema
 
 - **Reels hasta 20 minutos**: El contenido educativo profundo compite directamente con YouTube. Un tutorial de "cómo fijar el precio de tus velas" puede durar 8-12 minutos y el algoritmo lo premia si el Watch Time es alto.
-- **Google indexa posts profesionales**: ChandeliERP puede aparecer en Google con posts de Instagram. Las keywords del blog SEO deben duplicarse en Instagram.
+- **Google indexa posts profesionales**: chandelierp puede aparecer en Google con posts de Instagram. Las keywords del blog SEO deben duplicarse en Instagram.
 - **Formato 4:5 vertical obligatorio**: Todo activo visual debe diseñarse en 4:5 (1080×1350px). El 1:1 pierde "real estate" en el feed.
 - **Pestaña "Amigos" y Dark Social**: La lealtad real ocurre en DMs y canales de difusión. El sistema debe asignar tiempo diario a esta dimensión.
-- **"Your Algorithm"**: Los usuarios eligen manualmente los nichos de interés en Reels. ChandeliERP debe ser reconocida como la cuenta de "cerería y negocio" para que el algoritmo la muestre consistentemente.
+- **"Your Algorithm"**: Los usuarios eligen manualmente los nichos de interés en Reels. chandelierp debe ser reconocida como la cuenta de "cerería y negocio" para que el algoritmo la muestre consistentemente.
 
 ---
 
@@ -70,7 +70,7 @@ Instagram en 2026 es un **motor de búsqueda semántico**, no una galería esté
 
 ## Concepto central
 **"La Llama que Organiza"** — Una llama no solo da luz, organiza la oscuridad.
-ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artesanal.
+chandelierp revela costos, ilumina deudas y organiza el caos de un negocio artesanal.
 
 ## Arquetipo visual dual
 - **El Mago**: transforma lo caótico en claro de forma que parece imposiblemente simple
@@ -118,7 +118,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 - Fondos blancos puros o mármol blanco
 - Velas de colores neón o estética genérica
 - Expresiones forzadas o poses de catálogo
-- Celulares/pantallas mostrando interfaces ajenas a ChandeliERP
+- Celulares/pantallas mostrando interfaces ajenas a chandelierp
 
 ---
 
@@ -152,7 +152,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 
 ## Hooks de Alto Impacto (primeros 1.5-3 segundos)
 
-| Tipo | Ejemplo para ChandeliERP | Mecanismo |
+| Tipo | Ejemplo para chandelierp | Mecanismo |
 |---|---|---|
 | **Miedo/pérdida** | "Si no calculas este número, estás perdiendo dinero en cada vela que vendes" | Aversión a la pérdida |
 | **Autoridad** | "Analicé 50 negocios de cerería colombianos. El error más costoso es este." | Prueba social + curiosidad |
@@ -165,7 +165,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 
 # PARTE V: CICLO OPERATIVO C.O.R.E.
 
-## Calendario mensual para ChandeliERP
+## Calendario mensual para chandelierp
 
 ### Semana 1 — Auditoría
 - Analizar guardados y enviados del mes anterior (no likes)
@@ -197,7 +197,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 
 ## Métricas prioritarias (ordenadas por importancia 2026)
 
-| KPI | Fórmula | Meta ChandeliERP | Por qué importa |
+| KPI | Fórmula | Meta chandelierp | Por qué importa |
 |---|---|---|---|
 | **Save-to-Reach Ratio** | Guardados / Alcance × 100 | >3% | El KPI de oro: indica utilidad real del contenido |
 | **Share Rate** | Enviados / Alcance × 100 | >2% | Viralidad en Dark Social |
@@ -217,7 +217,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 
 # PARTE VII: REFERENCIAS DE DISEÑO
 
-## Tendencias 2026 aplicadas a ChandeliERP
+## Tendencias 2026 aplicadas a chandelierp
 
 ### Estilos dominantes (fuente: investigación Dribbble/Behance 2026)
 - **Warm Modernism**: sans-serif limpio + formas orgánicas + acentos cálidos
@@ -229,9 +229,9 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 - **Display**: Plus Jakarta Sans Bold (warm, legible, moderna con personalidad)
 - **Alternativa serif**: Cormorant Garamond para momentos de lujo/aspiración
 - **Tamaños extremos**: titular 48-72px, subtexto 12-14px — contraste radical de escala
-- **Lowercase branding**: el copy de ChandeliERP usa minúsculas en hooks para parecer más cercano
+- **Lowercase branding**: el copy de chandelierp usa minúsculas en hooks para parecer más cercano
 
-### Tendencias de color (validadas con paleta ChandeliERP)
+### Tendencias de color (validadas con paleta chandelierp)
 - Tierra cálida sobre oscuro: Crema + Ámbar sobre Medianoche ✓ (ya definido)
 - Gradientes sutiles: Ámbar → Crema en fondos de detalle (aplicar con moderación)
 - Monocromático con pop de acento: un solo color de acento por pieza (Oro para datos)
@@ -264,7 +264,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 | Diferenciación en feed | Baja (similar a cualquier ERP) | Alta (visual artesanal único) |
 | Escalabilidad | Alta pero en un único estilo | Alta y diversa en formatos |
 
-**Veredicto:** Decisión correcta. La calidad visual de Nano Banana y VEO 3 supera completamente al pipeline Python para el mundo artesanal cálido que requiere ChandeliERP.
+**Veredicto:** Decisión correcta. La calidad visual de Nano Banana y VEO 3 supera completamente al pipeline Python para el mundo artesanal cálido que requiere chandelierp.
 
 ### Qué se ajustó
 - Reemplazo completo del pipeline de generación
@@ -329,7 +329,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 ### Resumen de lo construido en esta sesión
 - Framework de herramientas definido: Canva + Nano Banana + VEO 3
 - Visual DNA documentado (brief maestro para todas las herramientas)
-- Sistema C.O.R.E. adaptado a ChandeliERP
+- Sistema C.O.R.E. adaptado a chandelierp
 - KPIs y métricas 2026 definidos (Save/Reach como métrica de oro)
 - Estado del arte del algoritmo Instagram 2026 incorporado
 - 8 prompts ultra-detallados para Nano Banana (`prompts/nano-banana-v1.md`)
@@ -347,7 +347,7 @@ ChandeliERP revela costos, ilumina deudas y organiza el caos de un negocio artes
 
 ---
 
-## ITERACIÓN 2 — Logo ChandeliERP en Canva + Consistencia Visual (Pendiente)
+## ITERACIÓN 2 — Logo chandelierp en Canva + Consistencia Visual (Pendiente)
 
 **Estado:** En proceso
 **Objetivo:** Crear el isotipo (llama + tendencia ascendente) y el logotipo completo en Canva.

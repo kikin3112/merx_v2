@@ -1,4 +1,4 @@
-# INSTAGRAM LAUNCH PACK — ChandeliERP
+# INSTAGRAM LAUNCH PACK — chandelierp
 ## Todo lo que necesitas para lanzar desde cero
 
 > **Versión:** 1.0 — Febrero 2026
@@ -32,7 +32,7 @@
 
 Verificar disponibilidad al crear la cuenta. Elegir en ese orden de preferencia.
 
-**Nombre de pantalla (el que aparece en bold):** `ChandeliERP`
+**Nombre de pantalla (el que aparece en bold):** `chandelierp`
 
 ## 1.2 Bio (150 caracteres)
 
@@ -72,7 +72,7 @@ Crear cuenta en `linktr.ee` y agregar:
 
 | Botón | Texto | URL |
 |---|---|---|
-| 1 | 🕯️ Prueba ChandeliERP gratis 14 días | https://landing-neon-ten.vercel.app |
+| 1 | 🕯️ Prueba chandelierp gratis 14 días | https://landing-neon-ten.vercel.app |
 | 2 | 📖 Cómo calcular el costo de tu vela | URL del artículo del blog |
 | 3 | 💬 Habla con nosotros por WhatsApp | https://wa.me/573117677016 |
 
@@ -118,7 +118,7 @@ Ventajas: acceso a Instagram Insights, botón de contacto, horarios de publicaci
 → Simula el gráfico de tendencia
 
 **5. Tipografía bajo el isotipo:**
-→ Texto: "ChandeliERP"
+→ Texto: "chandelierp"
 → Fuente: Plus Jakarta Sans · Bold · 42px
 → Color: `#FAF3E8`
 → Posición: centrado, 600px desde arriba
@@ -204,7 +204,7 @@ y al final del mes no saben si ganaron o perdieron.
 Eso no es un problema de dedicación.
 Es un problema de información.
 
-ChandeliERP existe para darte esa información.
+chandelierp existe para darte esa información.
 Exacta. En segundos.
 
 ¿Tu negocio de velas merece algo así?
@@ -331,7 +331,7 @@ Crear 5 highlights con portadas coherentes con la marca.
 **Story 1/4:**
 ```
 [Fondo medianoche]
-Texto grande: "ChandeliERP"
+Texto grande: "chandelierp"
 Subtexto: "El software hecho
 para fabricantes de velas"
 Emoji: 🕯️
@@ -398,7 +398,7 @@ Link sticker → landing page
 [Fondo medianoche]
 Texto grande: "Tú decides
 cuánto pagar."
-Subtexto: "ChandeliERP funciona con un
+Subtexto: "chandelierp funciona con un
 modelo Pay-What-You-Want."
 ```
 
@@ -471,7 +471,7 @@ qué precio poner, cuánto comprar, si vale la pena ese pedido grande.
 
 ¿Cuánto tiempo llevas trabajando con el "creo que"?
 
-Prueba ChandeliERP 14 días gratis → link en bio 🕯️
+Prueba chandelierp 14 días gratis → link en bio 🕯️
 
 #velasartesanales #cereria #emprendedorescali #negociopropio
 #velascolombia #handmadecandles #pyme #cali #emprendimiento
@@ -553,7 +553,7 @@ Sientes que si subes el precio, "nadie va a comprar".
 
 —
 El primer paso para cobrar lo justo es saber tu costo exacto.
-ChandeliERP lo calcula automáticamente.
+chandelierp lo calcula automáticamente.
 Prueba gratis → link en bio.
 
 #velasartesanales #cereria #fijarprecios #emprendedorescali
@@ -574,7 +574,7 @@ El inventario desorganizado cuesta dinero de dos formas:
 💸 Comprando insumos que ya tenías (capital muerto)
 💸 Quedándote sin stock cuando más vendes (ventas perdidas)
 
-Con ChandeliERP, cada venta que registras
+Con chandelierp, cada venta que registras
 descuenta los insumos automáticamente.
 
 Sin contar físicamente.

@@ -1,5 +1,5 @@
 # Nano Banana (Gemini Imagen) — Biblioteca de Prompts v1
-## ChandeliERP Instagram Assets
+## chandelierp Instagram Assets
 
 > **Herramienta:** Google Gemini Image Generation (Nano Banana Pro)
 > **Versión:** 1.0 — Febrero 2026
@@ -10,12 +10,12 @@
 
 ## INSTRUCCIONES DE USO
 
-### Cómo abrir una sesión de Nano Banana para ChandeliERP
+### Cómo abrir una sesión de Nano Banana para chandelierp
 
 Al iniciar cada sesión de Gemini, pegar primero este contexto de marca:
 
 ```
-Estoy creando contenido visual para ChandeliERP, un software ERP artesanal para
+Estoy creando contenido visual para chandelierp, un software ERP artesanal para
 fabricantes de velas en Colombia. La marca combina la calidez artesanal de la cerería
 con la claridad de un software profesional. El concepto creativo central es
 "La Llama que Organiza" — la llama de una vela que también organiza el caos de un negocio.
@@ -136,7 +136,7 @@ cambio de "llevar cuentas en cuaderno" a "claridad en un sistema".
 Generate a photorealistic overhead flat lay showing a dramatic visual contrast
 between chaos and order, divided diagonally across a dark wood surface.
 
-LEFT SIDE — CHAOS (before ChandeliERP):
+LEFT SIDE — CHAOS (before chandelierp):
 - A worn spiral notebook opened to a page filled with crossed-out numbers, erased calculations,
   arrows pointing everywhere, and illegible handwriting
 - A calculator with some keys visibly worn
@@ -145,7 +145,7 @@ LEFT SIDE — CHAOS (before ChandeliERP):
 - Scattered wax fragments, a price tag left blank
 - Slight feeling of overwhelm — too many items, slightly overlapping
 
-RIGHT SIDE — ORDER (after ChandeliERP):
+RIGHT SIDE — ORDER (after chandelierp):
 - A modern smartphone lying flat, screen showing a clean minimal dashboard with:
   the number "$3.780" prominently displayed in warm gold, labeled "Costo unitario"
   and green indicators showing profit margin
@@ -161,14 +161,14 @@ The order side has warmer, more dramatic lighting with amber highlights.
 This subtle shift reinforces the emotional narrative.
 
 COLOR PALETTE: Chaos side: muted grays and paper whites. Order side: ambers, creams,
-warm gold — the ChandeliERP palette dominates the "after" zone.
+warm gold — the chandelierp palette dominates the "after" zone.
 
 MOOD: Recognition, relief, transformation. The emotional moment of clarity.
 
 TECHNICAL: Sharp focus throughout (no bokeh — need both sides legible).
 4:5 vertical format. Overhead view, slightly angled (80 degrees, not full 90).
 
-AVOID: Showing the ChandeliERP logo or any specific brand UI (this is a concept image).
+AVOID: Showing the chandelierp logo or any specific brand UI (this is a concept image).
 No laptops, no desktop computers, no office chairs visible.
 ```
 
@@ -397,7 +397,7 @@ LIGHTING: Three-point warm lighting setup:
 - BACK LIGHT: Thin rim light from behind, slightly warmer — separates the vessel from background
 The candle flame is also an active light source, adding warm flicker glow to the wax surface.
 
-COLOR STORY: The entire image tells the ChandeliERP brand story in color:
+COLOR STORY: The entire image tells the chandelierp brand story in color:
 - Deep midnight background (#1A1A2E)
 - Warm amber glass (#C17B2B glow)
 - Cream wax (#FAF3E8)
@@ -469,7 +469,7 @@ Real hands that show evidence of craft work. Not a stock model.`
 Antes de generar cualquier imagen nueva en Gemini, subir `prompt-8.png` y escribir:
 
 ```
-Esta imagen es la referencia de estilo para ChandeliERP.
+Esta imagen es la referencia de estilo para chandelierp.
 Mantén en todas las imágenes que genere en esta sesión:
 - El mismo fondo midnight oscuro sin textura
 - La misma temperatura de iluminación cálida (3200-3500K), key light lateral

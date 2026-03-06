@@ -1,4 +1,4 @@
-# Auditoría de Estado del Arte (Estándar 2026) - MERX v2
+# Auditoría de Estado del Arte (Estándar 2026) - chandelierp
 **Fecha:** 13 de Febrero, 2026
 **Responsable:** Senior AI Tech Lead
 **Marco de Referencia:** Cloud-Native & Financial Compliance 2026

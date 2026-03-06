@@ -17,7 +17,7 @@ export function Footer() {
           {/* Logo + tagline */}
           <div className="text-center md:text-left">
             <span className="text-2xl font-bold text-amber-500">
-              ChandeliERP
+              chandelierp
             </span>
             <p className="mt-2 text-sm text-cream/60 max-w-xs">
               El ERP diseñado para PyMEs de candelería en Colombia.
@@ -72,7 +72,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="mt-10 pt-6 border-t border-white/10 text-center">
           <p className="text-xs text-cream/50">
-            &copy; {currentYear} ChandeliERP. Todos los derechos reservados.
+            &copy; {currentYear} chandelierp. Todos los derechos reservados.
           </p>
         </div>
       </div>

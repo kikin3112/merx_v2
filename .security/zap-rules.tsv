@@ -1,4 +1,4 @@
-# ZAP Baseline scan rule overrides for Merx v2
+# ZAP Baseline scan rule overrides for chandelierp
 # Format: rule_id	IGNORE|WARN|FAIL	description
 # https://www.zaproxy.org/docs/docker/baseline-scan/
 #

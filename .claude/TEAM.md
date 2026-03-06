@@ -1,6 +1,6 @@
 # TEAM — Ecosystem Index
 
-> This file is the navigation index for the MERX v2 / Chandelier ERP organizational ecosystem.
+> This file is the navigation index for the chandelierp / chandelierp organizational ecosystem.
 > Source of truth: `.claude/ecosystem/00_MASTER_BLUEPRINT.md`
 
 ---

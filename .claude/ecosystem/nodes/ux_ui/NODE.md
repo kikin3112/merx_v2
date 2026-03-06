@@ -1,6 +1,6 @@
 # L3 — Head of UX/UI & Design
 
-> Guardian of user experience. Ensures every interaction with MERX v2 is intuitive, beautiful, and accessible.
+> Guardian of user experience. Ensures every interaction with chandelierp is intuitive, beautiful, and accessible.
 
 ---
 

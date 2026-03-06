@@ -1,4 +1,4 @@
-# Merx v2 — Auditoría de Brechas (Phase 1)
+# chandelierp — Auditoría de Brechas (Phase 1)
 
 **Fecha:** 2026-03-04
 **Base:** PR #104 (ERP multi-tenant maduro en producción)
@@ -94,7 +94,7 @@ No requiere nueva dependencia si R1.1 se implementa primero.
 **Proveedor recomendado:** BSP (WATI o 360dialog) en vez de Meta Cloud API directo.
 - BSP: onboarding WABA en 24–48h vs 2–10 días hábiles para verificación Meta directa
 - Precio Colombia: $0.0008/mensaje utility (envío de facturas) — ~$8/mes a 100 tenants × 100 msgs
-- Número compartido Merx para MVP (cero setup por tenant)
+- Número compartido chandelierp para MVP (cero setup por tenant)
 
 **Brecha de infraestructura:** Registro WABA requerido antes de Phase 5.
 - Acción del propietario: Iniciar cuenta BSP (WATI: wati.io, 360dialog.com)

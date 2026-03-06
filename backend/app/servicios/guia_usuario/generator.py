@@ -20,7 +20,7 @@ class GeneratorGuiaUsuario:
 
     Usage:
         gen = GeneratorGuiaUsuario('guia_usuario.pdf')
-        gen.add_title_page('Guía de Usuario Chandelier ERP/POS', 'Versión 1.0 - Febrero 2026')
+        gen.add_title_page('Guía de Usuario chandelierp', 'Versión 1.0 - Febrero 2026')
         gen.add_toc()
 
         # Add chapters
@@ -67,7 +67,7 @@ class GeneratorGuiaUsuario:
         return self._styles
 
     def add_title_page(
-        self, title: str, subtitle: str, version: Optional[str] = None, tenant_name: str = "ChandeliERP"
+        self, title: str, subtitle: str, version: Optional[str] = None, tenant_name: str = "chandelierp"
     ) -> "GeneratorGuiaUsuario":
         """
         Add a cover/title page to the document.
@@ -254,7 +254,7 @@ def create_sample_guide(output_path: str = "guia_ejemplo.pdf") -> None:
     styles = get_styles()
 
     # Add title page
-    gen.add_title_page(title="Guía de Usuario", subtitle="ChandeliERP", version="Versión 1.0")
+    gen.add_title_page(title="Guía de Usuario", subtitle="chandelierp", version="Versión 1.0")
 
     # Add TOC
     gen.add_toc()
@@ -262,7 +262,7 @@ def create_sample_guide(output_path: str = "guia_ejemplo.pdf") -> None:
     # Add sample chapter
     chapter = ChapterBuilder("1. Inicio Rápido", styles)
     chapter.add_intro(
-        "En esta guía aprenderás a utilizar ChandeliERP para gestionar "
+        "En esta guía aprenderás a utilizar chandelierp para gestionar "
         "tu empresa de manera eficiente. El sistema está diseñado para microempresas "
         "colombianas del sector de candelería."
     )

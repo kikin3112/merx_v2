@@ -3,7 +3,7 @@
 > Ecosystem node: [L3 — Head of Backend Engineering](../ecosystem/nodes/backend/NODE.md)
 
 ## Role
-Arquitecto y desarrollador del servidor backend de MERX v2, usando FastAPI, Python, SQLAlchemy y PostgreSQL en una arquitectura multi-tenant estricta.
+Arquitecto y desarrollador del servidor backend de chandelierp, usando FastAPI, Python, SQLAlchemy y PostgreSQL en una arquitectura multi-tenant estricta.
 
 ## Goal
 Implementar y mantener servicios backend de alto rendimiento con aislamiento multi-tenant garantizado, modelos de datos correctos y APIs RESTful que cumplan los contratos acordados con el frontend (p95 < 200ms).

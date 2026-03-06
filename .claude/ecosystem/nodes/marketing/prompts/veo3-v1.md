@@ -1,5 +1,5 @@
 # VEO 3 (Google) — Biblioteca de Prompts v1
-## ChandeliERP Instagram Video Assets
+## chandelierp Instagram Video Assets
 
 > **Herramienta:** VEO 3 — Google DeepMind Video Generation
 > **Versión:** 1.0 — Febrero 2026
@@ -28,7 +28,7 @@ VEO 3 genera clips de máximo 8 segundos. El flujo de trabajo es:
 Incluir al inicio de cada generación:
 
 ```
-Video for ChandeliERP — artisan candle maker ERP software from Colombia.
+Video for chandelierp — artisan candle maker ERP software from Colombia.
 Brand aesthetic: warm, artisanal, professional. NOT corporate, NOT cold tech.
 Color palette: amber #C17B2B, midnight #1A1A2E, warm cream #FAF3E8, gold #D4A843.
 Lighting: always warm, 3200-4000K, like candlelight or morning golden hour.
@@ -52,7 +52,7 @@ Style: documentary stop-motion or cinematic slice-of-life. Never staged commerci
 
 ### ESCENA 1 — CAOS (0:00 – 0:10) | 2 clips de 5s
 
-**Narrativa:** El dolor del cerero antes de ChandeliERP. Todo es improvisación y confusión.
+**Narrativa:** El dolor del cerero antes de chandelierp. Todo es improvisación y confusión.
 
 **CLIP 1A (5s) — Los objetos del caos:**
 ```
@@ -242,7 +242,7 @@ y exportado como clip de 9 segundos (con animación de texto en CapCut).
 **Diseño en Canva:**
 ```
 Fondo: #1A1A2E (Medianoche)
-Centro: Logo ChandeliERP (isotipo llama + logotipo)
+Centro: Logo chandelierp (isotipo llama + logotipo)
 Debajo del logo:
 
 Texto principal (Plus Jakarta Sans Bold, #FAF3E8, 48px):
@@ -253,7 +253,7 @@ Texto secundario (Plus Jakarta Sans Regular, #D4A843, 24px):
 
 Texto pequeño (Plus Jakarta Sans Light, #C17B2B, 14px):
 "Yo te configuro todo en una videollamada de 30 min."
-"— El equipo de ChandeliERP"
+"— El equipo de chandelierp"
 
 Animación en CapCut: cada línea de texto aparece con 0.3s de delay entre sí.
 Música: fade out completo. Solo la última nota de piano.
@@ -357,7 +357,7 @@ Stop motion transition: the notebook pages flutter.
 **CLIP T3 (5s) — El punto de quiebre:**
 ```
 Stop motion overhead: the notebook is pushed aside (slides out of frame).
-A smartphone slides in. The screen shows the ChandeliERP-style dashboard.
+A smartphone slides in. The screen shows the chandelierp-style dashboard.
 The number "3.780" appears on screen in warm gold.
 The woman's hand (same hand as before) places the phone down gently.
 She sits back. One breath. The tension releases.
@@ -387,7 +387,7 @@ de cada vela que fabricas. Y sin ese número, cualquier precio que pones
 es una apuesta, no una decisión.
 
 Yo lo viví. Cargué todo en una hoja de Excel que nunca cuadraba.
-Hasta que construí ChandeliERP — el sistema que yo hubiera querido tener.
+Hasta que construí chandelierp — el sistema que yo hubiera querido tener.
 
 Te calcula el costo exacto de cada vela (incluyendo la merma que siempre olvidas).
 Te dice qué margen tienes en tiempo real.
@@ -397,7 +397,7 @@ Y te devuelve las 2 horas que perdías contando.
 Prueba gratis 14 días → link en bio.
 Yo te configuro todo en una videollamada de 30 minutos.
 
-#ChandeliERP #velasartesanales #negociopropio #pyme #Colombia
+#chandelierp #velasartesanales #negociopropio #pyme #Colombia
 #emprendedorescali #cereria #costeo #inventario
 ```
 
@@ -406,7 +406,7 @@ Yo te configuro todo en una videollamada de 30 minutos.
 # ASSET 4: REEL EDUCATIVO LARGO — "CÓMO CALCULAR EL COSTO DE TU VELA" (8-12 min)
 
 **Propósito:** Contenido de autoridad máxima. Diseñado para Watch Time alto y posicionamiento
-SEO en Instagram y Google. Un solo Reel largo que posiciona a ChandeliERP como la fuente
+SEO en Instagram y Google. Un solo Reel largo que posiciona a chandelierp como la fuente
 más confiable de información sobre costos en cerería artesanal colombiana.
 
 **Hook type:** Dato impactante + Tutorial de valor real
@@ -452,7 +452,7 @@ Canva: tabla visual con el cálculo completo en pantalla
 
 **7:30-8:00 — CTA:**
 ```
-"Si quieres que ChandeliERP calcule todo esto automáticamente por ti,
+"Si quieres que chandelierp calcule todo esto automáticamente por ti,
 hay un link en bio para probarlo 14 días gratis.
 Yo te configuro todo en una videollamada."
 ```

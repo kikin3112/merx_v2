@@ -1,7 +1,7 @@
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || '573019365537';
 
 export default function WhatsAppButton() {
-  const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent('Hola, necesito ayuda con ChandeliERP')}`;
+  const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent('Hola, necesito ayuda con chandelierp')}`;
 
   return (
     <a

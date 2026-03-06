@@ -1,7 +1,7 @@
-# Merx v2: CRM Module Master Plan (v1.0)
+# chandelierp: CRM Module Master Plan (v1.0)
 
 **Date:** 2026-02-13
-**Objective:** Implement a **Manual CRM Module** within the existing Merx v2 ERP. This module functions as a distinct extension for commercial management, leveraging existing data (Clients/Users) without altering core ERP logic.
+**Objective:** Implement a **Manual CRM Module** within the existing chandelierp ERP. This module functions as a distinct extension for commercial management, leveraging existing data (Clients/Users) without altering core ERP logic.
 
 > **Scope Note:** This roadmap explicitly excludes AI/LLM features. The focus is on operational efficiency, manual control, and reporting.
 
