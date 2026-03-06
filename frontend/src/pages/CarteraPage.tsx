@@ -224,9 +224,9 @@ function SummaryCard({ label, value, sub, color }: { label: string; value: strin
   };
   return (
     <div className={`rounded-xl border p-4 ${colors[color] || 'cv-card'}`}>
-      <p className="text-xs font-medium cv-muted mb-1">{label}</p>
-      <p className="text-xl font-bold cv-text">{value}</p>
-      <p className="text-xs cv-muted mt-0.5">{sub}</p>
+      <div className="bento-kpi-label">{label}</div>
+      <div className="bento-kpi-val">{value}</div>
+      <div className="bento-kpi-delta">{sub}</div>
     </div>
   );
 }

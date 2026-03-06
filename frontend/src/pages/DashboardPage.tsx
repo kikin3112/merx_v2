@@ -33,10 +33,10 @@ function KPICard({ title, value, subtitle, color }: {
   color: string;
 }) {
   return (
-    <div className="cv-card p-5">
-      <p className="text-sm font-medium cv-muted">{title}</p>
-      <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
-      <p className="text-xs cv-muted mt-1">{subtitle}</p>
+    <div className="bento-cell">
+      <div className="bento-kpi-label">{title}</div>
+      <div className={`bento-kpi-val ${color}`}>{value}</div>
+      <div className="bento-kpi-delta">{subtitle}</div>
     </div>
   );
 }

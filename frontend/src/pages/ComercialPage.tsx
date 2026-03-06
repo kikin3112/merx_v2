@@ -272,9 +272,9 @@ export default function ComercialPage() {
             { label: 'Por cobrar', value: resumen.por_cobrar, colorClass: 'cv-primary' },
             { label: 'Facturado este mes', value: resumen.facturado_mes, colorClass: 'text-[var(--cv-positive)]' },
           ].map((kpi) => (
-            <div key={kpi.label} className="cv-card p-4">
-              <p className="text-xs font-medium cv-muted mb-1">{kpi.label}</p>
-              <p className={`text-xl font-bold ${kpi.colorClass}`}>{formatCurrency(Number(kpi.value))}</p>
+            <div key={kpi.label} className="bento-cell">
+              <div className="bento-kpi-label">{kpi.label}</div>
+              <div className={`bento-kpi-val ${kpi.colorClass}`}>{formatCurrency(Number(kpi.value))}</div>
             </div>
           ))}
         </div>
