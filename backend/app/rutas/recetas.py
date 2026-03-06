@@ -721,10 +721,12 @@ async def consultar_socia(
     try:
         if not request.messages:
             # Fase 1: análisis inicial estructurado
-            return await servicio.analisis_inicial(
+            result = await servicio.analisis_inicial(
                 receta_id=receta_id,
                 precio_referencia=request.precio_referencia,
             )
+            db.commit()  # persist socia_cache + socia_cache_key
+            return result
         else:
             # Fase 2: chat conversacional libre
             messages_dicts = [{"role": m.role, "content": m.content} for m in request.messages]
