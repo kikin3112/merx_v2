@@ -1,1 +1,1 @@
-"""Tests package for Chandelier ERP/POS."""
+"""Tests package for chandelierp."""

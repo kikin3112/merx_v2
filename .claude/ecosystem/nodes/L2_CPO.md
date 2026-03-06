@@ -19,7 +19,7 @@
 
 ## Purpose
 
-Ensure MERX v2 builds the **right product** for micro/SMEs, with relentless **customer obsession**, using **RICE scoring** for prioritization and **Design Thinking** for discovery.
+Ensure chandelierp builds the **right product** for micro/SMEs, with relentless **customer obsession**, using **RICE scoring** for prioritization and **Design Thinking** for discovery.
 
 ---
 

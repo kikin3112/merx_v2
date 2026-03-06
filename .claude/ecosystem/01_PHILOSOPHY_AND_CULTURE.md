@@ -1,6 +1,6 @@
 # 01 — Philosophy & Culture
 
-> The soul of the MERX v2 ecosystem. Every decision, every interaction, every line of code must reflect these principles.
+> The soul of the chandelierp ecosystem. Every decision, every interaction, every line of code must reflect these principles.
 
 ---
 

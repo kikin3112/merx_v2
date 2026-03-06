@@ -1,6 +1,6 @@
 # Guía de Implementación: Auditoría y Atribución de Transacciones
 
-Esta guía detalla cómo implementar el registro de "quién" y "cuándo" para todas las transacciones del sistema (Ventas, POS, Cotizaciones, Inventario), siguiendo las mejores prácticas de la industria y aprovechando la arquitectura existente de MERX v2.
+Esta guía detalla cómo implementar el registro de "quién" y "cuándo" para todas las transacciones del sistema (Ventas, POS, Cotizaciones, Inventario), siguiendo las mejores prácticas de la industria y aprovechando la arquitectura existente de chandelierp.
 
 ## 1. Análisis del Estado Actual
 

@@ -88,7 +88,7 @@ Phase 1 is fully complete. The following 6 decisions are locked and documented i
 | 2 — IA Costeo | claude-haiku-4-5 via Anthropic API | LOCKED |
 | 3 — PDF Branding | ReportLab extend + S3 activate | LOCKED |
 | 4 — Pagos Locales | Wompi unified gateway | LOCKED |
-| 5 — WhatsApp | BSP (WATI/360dialog) + shared Merx number | LOCKED |
+| 5 — WhatsApp | BSP (WATI/360dialog) + shared chandelierp number | LOCKED |
 | 6 — Freemium | Clerk publicMetadata + FastAPI decorator | LOCKED |
 | 7 — DIAN | Static Markdown + claude-haiku-4-5 contextual | LOCKED |
 

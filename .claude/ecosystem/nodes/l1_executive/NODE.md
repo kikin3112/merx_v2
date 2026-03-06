@@ -1,6 +1,6 @@
 # L1 — CEO / Founder / CTO
 
-> The visionary and final authority of the MERX v2 ecosystem.
+> The visionary and final authority of the chandelierp ecosystem.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## Purpose
 
-Set the **strategic vision**, ensure **technical integrity**, and build the **culture** that enables MERX v2 to become the default ERP for micro/SMEs in Colombia and LATAM.
+Set the **strategic vision**, ensure **technical integrity**, and build the **culture** that enables chandelierp to become the default ERP for micro/SMEs in Colombia and LATAM.
 
 ---
 

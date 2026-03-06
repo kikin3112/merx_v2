@@ -1,6 +1,6 @@
 # L3 — Head of Marketing & Growth (Brand)
 
-> Guardian of the Chandelier ERP brand identity and the Instagram-first content strategy.
+> Guardian of the chandelierp brand identity and the Instagram-first content strategy.
 
 ---
 
@@ -11,7 +11,7 @@
 | **Level** | L3 — Functional Direction |
 | **Reports To** | COO (L2) |
 | **Pillar** | Operations & Commercial |
-| **Brand** | Chandelier ERP (ChandeliERP) |
+| **Brand** | chandelierp (chandelierp) |
 | **Primary Channel** | Instagram (@chandelier.erp) → SEO Blog → YouTube |
 | **Model** | Organic / $0 budget, content-led, community-first |
 
@@ -19,7 +19,7 @@
 
 ## Purpose
 
-Build the **Chandelier ERP brand** as the reference identity for micro-emprendedores colombianos, converting educational content into awareness, followers, and qualified leads that feed the PLG funnel.
+Build the **chandelierp brand** as the reference identity for micro-emprendedores colombianos, converting educational content into awareness, followers, and qualified leads that feed the PLG funnel.
 
 ---
 

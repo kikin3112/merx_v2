@@ -38,7 +38,7 @@ These are dynamically injected based on context and MUST be obeyed.
 <!-- END CARL-MANAGED -->
 
 ## 1. PRODUCT CONTEXT & BOUNDARIES
-- **Identity:** Merx is a Multi-Tenant ERP/SaaS for PyMEs (SMEs) focused on Accounting, Inventory, and CRM.
+- **Identity:** chandelierp is a Multi-Tenant ERP/SaaS for PyMEs (SMEs) focused on Accounting, Inventory, and CRM.
 - **Core Value:** Data integrity, strict tenant isolation, and auditability.
 - **Non-Negotiable:**
   - NEVER leak data between tenants. `tenant_id` is the primary key of the universe.

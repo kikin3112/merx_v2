@@ -50,7 +50,7 @@ export async function Testimonials() {
             Lo que dicen nuestros clientes
           </h2>
           <p className="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">
-            Empresas reales usando ChandeliERP todos los días.
+            Empresas reales usando chandelierp todos los días.
           </p>
         </div>
 

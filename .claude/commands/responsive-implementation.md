@@ -1,4 +1,4 @@
-# Plan Maestro de Modernización Frontend: Merx V2 Full-Responsive
+# Plan Maestro de Modernización Frontend: chandelierp V2 Full-Responsive
 
 **Fecha:** 14 de Febrero de 2026
 **Estado:** Borrador de Planificación
@@ -6,7 +6,7 @@
 
 ## 1. Resumen Ejecutivo
 
-El objetivo es transformar la interfaz de Merx V2 (actualmente optimizada para escritorio) en una experiencia **Full-Responsive** de clase mundial, priorizando la ergonomía móvil ("Thumb-Driven Design") sin sacrificar la densidad de información requerida en escritorio.
+El objetivo es transformar la interfaz de chandelierp V2 (actualmente optimizada para escritorio) en una experiencia **Full-Responsive** de clase mundial, priorizando la ergonomía móvil ("Thumb-Driven Design") sin sacrificar la densidad de información requerida en escritorio.
 
 > [!IMPORTANT]
 > **PRINCIPIO DE NO REGRESIÓN (ZERO-BREAK POLICY):**

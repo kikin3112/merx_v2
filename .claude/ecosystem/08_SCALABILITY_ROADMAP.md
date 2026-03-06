@@ -1,6 +1,6 @@
 # 08 — Scalability Roadmap
 
-> Growth phases, triggers, headcount projections, and structural evolution for MERX v2.
+> Growth phases, triggers, headcount projections, and structural evolution for chandelierp.
 
 ---
 

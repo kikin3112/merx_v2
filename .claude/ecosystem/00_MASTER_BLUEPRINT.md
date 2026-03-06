@@ -1,4 +1,4 @@
-# 🏛️ MERX v2 / Chandelier ERP — Ecosystem Master Blueprint
+# 🏛️ chandelierp / chandelierp — Ecosystem Master Blueprint
 
 > **Version**: 1.0 | **Last Updated**: 2026-02-25
 > **Classification**: Foundational Document — Living System
@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This document is the **master index** and **structural overview** of the MERX v2 / Chandelier ERP organizational ecosystem. It serves as the single source of truth for navigating the complete set of operational manuals, governance protocols, and node definitions.
+This document is the **master index** and **structural overview** of the chandelierp / chandelierp organizational ecosystem. It serves as the single source of truth for navigating the complete set of operational manuals, governance protocols, and node definitions.
 
 ---
 

@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     # APLICACIÓN
     # ============================================================================
 
-    APP_NAME: str = Field(default="MERX - Sistema contable para PyMEs", max_length=100)
+    APP_NAME: str = Field(default="chandelierp", max_length=100)
 
     APP_VERSION: str = Field(
         default="1.0.0", pattern=r"^\d+\.\d+\.\d+$", description="Versión semántica (MAJOR.MINOR.PATCH)"

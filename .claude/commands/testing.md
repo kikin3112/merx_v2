@@ -1,6 +1,6 @@
 # Chandelier - Framework de Testing
 
-Guía completa de testing para el proyecto Chandelier ERP.
+Guía completa de testing para el proyecto chandelierp.
 
 ## Setup
 

@@ -4,7 +4,7 @@
 
 ## 1. Resumen Ejecutivo
 
-El módulo contable actual de **Merx v2** opera como un sistema funcional básico con capacidades de asientos manuales, contabilización automática de ventas/anulaciones y balance de prueba. Sin embargo, presenta brechas significativas frente al estado del arte 2025 en:
+El módulo contable actual de **chandelierp** opera como un sistema funcional básico con capacidades de asientos manuales, contabilización automática de ventas/anulaciones y balance de prueba. Sin embargo, presenta brechas significativas frente al estado del arte 2025 en:
 
 - **Modelado contable**: Sin terceros en asientos, sin centros de costo, sin períodos contables, sin cierre fiscal
 - **Integridad transaccional**: Códigos de cuentas PUC hardcodeados, sin uso de `ConfiguracionContable`, sin validaciones de período

@@ -1,6 +1,6 @@
 """
 Capítulo 1: Quick Start (Inicio Rápido)
-Ayuda a nuevos usuarios a comenzar con Chandelier ERP/POS en menos de 5 minutos.
+Ayuda a nuevos usuarios a comenzar con chandelierp en menos de 5 minutos.
 """
 
 from typing import List
@@ -34,16 +34,16 @@ class QuickStartChapter:
 
         # Introducción
         chapter.add_intro(
-            "Este capítulo te guiará para comenzar a usar ChandeliERP en menos de 5 minutos. "
+            "Este capítulo te guiará para comenzar a usar chandelierp en menos de 5 minutos. "
             "Aprenderás a acceder al sistema, iniciar sesión y navegar por el dashboard principal."
         )
 
         chapter.add_spacer(0.3)
 
-        # Sección 1: ¿Qué es Chandelier ERP/POS?
+        # Sección 1: ¿Qué es chandelierp?
         chapter.add_section(
-            "1.1 ¿Qué es ChandeliERP?",
-            "Chandelier es un sistema ERP/POS diseñado específicamente para microempresas de "
+            "1.1 ¿Qué es chandelierp?",
+            "chandelierp es un sistema ERP/POS diseñado específicamente para microempresas de "
             "velas y aromáticos en Colombia. Incluye gestión de productos, inventario, facturas, "
             "cotizaciones, clientes y contabilidad básica. El sistema es multi-tenant, lo que significa "
             "que cada empresa tiene su propio espacio de trabajo seguro.",
@@ -51,7 +51,7 @@ class QuickStartChapter:
 
         chapter.add_section(
             "1.2 Requisitos del Sistema",
-            "Para usar Chandelier necesitas:\n"
+            "Para usar chandelierp necesitas:\n"
             "<br/>• Navegador web actualizado (Chrome, Firefox, Edge o Safari)\n"
             "<br/>• Conexión a internet estable\n"
             "<br/>• Credenciales de acceso proporcionadas por tu administrador",
@@ -64,7 +64,7 @@ class QuickStartChapter:
 
         chapter.add_step_list(
             [
-                "Abre tu navegador e ingresa la URL de Chandelier proporcionada por tu empresa",
+                "Abre tu navegador e ingresa la URL de chandelierp proporcionada por tu empresa",
                 "En la pantalla de login, ingresa tu correo electrónico y contraseña",
                 "Si perteneces a varias empresas, selecciona el tenant (empresa) al que deseas acceder",
                 "Una vez autenticado, verás el dashboard principal",

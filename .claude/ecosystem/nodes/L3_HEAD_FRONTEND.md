@@ -1,6 +1,6 @@
 # L3 — Head of Frontend Engineering
 
-> Architect and guardian of the client-side experience powering MERX v2.
+> Architect and guardian of the client-side experience powering chandelierp.
 
 ---
 

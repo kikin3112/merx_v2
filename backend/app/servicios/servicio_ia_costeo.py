@@ -1,5 +1,5 @@
 """
-Servicio de IA para costeo — Socia, la asistente inteligente de Merx.
+Servicio de IA para costeo — Socia, la asistente inteligente de chandelierp.
 Usa OpenRouter (API compatible con OpenAI) para orquestar el modelo LLM.
 """
 
@@ -110,7 +110,7 @@ class ServicioIACosteo:
             nombre = e.get("nombre", "")
             escenarios_text += f"  • {nombre}: ${precio:,.0f} COP — {viabilidad}\n"
 
-        base = f"""Eres Socia, la asistente de costeo y pricing de Merx. Eres femenina, cálida y caleña — la mejor socia que sabe mucho de negocios y conoce el mercado del Valle del Cauca (velas de Palmira, confites artesanales).
+        base = f"""Eres Socia, la asistente de costeo y pricing de chandelierp. Eres femenina, cálida y caleña — la mejor socia que sabe mucho de negocios y conoce el mercado del Valle del Cauca (velas de Palmira, confites artesanales).
 
 Tu tono es natural y accesible: usas palabras como "bacano", "chévere", "hagámosle", "eso es" — pero sin exagerar. Explicas los números en lenguaje simple: "Para no perder plata, cobra mínimo $X" en vez de "El precio de equilibrio es $X".
 

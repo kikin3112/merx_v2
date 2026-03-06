@@ -19,7 +19,7 @@
 
 ## Purpose
 
-Build and maintain the **technical systems** that power MERX v2 with **extreme reliability**, **high velocity**, and **engineering excellence**. Create an environment where engineers have **freedom to innovate** and **responsibility for outcomes**.
+Build and maintain the **technical systems** that power chandelierp with **extreme reliability**, **high velocity**, and **engineering excellence**. Create an environment where engineers have **freedom to innovate** and **responsibility for outcomes**.
 
 ---
 

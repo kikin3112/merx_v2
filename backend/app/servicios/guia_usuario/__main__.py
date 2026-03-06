@@ -34,7 +34,7 @@ from backend.app.servicios.guia_usuario.generator import GeneratorGuiaUsuario
 from backend.app.servicios.guia_usuario.styles import get_styles
 
 VERSION = "1.0"
-CHANDELIER_NAME = "ChandeliERP"
+CHANDELIER_NAME = "chandelierp"
 
 
 def generate_complete_guide(output_path: str = "guia_usuario.pdf") -> None:
@@ -53,7 +53,7 @@ def generate_complete_guide(output_path: str = "guia_usuario.pdf") -> None:
     # Add title page
     print("  - Agregando página de título...")
     gen.add_title_page(
-        title="Guía de Usuario ChandeliERP",
+        title="Guía de Usuario chandelierp",
         subtitle="Sistema ERP/POS multi-tenant para microempresas",
         version=f"Versión {VERSION} - {date.today().strftime('%B %Y').title()}",
         tenant_name=CHANDELIER_NAME,
@@ -110,7 +110,7 @@ def main() -> None:
     """
     # Parse arguments
     parser = argparse.ArgumentParser(
-        description="Genera la guía de usuario de ChandeliERP en formato PDF.",
+        description="Genera la guía de usuario de chandelierp en formato PDF.",
         prog="python -m backend.app.servicios.guia_usuario",
     )
 

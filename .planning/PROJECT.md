@@ -1,4 +1,4 @@
-# Merx v2 — Project State
+# chandelierp — Project State
 
 **Last Updated:** 2026-03-04
 **Active Milestone:** Propuesta de Valor 2026 (v2.0)

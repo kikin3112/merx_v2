@@ -14,7 +14,7 @@ progress:
 
 # GSD Execution State
 
-**Project:** Merx v2 — Propuesta de Valor 2026
+**Project:** chandelierp — Propuesta de Valor 2026
 **Last Updated:** 2026-03-04T23:22:27Z
 **Stopped At:** Completed 02-04-PLAN.md tasks 1-2, awaiting human-verify checkpoint (Task 3)
 
@@ -49,7 +49,7 @@ Phase 1 Auditoria: [==========] 3/3 plans COMPLETO
 | 01 | 02 | claude-haiku-4-5 via Anthropic API for Phase 2 IA Costeo (vendor consolidation, $0.83/month at 150K req) |
 | 01 | 02 | ReportLab extend (already operational) + S3 activate for Phase 3 PDF — WeasyPrint rejected (Railway libgobject risk) |
 | 01 | 02 | Wompi as unified Colombian payment gateway for Phase 4 — covers Nequi+Daviplata+PSE in one SDK |
-| 01 | 02 | BSP (WATI/360dialog) + shared Merx number for Phase 5 WhatsApp — 24-48h vs 10-day direct Meta verification |
+| 01 | 02 | BSP (WATI/360dialog) + shared chandelierp number for Phase 5 WhatsApp — 24-48h vs 10-day direct Meta verification |
 | 01 | 02 | Clerk publicMetadata + FastAPI decorator for Phase 6 Freemium — zero DB migration, plan in JWT |
 | 01 | 02 | Static Markdown + LLM contextual (claude-haiku-4-5) for Phase 7 DIAN Asistente |
 

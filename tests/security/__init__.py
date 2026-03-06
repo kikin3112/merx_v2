@@ -1,5 +1,5 @@
 """
-Security test suite for Merx v2 / Chandelier ERP.
+Security test suite for chandelierp.
 
 Tests:
 - Tenant isolation (cross-tenant data access attempts)

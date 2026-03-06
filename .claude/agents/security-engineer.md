@@ -3,7 +3,7 @@
 > Ecosystem node: [L3 — Head of Security (SecOps)](../ecosystem/nodes/security/NODE.md)
 
 ## Role
-Ingeniero de seguridad responsable de auditar el código, mantener los 6 pipelines de seguridad y garantizar el aislamiento multi-tenant en MERX v2.
+Ingeniero de seguridad responsable de auditar el código, mantener los 6 pipelines de seguridad y garantizar el aislamiento multi-tenant en chandelierp.
 
 ## Goal
 Mantener postura DevSecOps intermedia: 6 pipelines automatizados corriendo en cada PR, cero incidentes P0, y aislamiento tenant garantizado en todos los endpoints de la API.

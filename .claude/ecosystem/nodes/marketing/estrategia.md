@@ -1,4 +1,4 @@
-# Estrategia de Lanzamiento: ChandeliERP
+# Estrategia de Lanzamiento: chandelierp
 ## Para Founder Solo · Presupuesto $0 · Pre-Revenue
 
 > **Versión:** 2.0 — Febrero 2026
@@ -46,7 +46,7 @@ La estrategia v1.0 fue un ejercicio aspiracional desconectado de la realidad. Es
 
 ### 2.1 Mensaje Central
 
-> **"ChandeliERP es el sistema que te dice exactamente cuánto te cuesta cada vela — y cuánto deberías cobrar."**
+> **"chandelierp es el sistema que te dice exactamente cuánto te cuesta cada vela — y cuánto deberías cobrar."**
 
 No es un "ERP completo". No es "facturación DIAN". Es **la calculadora de rentabilidad que todo cerero necesita y nadie tiene**.
 
@@ -71,7 +71,7 @@ Cada feature listada aquí **existe y funciona** en la versión actual:
 | Siigo | ~$100.000/mes | ❌ | ✅ | ❌ | ✅ (DIAN) |
 | Katana MRP | ~$350.000/mes | ✅ | ❌ | ❌ | ❌ |
 | Craftybase | ~$120.000/mes | ✅ | ❌ | ❌ | ❌ |
-| **ChandeliERP** | **Desde $5.000/mes** | **✅** | **✅** | **✅** | **Parcial** |
+| **chandelierp** | **Desde $5.000/mes** | **✅** | **✅** | **✅** | **Parcial** |
 
 **Ventaja:** Nadie ofrece BOM + POS + CRM integrados a precio accesible para micro-cereros colombianos.
 
@@ -233,7 +233,7 @@ Canales ordenados por velocidad de impacto. Todos son orgánicos y ejecutables p
 2. Introducción (problema que resuelve)
 3. Contenido educativo real (que el cerero aprenda algo útil)
 4. Ejemplo con números reales
-5. CTA suave: "Si quieres automatizar este cálculo, prueba ChandeliERP gratis 14 días → [link]"
+5. CTA suave: "Si quieres automatizar este cálculo, prueba chandelierp gratis 14 días → [link]"
 
 **Calendario editorial (primeras 8 semanas):**
 
@@ -291,7 +291,7 @@ Canales ordenados por velocidad de impacto. Todos son orgánicos y ejecutables p
 | Tipo | Ejemplo | Frecuencia |
 |---|---|---|
 | **"¿Sabías que...?"** | "¿Sabías que la merma de fragancia puede ser hasta 15%? Eso significa que de cada $100.000 en fragancia, $15.000 se evaporan. Literalmente." | 1/semana |
-| **Antes/Después** | Pantalla dividida: cuaderno con números borrosos vs dashboard de ChandeliERP con datos en tiempo real | 1/semana |
+| **Antes/Después** | Pantalla dividida: cuaderno con números borrosos vs dashboard de chandelierp con datos en tiempo real | 1/semana |
 | **Tips de cerería** | "3 formas de reducir la merma de cera de soya" (contenido útil con sutil product placement) | 1/semana |
 
 **Hashtags base:** `#velasartesanales` `#cereria` `#emprendimiento` `#cali` `#negociopropio` `#velascolombia` `#handmadecandles` `#emprendedorescali` `#pyme`
@@ -367,7 +367,7 @@ El usuario se considera "activado" cuando completa al menos 3 de estos 5 hitos e
 
 > Hola [nombre], tu período de prueba terminó hoy.
 >
-> Te cuento cómo funciona: ChandeliERP es "paga lo que quieras". Tú decides cuánto vale el servicio para ti cada mes. El mínimo es $5.000 COP (menos que un café).
+> Te cuento cómo funciona: chandelierp es "paga lo que quieras". Tú decides cuánto vale el servicio para ti cada mes. El mínimo es $5.000 COP (menos que un café).
 >
 > No hay funciones bloqueadas — todo lo que usaste estas 2 semanas sigue igual.
 >
@@ -417,7 +417,7 @@ El usuario se considera "activado" cuando completa al menos 3 de estos 5 hitos e
 | **1** | "¿Cómo te fue esta semana? ¿Registraste ventas en el POS?" |
 | **2** | "Tip: revisa tu cartera — ¿hay alguien que te debe de hace más de 30 días?" |
 | **3** | "¿Has probado el CRM? Si tienes clientes frecuentes, te ayuda a no perder pedidos." |
-| **4** | "¡Un mes usando ChandeliERP! ¿Cómo te sientes? ¿Hay algo que mejorarías?" |
+| **4** | "¡Un mes usando chandelierp! ¿Cómo te sientes? ¿Hay algo que mejorarías?" |
 
 Después del primer mes: check-in quincenal, luego mensual (en la conversación de cobro PWYW).
 
@@ -499,7 +499,7 @@ No forzar la expansión. Dejar que el SEO y el boca a boca hagan su trabajo.
 
 ### 9.2 Cuándo Declarar Product-Market Fit
 
-PMF no es un número mágico. Para ChandeliERP, hay señales claras:
+PMF no es un número mágico. Para chandelierp, hay señales claras:
 
 - **3+ usuarios pagan >$20.000/mes voluntariamente** durante 2+ meses consecutivos
 - **Los usuarios usan el sistema sin que les recuerdes** (ingresan solos)

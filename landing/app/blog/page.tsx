@@ -5,8 +5,8 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Blog — ChandeliERP',
-  description: 'Artículos sobre candelería, gestión de PyMEs y novedades de ChandeliERP.',
+  title: 'Blog — chandelierp',
+  description: 'Artículos sobre candelería, gestión de PyMEs y novedades de chandelierp.',
 };
 
 export default function BlogPage() {

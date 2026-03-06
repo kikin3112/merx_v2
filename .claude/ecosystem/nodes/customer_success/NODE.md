@@ -1,6 +1,6 @@
 # L3 — Head of Customer Success & Support
 
-> Ensures every tenant gets maximum value from MERX v2. Turns users into advocates.
+> Ensures every tenant gets maximum value from chandelierp. Turns users into advocates.
 
 ---
 

@@ -65,7 +65,7 @@ Questions to answer:
 - Meta Cloud API directo: requisitos de verificación de negocio, tiempo de aprobación WABA
 - BSP Colombia: WATI, Infobip, Treble.ai — comparativa pricing conversaciones de servicio vs utilidad
 - Precio por conversación en Colombia 2026 (Meta pricing actualizado)
-- Modelo: número compartido Merx (1 WABA, sender name = tenant) vs número propio por tenant
+- Modelo: número compartido chandelierp (1 WABA, sender name = tenant) vs número propio por tenant
 - Template requirements: factura enviada, pago confirmado — proceso de aprobación Meta
 
 Decision needed: **BSP vs direct + número compartido vs por tenant + costo mensual estimado**

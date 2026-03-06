@@ -66,7 +66,7 @@ export default function CalificacionModal({ onClose }: Props) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
-          <h2 className="text-lg font-bold text-gray-900">Califica ChandeliERP</h2>
+          <h2 className="text-lg font-bold text-gray-900">Califica chandelierp</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"

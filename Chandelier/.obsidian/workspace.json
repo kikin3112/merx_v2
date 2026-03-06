@@ -8,17 +8,17 @@
         "type": "tabs",
         "children": [
           {
-            "id": "62c88e7d1951643b",
+            "id": "9384b546d51b27ec",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "1.0.4.md",
+                "file": "PROPUESTA DE VALOR.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "1.0.4"
+              "title": "PROPUESTA DE VALOR"
             }
           }
         ]
@@ -44,7 +44,7 @@
                 "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Files"
+              "title": "Explorador de archivos"
             }
           },
           {
@@ -174,17 +174,21 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
     }
   },
-  "active": "62c88e7d1951643b",
+  "active": "9384b546d51b27ec",
   "lastOpenFiles": [
+    "PROPUESTA DE VALOR.md",
+    "5-03-26.md",
+    "1.0.x.md",
+    "Sin título.md",
     "1.0.3.md",
     "Untitled.md",
     "1.0.4.md",

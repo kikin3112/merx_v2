@@ -1,6 +1,6 @@
 # 04 — Strategic Objectives
 
-> Three-horizon strategic plan with measurable North Star metrics for MERX v2.
+> Three-horizon strategic plan with measurable North Star metrics for chandelierp.
 
 ---
 

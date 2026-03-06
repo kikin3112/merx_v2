@@ -44,7 +44,7 @@ function LegacyLoginForm({ onBack }: LegacyFormProps) {
         <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500 flex items-center justify-center mb-4">
           <span className="text-white text-2xl font-bold">C</span>
         </div>
-        <h1 className="font-brand text-2xl font-medium cv-text">ChandeliERP</h1>
+        <h1 className="font-brand text-2xl font-medium cv-text">chandelierp</h1>
         <p className="text-sm cv-muted mt-1">ERP para cerer@s hecho con &lt;3</p>
       </div>
 

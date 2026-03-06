@@ -1,4 +1,4 @@
-# ChandeliERP — Estrategia de Marca e Instagram
+# chandelierp — Estrategia de Marca e Instagram
 ## Documento Base para Ejecución desde Cero
 
 > **Versión:** 1.0 — Febrero 2026
@@ -11,7 +11,7 @@
 ## 1.1 Propuesta de Valor
 
 ### Propuesta Central
-> **"ChandeliERP es el sistema que convierte tu pasión por las velas en un negocio que te paga bien — y te devuelve tiempo para vivir."**
+> **"chandelierp es el sistema que convierte tu pasión por las velas en un negocio que te paga bien — y te devuelve tiempo para vivir."**
 
 ### Descomposición por capa:
 
@@ -39,7 +39,7 @@ El Mago toma lo que parece complicado o caótico y lo transforma en algo ordenad
 
 **Por qué encaja perfectamente:**
 - El dolor del cerero es el caos (números sin sentido, inventario perdido, tiempo evaporado)
-- ChandeliERP no solo "organiza datos" — **transforma** un negocio artesanal en una empresa profesional
+- chandelierp no solo "organiza datos" — **transforma** un negocio artesanal en una empresa profesional
 - La sensación que genera en el usuario es: "¿Cómo no usé esto antes?"
 - El software hace que cosas difíciles (costeo, contabilidad, cartera) se sientan fáciles y casi mágicas
 
@@ -61,7 +61,7 @@ El Sabio aporta conocimiento real y práctico. No vende, enseña.
 
 ### Los 5 atributos de carácter:
 
-| Atributo | Qué significa para ChandeliERP |
+| Atributo | Qué significa para chandelierp |
 |---|---|
 | **Cálido** | Habla como un amigo que entiende tu negocio, no como un banco o una consultora. |
 | **Directo** | Sin rodeos. Te dice el número exacto, el dato real, la verdad que tu cuaderno no te puede dar. |
@@ -106,7 +106,7 @@ El Sabio aporta conocimiento real y práctico. No vende, enseña.
 
 ### La Historia Maestra (Brand Story)
 
-Toda la comunicación de ChandeliERP es una variación de esta historia:
+Toda la comunicación de chandelierp es una variación de esta historia:
 
 ---
 
@@ -121,7 +121,7 @@ Toda la comunicación de ChandeliERP es una variación de esta historia:
 >
 > El problema no era su arte. El problema era que nadie le había dado las herramientas para gestionar lo que había construido.
 >
-> ChandeliERP nació para ella.
+> chandelierp nació para ella.
 > Para que sepa exactamente cuánto le cuesta cada vela.
 > Para que su inventario no se agote sin aviso.
 > Para que las cuentas cuadren al final del mes.
@@ -144,7 +144,7 @@ Cada post, cada Reel, cada caption es una versión pequeña de esta historia:
 
 ### Nombre del concepto: **"La Llama que Organiza"**
 
-> Una llama no solo da luz — organiza la oscuridad. ChandeliERP es la llama que le da luz a tu negocio: revela los costos, ilumina las deudas, organiza el caos.
+> Una llama no solo da luz — organiza la oscuridad. chandelierp es la llama que le da luz a tu negocio: revela los costos, ilumina las deudas, organiza el caos.
 
 Este concepto conecta:
 - El mundo visual de las velas (llama, luz, cera, calor)
@@ -183,7 +183,7 @@ Una llama de vela cuya base es una línea de tendencia ascendente (como un gráf
 2. **Elemento oculto:** La parte inferior izquierda de la llama forma una línea que sube de izquierda a derecha — solo se percibe conscientemente si la buscas, pero el subconsciente lo registra como "crecimiento"
 3. **Geometría base:** Construida sobre una rejilla de 5×8 (proporción áurea aplicada)
 4. **Trazo:** Monolíneo de grosor uniforme (no tiene variaciones de grosor) — moderno, limpio, reproducible a cualquier escala
-5. **Versión con texto:** El isotipo (llama) va a la izquierda; el logotipo (ChandeliERP) a la derecha
+5. **Versión con texto:** El isotipo (llama) va a la izquierda; el logotipo (chandelierp) a la derecha
 
 ### Logotipo (tipografía):
 
@@ -196,7 +196,7 @@ Una llama de vela cuya base es una línea de tendencia ascendente (como un gráf
 - **Evitar:** Cualquier tipografía que parezca "techie" (monospace, futurista) — rompe con el mundo artesanal
 
 ### Variantes del logo:
-1. **Full:** Isotipo + "ChandeliERP" (horizontal)
+1. **Full:** Isotipo + "chandelierp" (horizontal)
 2. **Compacto:** Isotipo + "Chandeli" (para espacios pequeños)
 3. **Solo isotipo:** La llama sola (perfil de Instagram, favicon)
 4. **Versión oscura:** Llama ámbar sobre fondo medianoche
@@ -262,7 +262,7 @@ Una llama de vela cuya base es una línea de tendencia ascendente (como un gráf
 ## 1.9 Sistema Visual para Instagram
 
 ### Filosofía del feed:
-> El feed de ChandeliERP debe sentirse como entrar a un taller de velas profesional: hay orden y calidez al mismo tiempo. Cada pieza tiene su lugar. Nada está tirado.
+> El feed de chandelierp debe sentirse como entrar a un taller de velas profesional: hay orden y calidez al mismo tiempo. Cada pieza tiene su lugar. Nada está tirado.
 
 ### Reglas de composición:
 
@@ -349,7 +349,7 @@ Merma del 10% = $10.000 que literalmente se evaporan
 La mayoría no lo hace.
 ```
 
-**CTA:** "Guarda este post antes de fijar tu próximo precio. Y si quieres que el sistema calcule la merma automáticamente, prueba ChandeliERP 14 días gratis — link en bio."
+**CTA:** "Guarda este post antes de fijar tu próximo precio. Y si quieres que el sistema calcule la merma automáticamente, prueba chandelierp 14 días gratis — link en bio."
 
 **Formato:** Carrusel (5 slides): slide 1 = hook impactante, slides 2-4 = explicación visual del cálculo, slide 5 = solución + CTA
 
@@ -373,7 +373,7 @@ Esta vela te cuesta $3.780.
 Saber el número lo cambia todo.
 ```
 
-**Caption:** "El problema nunca fue que no supieras hacer velas. El problema era que nadie te había dado el número exacto. ChandeliERP te da ese número."
+**Caption:** "El problema nunca fue que no supieras hacer velas. El problema era que nadie te había dado el número exacto. chandelierp te da ese número."
 
 **CTA:** "¿Sabes cuál es tu margen real en tu vela más vendida? Coméntalo abajo."
 
@@ -409,7 +409,7 @@ Saber el número lo cambia todo.
 - El dashboard mostrando la cifra del día en tiempo real
 - La cerera cerrando la maleta y sonriendo — "ya sé cuánto gané"
 
-**Caption:** "Antes del ChandeliERP: llegar a casa a contar efectivo, restar costos a mano, rezar para que los números cuadren. Ahora: el sistema lo sabe antes que tú llegues a casa."
+**Caption:** "Antes del chandelierp: llegar a casa a contar efectivo, restar costos a mano, rezar para que los números cuadren. Ahora: el sistema lo sabe antes que tú llegues a casa."
 
 ---
 
@@ -443,7 +443,7 @@ Ahora sé exactamente lo que gané.
 Y es una sensación que no tiene precio."
 ```
 
-**Caption:** "La claridad financiera no es solo un número. Es poder dormir tranquila. Es saber si puedes comprar más insumos la próxima semana. Es tener el control de tu propio negocio. Eso es lo que ChandeliERP quiere darte."
+**Caption:** "La claridad financiera no es solo un número. Es poder dormir tranquila. Es saber si puedes comprar más insumos la próxima semana. Es tener el control de tu propio negocio. Eso es lo que chandelierp quiere darte."
 
 **Sin CTA directo de venta en este post.** El poder está en que resuene.
 
@@ -478,7 +478,7 @@ El inventario desorganizado cuesta dinero de dos formas:
 1. Comprando insumos que ya tenías (capital muerto)
 2. Quedándote sin stock justo cuando más vendes (ventas perdidas)
 
-Con ChandeliERP, cada venta que registras descuenta los insumos automáticamente.
+Con chandelierp, cada venta que registras descuenta los insumos automáticamente.
 Siempre sabes exactamente cuánto te queda — sin contar físicamente.
 ```
 
@@ -597,7 +597,7 @@ glowing softly. Warm amber lighting. Artisanal aesthetic.
 **Ritmo:** Pausa emocional — los frames se ralentizan
 
 **Acción visual:**
-Un teléfono celular entra al cuadro desde el borde derecho. En su pantalla: el dashboard de ChandeliERP. Los números del teléfono coinciden exactamente con los números calculados en la escena anterior. La mano del teléfono es la misma que apuntaba antes — hay continuidad.
+Un teléfono celular entra al cuadro desde el borde derecho. En su pantalla: el dashboard de chandelierp. Los números del teléfono coinciden exactamente con los números calculados en la escena anterior. La mano del teléfono es la misma que apuntaba antes — hay continuidad.
 
 El cuaderno caótico de la escena 1 sale lentamente del cuadro. Fuera de escena.
 
@@ -683,11 +683,11 @@ Warm amber and cream tones. This is the emotional peak of the video.
 **Acción visual:**
 Retorno al overhead. La mesa de trabajo está perfecta: velas ordenadas, el teléfono con el dashboard visible, la taza de café. Todo en armonía visual.
 
-El logo de ChandeliERP aparece — la llama-gráfico — flotando suavemente sobre la escena como si fuera la llama de una de las velas.
+El logo de chandelierp aparece — la llama-gráfico — flotando suavemente sobre la escena como si fuera la llama de una de las velas.
 
 **Texto en pantalla:**
 ```
-ChandeliERP
+chandelierp
 Tu negocio, en orden.
 ```
 
@@ -708,7 +708,7 @@ Prueba gratis 14 días.
 **Subtexto más pequeño:**
 ```
 Yo te ayudo a configurar todo.
-— El equipo de ChandeliERP
+— El equipo de chandelierp
 ```
 
 **Música:** Silencio casi total — solo la última nota del piano, larga.
@@ -762,7 +762,7 @@ Crear más.
 Descansar más.
 Estar más presente.
 
-ChandeliERP le devuelve tiempo a las cereras artesanales
+chandelierp le devuelve tiempo a las cereras artesanales
 calculando automáticamente lo que antes tomaba horas:
 el costo de cada vela, el control del inventario,
 las cuentas al día.
@@ -803,6 +803,6 @@ Yo te configuro todo en una videollamada de 30 min.
 ---
 
 > **Principio rector de toda la estrategia:**
-> La cuenta no es sobre ChandeliERP — es sobre el mundo de las velas y quienes las hacen.
-> ChandeliERP es solo la herramienta que aparece cuando la cerera está lista para escuchar.
+> La cuenta no es sobre chandelierp — es sobre el mundo de las velas y quienes las hacen.
+> chandelierp es solo la herramienta que aparece cuando la cerera está lista para escuchar.
 > Ganar esa confianza primero. Vender después.

@@ -1,5 +1,5 @@
 
-# MERX v2
+# chandelierp
 
 <div align="center">
 
@@ -26,7 +26,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 
-# Security Guide — Merx v2 / Chandelier ERP
+# Security Guide — chandelierp / chandelierp
 
 ## Para contribuyentes: configuración inicial (5 minutos)
 

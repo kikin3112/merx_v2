@@ -1,6 +1,6 @@
 # L3 — Head of Backend Engineering
 
-> Architect and guardian of the server-side systems powering MERX v2.
+> Architect and guardian of the server-side systems powering chandelierp.
 
 ---
 

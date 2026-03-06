@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   const post = getPostBySlug(slug);
   if (!post) return { title: 'Post no encontrado' };
   return {
-    title: `${post.title} — ChandeliERP Blog`,
+    title: `${post.title} — chandelierp Blog`,
     description: post.excerpt,
     openGraph: {
       title: post.title,

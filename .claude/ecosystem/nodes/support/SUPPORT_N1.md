@@ -16,7 +16,7 @@
 
 ## Purpose
 
-Provide **fast, friendly first-line support** for MERX v2 users. Resolve basic incidents and route complex issues to N2.
+Provide **fast, friendly first-line support** for chandelierp users. Resolve basic incidents and route complex issues to N2.
 
 ---
 

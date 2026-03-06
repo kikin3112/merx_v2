@@ -141,8 +141,8 @@ export default function EmpresaWizardPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <img src="/logo.png" alt="ChandeliERP logo" className="h-10 w-10 rounded-full object-cover" />
-            <span className="font-brand text-3xl font-medium text-[var(--cv-primary)]">ChandeliERP</span>
+            <img src="/logo.png" alt="chandelierp logo" className="h-10 w-10 rounded-full object-cover" />
+            <span className="font-brand text-3xl font-medium text-[var(--cv-primary)]">chandelierp</span>
           </div>
           <h1 className="font-brand text-2xl font-medium cv-text">Registra tu empresa</h1>
           <p className="text-sm cv-muted mt-1">14 días de prueba gratuita</p>
