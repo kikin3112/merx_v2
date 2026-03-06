@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chandelierp — Dashboard Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cv-bg:           #484848;
+  --cv-surface:      #3A3A3A;
+  --cv-elevated:     #525252;
+  --cv-border:       rgba(255,255,255,0.08);
+  --cv-border-mid:   rgba(255,255,255,0.14);
+  --cv-text:         #F5F5F5;
+  --cv-muted:        #A8A8A8;
+  --cv-primary:      #FF9B65;
+  --cv-primary-dim:  rgba(255,155,101,0.15);
+  --cv-accent:       #FFE680;
+  --cv-accent-dim:   rgba(255,230,128,0.15);
+  --cv-positive:     #BDFFA8;
+  --cv-positive-dim: rgba(189,255,168,0.15);
+  --cv-negative:     #FF7A7A;
+  --cv-negative-dim: rgba(255,122,122,0.15);
+  --font-sans:  'Inter', system-ui, sans-serif;
+  --font-brand: 'Plus Jakarta Sans', 'CreatoDisplay', sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  background: #1A1A1A;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:0.015; pointer-events:none; z-index:0;
+}
+
+/* ── Layout ── */
+.mockup-page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px 64px;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.mockup-col { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.phone-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(168,168,168,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.phone-frame {
+  width: 375px;
+  height: 812px;
+  background: var(--cv-bg);
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 32px 96px rgba(0,0,0,0.6), 0 0 0 1px var(--cv-border-mid);
+  flex-shrink: 0;
+}
+.phone-screen {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-width: none;
+}
+.phone-screen::-webkit-scrollbar { display: none; }
+
+/* ── CV utilities ── */
+.cv-card { background:var(--cv-surface); border:1px solid var(--cv-border); border-radius:.75rem; }
+.cv-badge { display:inline-flex; align-items:center; gap:.375rem; padding:.125rem .625rem; font-size:.75rem; font-weight:500; border-radius:9999px; }
+.cv-badge-positive { background:var(--cv-positive-dim); color:var(--cv-positive); }
+.cv-badge-negative { background:var(--cv-negative-dim); color:var(--cv-negative); }
+.cv-badge-accent   { background:var(--cv-accent-dim);   color:var(--cv-accent); }
+.cv-nav-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; font-size:14px; font-weight:500; color:var(--cv-muted); text-decoration:none; cursor:pointer; transition:background .15s,color .15s; }
+.cv-nav-item.active { background:var(--cv-primary-dim); color:var(--cv-primary); }
+.cv-nav-item svg { width:20px; height:20px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.5; }
+.cv-icon-btn { background:none; border:none; color:var(--cv-muted); cursor:pointer; padding:6px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.cv-section-label { font-family:var(--font-mono); font-size:.6875rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--cv-primary); }
+.bento-cell { background:var(--cv-surface); border:1px solid var(--cv-border); border-radius:.75rem; padding:14px 16px; }
+.bento-kpi-label { font-size:10px; color:var(--cv-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; font-family:var(--font-mono); }
+.bento-kpi-val { font-family:var(--font-mono); font-size:1.25rem; font-weight:600; letter-spacing:-.03em; line-height:1.1; }
+.bento-kpi-delta { font-size:11px; margin-top:4px; color:var(--cv-muted); }
+.cv-primary  { color:var(--cv-primary); }
+.cv-positive { color:var(--cv-positive); }
+.cv-negative { color:var(--cv-negative); }
+.cv-accent   { color:var(--cv-accent); }
+.cv-text     { color:var(--cv-text); }
+.cv-muted    { color:var(--cv-muted); }
+.font-brand  { font-family:var(--font-brand); }
+.font-mono   { font-family:var(--font-mono); }
+
+/* Chart */
+.chart-tick { font-family:var(--font-sans); font-size:10px; fill:var(--cv-muted); }
+.chart-grid { stroke:var(--cv-border-mid); stroke-dasharray:3 3; }
+
+/* SSE pulse */
+.sse-dot { width:6px; height:6px; border-radius:50%; background:var(--cv-positive); animation:pulse 2s infinite; display:inline-block; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+/* Drawer backdrop */
+.drawer-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.5); z-index:50; }
+/* Drawer panel */
+.drawer-panel {
+  position:absolute; left:0; top:0; bottom:0; width:288px; z-index:51;
+  background:var(--cv-surface);
+  display:flex; flex-direction:column;
+}
+.drawer-divider { border:none; border-top:1px solid var(--cv-border); margin:6px 12px; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+
+  <!-- ══════════ PANTALLA 1: Dashboard móvil ══════════ -->
+  <div class="mockup-col">
+    <div class="phone-label">Dashboard — Vista móvil</div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+
+        <!-- Header top bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--cv-border);background:var(--cv-surface);">
+          <img src="../../marca/logo-grande.png" alt="chandelierp" style="height:24px;object-fit:contain;">
+          <span class="cv-badge cv-badge-positive">
+            <span class="sse-dot"></span>
+            En vivo
+          </span>
+        </div>
+
+        <!-- Scrollable content -->
+        <div style="padding:16px;padding-bottom:100px;">
+
+          <!-- Next Actions -->
+          <p class="cv-section-label" style="margin-bottom:8px;">Próximas acciones</p>
+          <div style="margin-bottom:16px;">
+            <div class="cv-card" style="border-left:4px solid var(--cv-negative);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <p style="font-size:13px;color:var(--cv-text);">3 ventas por facturar ($4.250.000)</p>
+              <span class="cv-badge cv-badge-negative" style="flex-shrink:0;font-size:11px;">Facturar</span>
+            </div>
+          </div>
+
+          <!-- KPI Grid 2×2 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <div class="bento-cell">
+              <div class="bento-kpi-label">Ventas periodo</div>
+              <div class="bento-kpi-val cv-primary">$18.45M</div>
+              <div class="bento-kpi-delta">47 ventas</div>
+            </div>
+            <div class="bento-cell">
+              <div class="bento-kpi-label">Ventas hoy</div>
+              <div class="bento-kpi-val cv-positive">$1.23M</div>
+              <div class="bento-kpi-delta">6 ventas</div>
+            </div>
+            <div class="bento-cell">
+              <div class="bento-kpi-label">Promedio</div>
+              <div class="bento-kpi-val cv-accent">$392k</div>
+              <div class="bento-kpi-delta">47 ventas</div>
+            </div>
+            <div class="bento-cell">
+              <div class="bento-kpi-label">Alertas stock</div>
+              <div class="bento-kpi-val cv-negative">4</div>
+              <div class="bento-kpi-delta">bajo mínimo</div>
+            </div>
+          </div>
+
+          <!-- Ventas diarias (compact chart) -->
+          <div class="cv-card" style="padding:16px;margin-bottom:16px;">
+            <p style="font-size:13px;font-weight:600;color:var(--cv-text);margin-bottom:12px;">Ventas diarias</p>
+            <svg viewBox="0 0 340 100" width="100%" height="100px">
+              <defs>
+                <linearGradient id="mlg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--cv-primary)" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="var(--cv-primary)" stop-opacity="0.01"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="85" x2="340" y2="85" class="chart-grid"/>
+              <line x1="0" y1="55" x2="340" y2="55" class="chart-grid"/>
+              <line x1="0" y1="25" x2="340" y2="25" class="chart-grid"/>
+              <text x="0" y="99" class="chart-tick">04 feb</text>
+              <text x="115" y="99" class="chart-tick">14 feb</text>
+              <text x="230" y="99" class="chart-tick">24 feb</text>
+              <text x="310" y="99" class="chart-tick">06 mar</text>
+              <polygon fill="url(#mlg)" points="10,60 40,48 70,55 100,40 130,50 160,30 190,45 220,35 250,28 280,40 310,25 330,30 330,85 10,85"/>
+              <polyline fill="none" stroke="var(--cv-primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+                points="10,60 40,48 70,55 100,40 130,50 160,30 190,45 220,35 250,28 280,40 310,25 330,30"/>
+            </svg>
+          </div>
+
+          <!-- Top Clientes (compact) -->
+          <div class="cv-card" style="padding:16px;">
+            <p style="font-size:13px;font-weight:600;color:var(--cv-text);margin-bottom:12px;">Top clientes</p>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--cv-border);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="height:28px;width:28px;border-radius:9999px;background:var(--cv-elevated);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:var(--cv-primary);font-size:11px;font-weight:600;">1</span></div>
+                  <div><p style="font-size:12px;font-weight:500;color:var(--cv-text);">M. Fernanda López</p><p style="font-size:11px;color:var(--cv-muted);">12 compras</p></div>
+                </div>
+                <p style="font-size:12px;font-weight:600;color:var(--cv-text);">$3.840.000</p>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--cv-border);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="height:28px;width:28px;border-radius:9999px;background:var(--cv-elevated);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:var(--cv-primary);font-size:11px;font-weight:600;">2</span></div>
+                  <div><p style="font-size:12px;font-weight:500;color:var(--cv-text);">Artesanías El Dorado</p><p style="font-size:11px;color:var(--cv-muted);">8 compras</p></div>
+                </div>
+                <p style="font-size:12px;font-weight:600;color:var(--cv-text);">$2.950.000</p>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="height:28px;width:28px;border-radius:9999px;background:var(--cv-elevated);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:var(--cv-primary);font-size:11px;font-weight:600;">3</span></div>
+                  <div><p style="font-size:12px;font-weight:500;color:var(--cv-text);">Tienda Aromatic SAS</p><p style="font-size:11px;color:var(--cv-muted);">7 compras</p></div>
+                </div>
+                <p style="font-size:12px;font-weight:600;color:var(--cv-text);">$2.180.000</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BottomNav — fixed to bottom of phone-frame -->
+        <div style="position:absolute;bottom:16px;left:16px;right:16px;z-index:40;">
+          <div style="display:flex;align-items:center;justify-content:space-around;padding:8px 16px;background:var(--cv-surface);border:1px solid var(--cv-border);border-radius:24px;">
+
+            <!-- Dashboard — ACTIVO -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;color:var(--cv-primary);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+              </svg>
+              <span style="font-size:10px;font-weight:500;font-family:var(--font-mono);">Dashboard</span>
+            </div>
+
+            <!-- Gestión -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;color:var(--cv-muted);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
+              </svg>
+              <span style="font-size:10px;font-weight:500;font-family:var(--font-mono);">Gestión</span>
+            </div>
+
+            <!-- FAB CENTER — Iniciales del tenant "LDL" (Luz De Luna) -->
+            <button style="width:48px;height:48px;background:var(--cv-primary);border-radius:14px;box-shadow:0 4px 16px rgba(255,155,101,0.4);color:#1A1A1A;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">
+              <span style="font-family:var(--font-brand);font-size:13px;font-weight:700;color:#1A1A1A;letter-spacing:-.02em;">LDL</span>
+            </button>
+
+            <!-- POS -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;color:var(--cv-muted);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+              </svg>
+              <span style="font-size:10px;font-weight:500;font-family:var(--font-mono);">POS</span>
+            </div>
+
+            <!-- Productos -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;color:var(--cv-muted);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/>
+              </svg>
+              <span style="font-size:10px;font-weight:500;font-family:var(--font-mono);">Productos</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /phone-screen -->
+    </div><!-- /phone-frame -->
+  </div><!-- /mockup-col -->
+
+
+  <!-- ══════════ PANTALLA 2: MobileDrawer abierto ══════════ -->
+  <div class="mockup-col">
+    <div class="phone-label">MobileDrawer — Estado abierto</div>
+    <div class="phone-frame">
+      <div class="phone-screen" style="background:var(--cv-bg);">
+
+        <!-- Faint dashboard content visible behind backdrop -->
+        <div style="padding:16px;opacity:0.3;pointer-events:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-family:var(--font-brand);font-size:18px;font-weight:500;color:var(--cv-text);">Dashboard</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="bento-cell"><div class="bento-kpi-label">Ventas periodo</div><div class="bento-kpi-val cv-primary">$18.45M</div></div>
+            <div class="bento-cell"><div class="bento-kpi-label">Ventas hoy</div><div class="bento-kpi-val cv-positive">$1.23M</div></div>
+          </div>
+        </div>
+
+        <!-- Drawer backdrop -->
+        <div class="drawer-backdrop"></div>
+
+        <!-- Drawer panel -->
+        <div class="drawer-panel">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--cv-border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="height:32px;width:32px;border-radius:8px;background:var(--cv-primary-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-family:var(--font-brand);font-size:14px;font-weight:700;color:var(--cv-primary);">C</span>
+              </div>
+              <div style="min-width:0;">
+                <p style="font-size:13px;font-weight:600;font-family:var(--font-brand);color:var(--cv-text);">Chandelier</p>
+                <p style="font-size:11px;font-family:var(--font-mono);color:var(--cv-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Luz De Luna</p>
+              </div>
+            </div>
+            <button class="cv-icon-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Nav items -->
+          <nav style="flex:1;overflow-y:auto;padding:12px 8px;">
+            <a class="cv-nav-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+              Dashboard
+            </a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>Gestión</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>Ventas</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>POS</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"/></svg>CRM</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>Terceros</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>Catálogo</a>
+            <hr class="drawer-divider">
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/></svg>Productos</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>Inventario</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .28 2.798-1.13 2.798H5.43c-1.41 0-2.13-1.798-1.13-2.798L5 14.5"/></svg>Producción</a>
+            <hr class="drawer-divider">
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>Cartera</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.638 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.119-.786-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z"/></svg>Contabilidad</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z"/><path d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z"/></svg>Reportes</a>
+            <hr class="drawer-divider">
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Config</a>
+            <a class="cv-nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.712 4.33a9.027 9.027 0 011.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 00-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 010 9.424m-4.138-5.976a3.736 3.736 0 00-.88-1.388 3.737 3.737 0 00-1.388-.88m2.268 2.268a3.765 3.765 0 010 2.528m-2.268-4.796a3.765 3.765 0 00-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 01-1.388.88m2.268-2.268l4.138 3.448m0 0a9.027 9.027 0 01-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0l-3.448-4.138m3.448 4.138a9.014 9.014 0 01-9.424 0m5.976-4.138a3.765 3.765 0 01-2.528 0m0 0a3.736 3.736 0 01-1.388-.88 3.737 3.737 0 01-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 01-1.652-1.306 9.027 9.027 0 01-1.306-1.652m0 0l4.138-3.448M4.33 16.712a9.014 9.014 0 010-9.424m4.138 5.976a3.765 3.765 0 010-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 011.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 00-1.652 1.306A9.025 9.025 0 004.33 7.288"/></svg>Soporte</a>
+          </nav>
+
+          <!-- User footer -->
+          <div style="border-top:1px solid var(--cv-border);padding:12px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;">
+              <div style="height:32px;width:32px;border-radius:9999px;background:var(--cv-elevated);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:12px;font-weight:600;font-family:var(--font-mono);color:var(--cv-primary);">C</span>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:13px;font-weight:500;color:var(--cv-text);">chandelierp</p>
+                <p style="font-size:11px;font-family:var(--font-mono);color:var(--cv-muted);">admin</p>
+              </div>
+              <button class="cv-icon-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div><!-- /drawer-panel -->
+
+      </div><!-- /phone-screen -->
+    </div><!-- /phone-frame -->
+  </div><!-- /mockup-col -->
+
+</div><!-- /mockup-page -->
+</body>
+</html>
