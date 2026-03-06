@@ -113,29 +113,22 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Tenant / product logo inferior */}
-      <div className="px-4 py-3 flex justify-start">
-        <img
-          src={isSuperadminOnly ? '/isotipo.png' : logoSrc}
-          alt={isSuperadminOnly ? 'chandelierp' : logoAlt}
-          className="h-8 w-8 rounded-md object-contain"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/isotipo.png'; }}
-        />
-      </div>
-
       {/* User */}
       <div className="border-t px-3 py-3" style={{ borderColor: 'var(--cv-border)' }}>
         <div className="flex items-center gap-[10px] px-[10px] py-2 rounded-[10px] cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.05)]">
           <div
-            className="h-8 w-8 rounded-[8px] flex items-center justify-center shrink-0"
+            className="h-8 w-8 rounded-[8px] flex items-center justify-center shrink-0 overflow-hidden"
             style={{
               backgroundColor: 'var(--cv-primary-dim)',
               border: '1px solid rgba(255,155,101,0.3)',
             }}
           >
-            <span className="text-xs font-bold font-mono" style={{ color: 'var(--cv-primary)' }}>
-              {user?.nombre?.slice(0, 2).toUpperCase() || 'US'}
-            </span>
+            <img
+              src={isSuperadminOnly ? '/isotipo.png' : logoSrc}
+              alt={isSuperadminOnly ? 'chandelierp' : logoAlt}
+              className="h-full w-full object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/isotipo.png'; }}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-medium truncate" style={{ color: 'var(--cv-text)' }}>{user?.nombre || 'Usuario'}</p>
