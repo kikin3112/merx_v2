@@ -17,6 +17,20 @@ from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer,
 from reportlab.platypus import Image as RLImage
 
 
+def _wcag_text_color(hex_color: str) -> str:
+    """Returns #FFFFFF or #1a1a2e based on WCAG relative luminance.
+
+    Uses simplified formula: luminance = (0.299R + 0.587G + 0.114B) / 255
+    Threshold 0.5 gives readable contrast for both directions.
+    """
+    c = hex_color.lstrip("#")
+    if len(c) != 6:
+        return "#FFFFFF"  # fallback for invalid hex
+    r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return "#FFFFFF" if luminance < 0.5 else "#1a1a2e"
+
+
 def _formato_moneda(valor) -> str:
     """Formatea un valor numérico como pesos colombianos."""
     try:
@@ -108,8 +122,13 @@ class ServicioPDF:
         Args:
             tenant_info: Dict con info del tenant:
                 - nombre, nit, email_contacto, telefono, direccion, ciudad, departamento
+                - color_primario: hex string (e.g. "#1976D2") — optional, defaults to #1976D2
+                - color_secundario: hex string — optional, defaults to #424242
         """
         self.tenant = tenant_info
+        self.primary_color = tenant_info.get("color_primario") or "#1976D2"
+        self.secondary_color = tenant_info.get("color_secundario") or "#424242"
+        self.text_on_primary = _wcag_text_color(self.primary_color)
         self.styles = _crear_estilos()
 
     def _build_header(self, titulo: str, numero: str, fecha: str, fecha_vencimiento: Optional[str] = None) -> list:
