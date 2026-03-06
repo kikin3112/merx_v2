@@ -31,16 +31,13 @@ export default function Sidebar() {
       style={{ backgroundColor: 'var(--cv-surface)', borderColor: 'var(--cv-border)', position: 'relative', zIndex: 1 }}
     >
       {/* Brand */}
-      <div className="flex items-center gap-[10px] px-[10px] py-5 border-b" style={{ borderColor: 'var(--cv-border)' }}>
+      <div className="flex items-center justify-between px-[10px] py-4 border-b" style={{ borderColor: 'var(--cv-border)' }}>
         <img
-          src={logoSrc}
-          alt={logoAlt}
-          className="h-7 w-7 rounded-md object-cover shrink-0"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
+          src="/logo-grande.png"
+          alt="chandelierp"
+          className="h-8 object-contain"
+          style={{ maxWidth: '140px' }}
         />
-        <p className="text-[15px] font-medium truncate font-brand flex-1 min-w-0" style={{ color: 'var(--cv-text)' }}>
-          {isSuperadminOnly ? 'SuperAdmin' : (tenantName || 'chandelierp')}
-        </p>
         <button
           onClick={toggleTheme}
           className="p-1.5 cv-icon-btn shrink-0"
@@ -115,6 +112,16 @@ export default function Sidebar() {
           </button>
         </div>
       )}
+
+      {/* Tenant / product logo inferior */}
+      <div className="px-4 py-3 flex justify-start">
+        <img
+          src={isSuperadminOnly ? '/isotipo.png' : logoSrc}
+          alt={isSuperadminOnly ? 'chandelierp' : logoAlt}
+          className="h-8 w-8 rounded-md object-contain"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/isotipo.png'; }}
+        />
+      </div>
 
       {/* User */}
       <div className="border-t px-3 py-3" style={{ borderColor: 'var(--cv-border)' }}>

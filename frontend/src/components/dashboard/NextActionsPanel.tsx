@@ -12,6 +12,7 @@ import type { Cotizacion, Venta } from '../../types';
 interface PipelineData {
   cotizaciones: Cotizacion[];
   ventas_pendientes: Venta[];
+  ventas_confirmadas: Venta[];
   facturas_recientes: Venta[];
   resumen: { total_cotizado: string; por_cobrar: string; facturado_mes: string };
 }
