@@ -15,7 +15,7 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    name: 'Recetas y BOM',
+    name: 'Producción y BOM',
     description: 'Define fórmulas de producción con ingredientes y costos automáticos.',
     icon: BeakerIcon,
   },
@@ -26,7 +26,7 @@ const features: Feature[] = [
   },
   {
     name: 'Punto de Venta (POS)',
-    description: 'Vende rápido con interfaz optimizada para candelería.',
+    description: 'Vende rápido con interfaz optimizada para solopreneurs.',
     icon: ShoppingCartIcon,
   },
   {
@@ -53,10 +53,10 @@ export function Features() {
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-            Todo lo que necesitas para tu candelería
+            Todo lo que necesitas para tu negocio
           </h2>
           <p className="mt-4 text-lg text-gray-500">
-            Módulos diseñados específicamente para el flujo de trabajo de producción y venta de velas.
+            Módulos diseñados para el flujo de trabajo real de solopreneurs — desde la producción hasta la venta.
           </p>
         </div>
 

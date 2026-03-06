@@ -117,13 +117,13 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
         logger.info("  Superadmin creado: superadmin@chandelier.com / superadmin123")
 
     # Tenant demo
-    tenant = db.query(Tenants).filter(Tenants.slug == "velas-demo").first()
+    tenant = db.query(Tenants).filter(Tenants.slug == "demo").first()
     if not tenant:
         tenant = Tenants(
-            nombre="Velas Aromáticas Demo",
-            slug="velas-demo",
+            nombre="Emprendedora Demo",
+            slug="demo",
             nit="900999999",
-            email_contacto="demo@velasaromaticas.com",
+            email_contacto="demo@emprendedora.co",
             telefono="3001234567",
             direccion="Calle 100 #20-30",
             ciudad="Bogotá",
@@ -141,7 +141,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
     admin = db.query(Usuarios).filter(Usuarios.email == "admin@example.com").first()
     if not admin:
         admin = Usuarios(
-            nombre="Admin Velas Demo",
+            nombre="Admin Demo",
             email="admin@example.com",
             password_hash=hash_password("admin123"),
             rol="admin",
@@ -167,11 +167,11 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
     # El superadmin gestiona tenants sin pertenecer a ellos.
 
     # Operador de prueba
-    operador = db.query(Usuarios).filter(Usuarios.email == "operador@velasaromaticas.com").first()
+    operador = db.query(Usuarios).filter(Usuarios.email == "operador@emprendedora.co").first()
     if not operador:
         operador = Usuarios(
             nombre="Operador Ventas",
-            email="operador@velasaromaticas.com",
+            email="operador@emprendedora.co",
             password_hash=hash_password("operador123"),
             rol="operador",
             estado=True,
@@ -184,7 +184,7 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
             usuario_id=operador.id, tenant_id=tenant.id, rol="vendedor", esta_activo=True, es_default=True
         )
         db.add(rel_op)
-        logger.info("  Operador: operador@velasaromaticas.com / operador123")
+        logger.info("  Operador: operador@emprendedora.co / operador123")
 
     # Suscripción
     sub = db.query(Suscripciones).filter(Suscripciones.tenant_id == tenant.id).first()
@@ -647,9 +647,9 @@ def seed_terceros(db: Session, tenant_id: UUID):
         {
             "tipo_documento": "NIT",
             "numero_documento": "900123456",
-            "nombre": "TIENDA VELAS & AROMAS S.A.S",
+            "nombre": "DISTRIBUIDORA REGIONAL S.A.S",
             "tipo_tercero": "CLIENTE",
-            "email": "tienda@velasyaromas.com",
+            "email": "ventas@distribuidora.co",
             "telefono": "3001234567",
             "direccion": "Calle 100 #20-30, Bogotá",
             "estado": True,
@@ -667,9 +667,9 @@ def seed_terceros(db: Session, tenant_id: UUID):
         {
             "tipo_documento": "NIT",
             "numero_documento": "800987654",
-            "nombre": "PROVEEDOR CERAS Y FRAGANCIAS LTDA",
+            "nombre": "PROVEEDORA INSUMOS LTDA",
             "tipo_tercero": "PROVEEDOR",
-            "email": "ventas@cerasyf.com",
+            "email": "ventas@proveedorainsumos.co",
             "telefono": "6017654321",
             "direccion": "Zona Industrial, Bogotá",
             "estado": True,
@@ -706,15 +706,15 @@ def seed_terceros(db: Session, tenant_id: UUID):
 
 
 def seed_productos(db: Session, tenant_id: UUID):
-    """Crea productos de prueba para candelería."""
+    """Crea productos de prueba genéricos para solopreneurs."""
     logger.info("Creando productos...")
 
     productos = [
         # Materias primas / Insumos
         {
             "codigo_interno": "INS-001",
-            "nombre": "Cera de Soya Vegetal",
-            "descripcion": "Cera de soya 100% natural para velas",
+            "nombre": "Materia Prima A",
+            "descripcion": "Insumo principal de producción",
             "categoria": "Insumo",
             "unidad_medida": "KILOGRAMO",
             "maneja_inventario": True,
@@ -726,8 +726,8 @@ def seed_productos(db: Session, tenant_id: UUID):
         },
         {
             "codigo_interno": "INS-002",
-            "nombre": "Fragancia Lavanda",
-            "descripcion": "Aceite esencial de lavanda para velas",
+            "nombre": "Saborizante Premium",
+            "descripcion": "Saborizante natural para confitería",
             "categoria": "Insumo",
             "unidad_medida": "LITRO",
             "maneja_inventario": True,
@@ -739,10 +739,10 @@ def seed_productos(db: Session, tenant_id: UUID):
         },
         {
             "codigo_interno": "INS-003",
-            "nombre": "Mecha Algodón #4",
-            "descripcion": "Mecha de algodón trenzada para velas",
+            "nombre": "Empaque Kraft 15x20",
+            "descripcion": "Bolsa de empaque artesanal",
             "categoria": "Insumo",
-            "unidad_medida": "METRO",
+            "unidad_medida": "UNIDAD",
             "maneja_inventario": True,
             "porcentaje_iva": Decimal("19.00"),
             "tipo_iva": "Gravado",
@@ -752,8 +752,8 @@ def seed_productos(db: Session, tenant_id: UUID):
         },
         {
             "codigo_interno": "INS-004",
-            "nombre": "Vaso Vidrio 200ml",
-            "descripcion": "Vaso de vidrio para velas aromáticas",
+            "nombre": "Frasco Vidrio 200ml",
+            "descripcion": "Envase de vidrio para producto terminado",
             "categoria": "Insumo",
             "unidad_medida": "UNIDAD",
             "maneja_inventario": True,
@@ -766,8 +766,8 @@ def seed_productos(db: Session, tenant_id: UUID):
         # Productos terminados
         {
             "codigo_interno": "PROD-001",
-            "nombre": "Vela Aromática Lavanda 200g",
-            "descripcion": "Vela aromática de lavanda en vaso de vidrio",
+            "nombre": "Producto Terminado A",
+            "descripcion": "Producto artesanal terminado 200g",
             "categoria": "Producto_Propio",
             "unidad_medida": "UNIDAD",
             "maneja_inventario": True,
@@ -779,8 +779,8 @@ def seed_productos(db: Session, tenant_id: UUID):
         },
         {
             "codigo_interno": "PROD-002",
-            "nombre": "Vela Aromática Vainilla 200g",
-            "descripcion": "Vela aromática de vainilla en vaso de vidrio",
+            "nombre": "Producto Terminado B",
+            "descripcion": "Producto artesanal terminado variante",
             "categoria": "Producto_Propio",
             "unidad_medida": "UNIDAD",
             "maneja_inventario": True,
@@ -994,7 +994,7 @@ def run_all_seeders():
         logger.info(f"  Tenant ID: {tenant_id}")
         logger.info("  Superadmin:  superadmin@chandelier.com / superadmin123")
         logger.info("  Admin:       admin@example.com / admin123")
-        logger.info("  Operador:    operador@velasaromaticas.com / operador123")
+        logger.info("  Operador:    operador@emprendedora.co / operador123")
         logger.info("=" * 60)
 
     except Exception as e:

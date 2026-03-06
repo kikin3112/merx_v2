@@ -653,13 +653,13 @@ class OrdenesProduccionDetalle(TenantMixin, Base):
 
 
 # ============================================================================
-# MODELO: Recetas (BOM - Bill of Materials para produccion de velas)
+# MODELO: Produccion (BOM - Bill of Materials para fabricacion de productos)
 # ============================================================================
 
 
 class Recetas(TenantAuditMixin, Base):
     """
-    Recetas para produccion de velas.
+    Fichas de produccion — BOM (Bill of Materials) para fabricar productos.
     Define los ingredientes necesarios para producir un producto terminado.
     Modelo con multi-tenancy, soft delete y auditoría completa.
     """

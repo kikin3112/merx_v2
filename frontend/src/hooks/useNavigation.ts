@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
   { to: '/catalogo', label: 'Catálogo', icon: BookOpenIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/productos', label: 'Productos', icon: CubeIcon, roles: ['admin', 'operador'] },
   { to: '/inventario', label: 'Inventario', icon: ArchiveBoxIcon, roles: ['admin', 'operador'] },
-  { to: '/recetas', label: 'Recetas', icon: BeakerIcon, roles: ['admin', 'operador'] },
+  { to: '/produccion', label: 'Producción', icon: BeakerIcon, roles: ['admin', 'operador'] },
   { to: '/cartera', label: 'Cartera', icon: CreditCardIcon, roles: ['admin', 'contador'] },
   { to: '/contabilidad', label: 'Contabilidad', icon: CalculatorIcon, roles: ['admin', 'contador'] },
   { to: '/reportes', label: 'Reportes', icon: ChartPieIcon, roles: ['admin', 'contador'] },
@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
 const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> = [
   { id: 'overview', label: null, paths: ['/'] },
   { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros', '/catalogo'] },
-  { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/recetas'] },
+  { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/produccion'] },
   { id: 'finanzas', label: 'Finanzas', paths: ['/cartera', '/contabilidad', '/reportes'] },
   { id: 'empresa', label: 'Empresa', paths: ['/config', '/soporte'] },
 ];

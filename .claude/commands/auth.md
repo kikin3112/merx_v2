@@ -96,4 +96,4 @@ async def mi_endpoint(
 
 - superadmin@chandelier.com / superadmin123
 - admin@example.com / admin123
-- operador@velasaromaticas.com / operador123
+- operador@emprendedora.co / operador123

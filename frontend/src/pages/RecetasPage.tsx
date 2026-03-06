@@ -224,7 +224,7 @@ export default function RecetasPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="font-brand text-xl font-medium cv-text">Recetas para producción</h1>
+          <h1 className="font-brand text-xl font-medium cv-text">Producción</h1>
           <p className="text-xs cv-muted mt-0.5">Costos, precios y análisis con tu Socia</p>
         </div>
         <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function RecetasPage() {
             onClick={() => setShowForm(true)}
             className="cv-btn cv-btn-primary"
           >
-            + Nueva receta
+            + Nueva producción
           </button>
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function RecetasPage() {
       {/* Tabs */}
       <div className="flex border-b cv-divider mb-4 gap-1 overflow-x-auto">
         {([
-          { id: 'recetas', label: '🕯️ Recetas' },
+          { id: 'recetas', label: '🏭 Producción' },
           { id: 'analisis', label: '📊 Análisis' },
           { id: 'indirectos', label: '💡 Gastos' },
         ] as const).map((tab) => (
@@ -329,8 +329,8 @@ export default function RecetasPage() {
             ))}
             {recetasList?.length === 0 && (
               <div className="cv-card p-12 text-center cv-muted">
-                <p className="text-lg mb-2">🕯️ Sin recetas todavía</p>
-                <p className="text-sm">Define materias primas y crea tu primera receta</p>
+                <p className="text-lg mb-2">🏭 Sin producciones todavía</p>
+                <p className="text-sm">Define materias primas y crea tu primera producción</p>
               </div>
             )}
           </div>
@@ -417,8 +417,8 @@ export default function RecetasPage() {
             </>
           ) : (
             <div className="cv-card text-center py-12 cv-muted">
-              <p className="text-lg mb-2">🕯️</p>
-              <p className="text-sm">Crea tu primera receta para acceder al análisis de precios</p>
+              <p className="text-lg mb-2">🏭</p>
+              <p className="text-sm">Crea tu primera producción para acceder al análisis de precios</p>
             </div>
           )}
         </div>
@@ -539,7 +539,7 @@ export default function RecetasPage() {
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej: Vela Aromatica Lavanda 200g"
+                  placeholder="Ej: Crema Corporal 200ml"
                   className="cv-input"
                 />
               </div>
@@ -690,7 +690,7 @@ export default function RecetasPage() {
                 disabled={!nombre || !productoResultadoId || ingredientes.length === 0 || crearMutation.isPending}
                 className="cv-btn cv-btn-primary"
               >
-                {crearMutation.isPending ? 'Creando...' : 'Crear Receta'}
+                {crearMutation.isPending ? 'Creando...' : 'Crear Producción'}
               </button>
             </div>
           </div>

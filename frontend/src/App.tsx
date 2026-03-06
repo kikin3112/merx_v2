@@ -113,12 +113,12 @@ export default function App() {
                   <InventarioPage />
                 </RoleGuard>
               } />
-              <Route path="/recetas" element={
+              <Route path="/produccion" element={
                 <RoleGuard allowedRoles={['admin', 'operador']}>
                   <RecetasPage />
                 </RoleGuard>
               } />
-              <Route path="/recetas/rentabilidad" element={
+              <Route path="/produccion/rentabilidad" element={
                 <RoleGuard allowedRoles={['admin', 'operador']}>
                   <RentabilidadPage />
                 </RoleGuard>

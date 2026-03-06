@@ -8,7 +8,7 @@ export const TUTORIALES: Record<string, TutorialConcepto> = {
   costoIngredientes: {
     titulo: 'Costo de ingredientes',
     explicacion: 'Es cuánto te costó todo lo que le pusiste a tu producto: los materiales, insumos o ingredientes que usaste.',
-    ejemplo: 'Si usaste 500g de harina a $4.000/kg, eso son $2.000 de ingredientes. O 200g de cera de soya a $8.000/kg → $1.600.',
+    ejemplo: 'Si usaste 500g de harina a $4.000/kg, eso son $2.000 de ingredientes. O 100ml de esencia de vainilla a $20.000/litro → $2.000.',
   },
   costoManoObra: {
     titulo: 'Mano de obra',

@@ -189,33 +189,33 @@ export const inventarios = {
 // Recetas
 export const recetas = {
   list: (params?: Record<string, unknown>) =>
-    client.get<Receta[]>('/recetas/', { params }),
-  get: (id: string) => client.get<Receta>(`/recetas/${id}`),
-  create: (data: unknown) => client.post<Receta>('/recetas/', data),
-  update: (id: string, data: unknown) => client.put<Receta>(`/recetas/${id}`, data),
-  delete: (id: string) => client.delete(`/recetas/${id}`),
+    client.get<Receta[]>('/produccion/', { params }),
+  get: (id: string) => client.get<Receta>(`/produccion/${id}`),
+  create: (data: unknown) => client.post<Receta>('/produccion/', data),
+  update: (id: string, data: unknown) => client.put<Receta>(`/produccion/${id}`, data),
+  delete: (id: string) => client.delete(`/produccion/${id}`),
   agregarIngrediente: (id: string, data: unknown) =>
-    client.post<Receta>(`/recetas/${id}/ingredientes`, data),
+    client.post<Receta>(`/produccion/${id}/ingredientes`, data),
   eliminarIngrediente: (recetaId: string, ingredienteId: string) =>
-    client.delete(`/recetas/${recetaId}/ingredientes/${ingredienteId}`),
+    client.delete(`/produccion/${recetaId}/ingredientes/${ingredienteId}`),
   calcularCosto: (id: string) =>
-    client.post<RecetaCosto>(`/recetas/${id}/calcular-costo`),
+    client.post<RecetaCosto>(`/produccion/${id}/calcular-costo`),
   producir: (id: string, data: { cantidad: number; observaciones?: string }) =>
-    client.post<ProduccionResponse>(`/recetas/${id}/producir`, data),
+    client.post<ProduccionResponse>(`/produccion/${id}/producir`, data),
   validarStock: (id: string, cantidad: number) =>
-    client.get(`/recetas/${id}/validar-stock`, { params: { cantidad } }),
+    client.get(`/produccion/${id}/validar-stock`, { params: { cantidad } }),
   consultarEquivalencia: (productoId: string, unidad: string) =>
-    client.get<EquivalenciaUnidad | null>('/recetas/equivalencia', { params: { producto_id: productoId, unidad } }),
+    client.get<EquivalenciaUnidad | null>('/produccion/equivalencia', { params: { producto_id: productoId, unidad } }),
   fijarCosto: (id: string, data: { notas?: string; vigente_desde?: string }) =>
-    client.post<CostoEstandar>(`/recetas/${id}/fijar-costo`, data),
+    client.post<CostoEstandar>(`/produccion/${id}/fijar-costo`, data),
   costoEstandar: (id: string) =>
-    client.get<CostoEstandar | null>(`/recetas/${id}/costo-estandar`),
+    client.get<CostoEstandar | null>(`/produccion/${id}/costo-estandar`),
   consultarSocia: (
     id: string,
     data: { precio_referencia?: number; messages?: ChatMessage[] }
   ) =>
     client.post<SociaAnalisisResponse | SociaChatResponse>(
-      `/recetas/${id}/asistente-ia`,
+      `/produccion/${id}/asistente-ia`,
       data
     ),
 };
