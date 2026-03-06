@@ -45,10 +45,11 @@ from ..datos.esquemas import (
 )
 from ..datos.modelos import Usuarios
 from ..datos.modelos_tenant import Tenants
+from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..servicios.servicio_audit import ServicioAuditLog
 from ..servicios.servicio_tenants import ServicioTenants
 from ..utils.logger import setup_logger
-from ..utils.seguridad import create_access_token, get_current_user, get_superadmin
+from ..utils.seguridad import UserContext, create_access_token, get_current_user, get_superadmin, require_tenant_roles
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -176,6 +177,52 @@ async def obtener_tenant_actual(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
 
     return TenantResponse.model_validate(tenant)
+
+
+@router.post("/me/logo", summary="Subir logo del tenant")
+async def upload_logo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin")),
+):
+    """
+    Sube el logo del tenant actual.
+    Solo admins pueden modificar el logo.
+    Formatos permitidos: JPG, PNG. Tamaño máximo: 2MB.
+    Almacena la S3 key en Tenants.url_logo.
+    """
+    ALLOWED_TYPES = {"image/jpeg", "image/png"}
+    MAX_SIZE = 2 * 1024 * 1024  # 2MB
+
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Formato no permitido. Solo JPG y PNG.",
+        )
+
+    contenido = await file.read()
+    if len(contenido) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Archivo demasiado grande. Máximo 2MB.",
+        )
+
+    extension = "png" if file.content_type == "image/png" else "jpg"
+    storage = ServicioAlmacenamiento()
+    key = storage.subir_imagen(
+        contenido=contenido,
+        tenant_id=str(ctx.tenant_id),
+        sub_path="logo",
+        extension=extension,
+    )
+
+    tenant = db.query(Tenants).filter(Tenants.id == ctx.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant no encontrado")
+
+    tenant.url_logo = key  # Store S3 key (None if S3 disabled — acceptable)
+    db.commit()
+    return {"url_logo": key, "message": "Logo actualizado"}
 
 
 # ============================================================================

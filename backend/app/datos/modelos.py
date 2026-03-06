@@ -162,6 +162,7 @@ class Productos(TenantAuditMixin, Base):
     stock_minimo = Column(Numeric(15, 2))
     stock_maximo = Column(Numeric(15, 2))
     estado = Column(Boolean, default=True, nullable=False)
+    imagen_s3_key = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
