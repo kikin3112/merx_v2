@@ -3,10 +3,54 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
+stopped_at: "Completed 03-01 Task 2 — checkpoint:human-verify reached (Railway S3 confirmation pending)"
+last_updated: "2026-03-06T13:29:12.630Z"
+progress:
+  total_phases: 7
+  completed_phases: 2
+  total_plans: 13
+  completed_plans: 10
+  percent: 77
+---
+
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: milestone
+status: unknown
+stopped_at: Completed 03-02-PLAN.md — PDF branding with tenant colors and S3 logo complete
+last_updated: "2026-03-06T13:27:15.241Z"
+progress:
+  [████████░░] 77%
+  completed_phases: 2
+  total_plans: 13
+  completed_plans: 9
+---
+
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: milestone
+status: unknown
+stopped_at: Completed 02-05-PLAN.md — Phase 2 COMPLETE, all 5 plans executed, Socia validated in production
+last_updated: "2026-03-06T13:27:02.830Z"
+progress:
+  total_phases: 7
+  completed_phases: 2
+  total_plans: 13
+  completed_plans: 9
+  percent: 69
+---
+
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: milestone
+status: unknown
 stopped_at: Completed 02-05-PLAN.md — Phase 2 COMPLETE, all 5 plans executed, Socia validated in production
 last_updated: "2026-03-06T04:30:53.849Z"
 progress:
-  total_phases: 7
+  [███████░░░] 69%
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
@@ -16,7 +60,7 @@ progress:
 
 **Project:** chandelierp — Propuesta de Valor 2026
 **Last Updated:** 2026-03-06T04:26:02Z
-**Stopped At:** Completed 02-05-PLAN.md — Phase 2 COMPLETE, all 5 plans executed, Socia validated in production
+**Stopped At:** Completed 03-01 Task 2 — checkpoint:human-verify reached (Railway S3 confirmation pending)
 
 ---
 
@@ -65,6 +109,10 @@ Phase 2 IA Core:    [==========] 5/5 plans COMPLETO
 - [Phase 02]: Chat history in React local state only, destroyed on modal close (confirmed from 02-03 locked decision)
 - [Phase 02]: OPENROUTER_API_KEY confirmed already set in Railway production — no configuration action needed
 - [Phase 02]: Production smoke test automated via curl (Fase 1 0.63s, Fase 2 0.52s, both HTTP 200) for Luz De Luna tenant VELA VASO recipe
+- [Phase 03]: WCAG luminance threshold 0.5 chosen (simplified formula 0.299R+0.587G+0.114B / 255)
+- [Phase 03]: S3 key detection: NOT startswith('data:') AND NOT startswith('/') — simple and unambiguous
+- [Phase 03]: S3 key stored in Tenants.url_logo (not full URL) — deferred URL resolution to presigned URL helper at render time
+- [Phase 03]: Alembic autogenerate detected imagen_s3_key addition cleanly — migration rev 5694eec66f4b applied locally
 
 ## Performance Metrics
 
@@ -80,8 +128,10 @@ Phase 2 IA Core:    [==========] 5/5 plans COMPLETO
 | Phase 02 P03 | 469 | 2 tasks | 2 files |
 | Phase 02 P04 | 240 | 2 tasks | 4 files |
 | Phase 02 P05 | 480 | 3 tasks | 0 files |
+| Phase 03 P02 | 180 | 2 tasks | 4 files |
+| Phase 03 P01 | 310 | 2 tasks | 6 files |
 
 ## Session Info
 
-**Last session:** 2026-03-06T04:26:02.406Z
+**Last session:** 2026-03-06T13:29:12.627Z
 **Stopped At:** Completed 01-01-PLAN.md (AUDIT.md produced, 494 lines, 6 P0 gaps + 10 P1 gaps documented)

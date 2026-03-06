@@ -89,7 +89,7 @@ generador de catálogo de productos descargable/compartible por WhatsApp.
 
 **Dependencies:** None (independiente de Phase 2)
 
-**Plans:** 5 plans
+**Plans:** 2/5 plans executed
 - [ ] 03-01-PLAN.md — S3 infraestructura + logo upload endpoint + migración Productos
 - [ ] 03-02-PLAN.md — PDF branding: colores tenant + logo S3 + WCAG contrast
 - [ ] 03-03-PLAN.md — ConfigPage pestaña Marca: logo upload UI + color pickers + preview
@@ -193,7 +193,7 @@ recordatorios de declaración, explicaciones de IVA/retenciones en contexto.
 |-------|------|-------------|--------|--------|-------|
 | 1 | Auditoría + Decisiones | R1–R7 | S | Unlock todo | COMPLETO |
 | 2 | 5/5 | COMPLETO   | 2026-03-06 | Alto diferenciador | COMPLETO — OpenRouter confirmed, 61 tests green, Socia E2E validated |
-| 3 | PDF Branded | R4.1, R4.2 | M | Imagen profesional | 5 planes listos — ejecutar `/gsd:execute-phase 03` |
+| 3 | 2/5 | In Progress|  | Imagen profesional | 5 planes listos — ejecutar `/gsd:execute-phase 03` |
 | 4 | Pagos Locales | R3.1–R3.3 | L | Conversión crítica | Requiere: cuenta Wompi producción |
 | 5 | WhatsApp | R2.1, R2.2 | L | Canal de ventas | Requiere: BSP onboarding (1 sem lead time) |
 | 6 | Freemium | R6.1–R6.3 | M | Adquisición masiva | Requiere: Clerk pk_live_* keys |
