@@ -2,53 +2,116 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.chandelierp.com'
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cream via-amber-50 to-white" />
-      <div className="absolute top-0 right-0 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-100/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+    <section className="relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+      {/* Glow orbs */}
+      <div
+        className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,155,101,0.12) 0%, transparent 70%)',
+          transform: 'translate(30%, -30%)',
+        }}
+      />
+      <div
+        className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,230,128,0.07) 0%, transparent 70%)',
+          transform: 'translate(-30%, 30%)',
+        }}
+      />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40">
-        <div className="max-w-3xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-medium mb-8">
-            Hecho para candelerias colombianas
-          </div>
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-28 sm:py-36 lg:py-44">
+        <div className="text-center">
+          {/* Eyebrow mono label */}
+          <p
+            className="inline-block text-xs font-semibold tracking-[0.18em] uppercase mb-8 px-3 py-1 rounded"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--primary)',
+              background: 'var(--primary-dim)',
+            }}
+          >
+            Para solopreneurs colombianos
+          </p>
 
           {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
-            El ERP diseñado para{' '}
-            <span className="bg-gradient-to-r from-amber-600 to-gold-500 bg-clip-text text-transparent">
-              tu candelería
-            </span>
+          <h1
+            className="text-5xl sm:text-6xl lg:text-7xl leading-[1.05] mb-6 animate-fade-up"
+            style={{ fontFamily: 'var(--font-brand)', fontWeight: 500, color: 'var(--text)' }}
+          >
+            Tu negocio,{' '}
+            <span style={{ color: 'var(--primary)' }}>en orden.</span>
           </h1>
 
           {/* Subheading */}
-          <p className="mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            Gestiona inventario, produce con recetas, vende en POS y lleva la contabilidad.
-            Todo en un solo lugar.
+          <p
+            className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-up delay-1"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Inventario, recetas de producción, POS, facturación y contabilidad.
+            Todo conectado. Sin caos.
           </p>
 
           {/* CTAs */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-2">
             <a
               href={`${APP_URL}/registro`}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl bg-amber-500 text-white font-bold text-lg hover:bg-amber-600 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-base transition-all hover:-translate-y-0.5"
+              style={{
+                background: 'var(--primary)',
+                color: '#1A1A1A',
+                boxShadow: '0 4px 24px rgba(255,155,101,0.25)',
+              }}
             >
-              Probar gratis 14 días
+              Probar gratis 14 días →
             </a>
             <a
               href="#video"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-lg hover:border-amber-300 hover:text-amber-600 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-80"
+              style={{
+                border: '1px solid rgba(255,255,255,0.14)',
+                color: 'var(--text-muted)',
+                background: 'var(--surface)',
+              }}
             >
               Ver demo
             </a>
           </div>
 
-          {/* Trust line */}
-          <p className="mt-6 text-sm text-gray-400">
-            Sin tarjeta de crédito. Sin compromiso. Cancela cuando quieras.
+          {/* Trust */}
+          <p
+            className="mt-6 text-xs animate-fade-up delay-3"
+            style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+          >
+            Sin tarjeta de crédito · Sin compromiso · Cancela cuando quieras
           </p>
+
+          {/* Stats strip */}
+          <div
+            className="mt-20 grid grid-cols-3 gap-px rounded-2xl overflow-hidden animate-fade-up delay-4"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
+          >
+            {[
+              { val: '14 días', label: 'prueba gratis' },
+              { val: '$5.000', label: 'desde / mes COP' },
+              { val: '6+', label: 'módulos integrados' },
+            ].map(({ val, label }) => (
+              <div
+                key={label}
+                className="py-6 px-4"
+                style={{ background: 'var(--surface)' }}
+              >
+                <p
+                  className="text-2xl font-bold mb-1"
+                  style={{ fontFamily: 'var(--font-brand)', color: 'var(--primary)' }}
+                >
+                  {val}
+                </p>
+                <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
