@@ -434,7 +434,7 @@ export default function RecetasPage() {
       {/* === Modal: Costo calculado === */}
       {costoInfo && activeTab === 'recetas' && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
-          <div className="cv-card w-full h-full md:h-auto md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
+          <div className="cv-card w-full h-full md:h-auto md:max-h-[90vh] md:rounded-xl shadow-xl md:max-w-md md:mx-4 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b cv-divider">
               <h2 className="text-lg font-semibold cv-text">Costo: {costoInfo.receta_nombre}</h2>
               <button onClick={() => setCostoInfo(null)} className="cv-icon-btn p-2 -mr-1 text-xl">&times;</button>
