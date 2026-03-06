@@ -34,7 +34,7 @@ export interface NavGroup {
 // All items with their group membership
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: ChartBarIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
-  { to: '/comercial', label: 'Gestión', icon: QueueListIcon, roles: ['admin', 'vendedor', 'operador'] },
+  { to: '/comercial', label: 'Comercial', icon: QueueListIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/ventas', label: 'Ventas', icon: ShoppingBagIcon, roles: ['admin', 'vendedor', 'contador', 'operador'] },
   { to: '/pos', label: 'POS', icon: BanknotesIcon, roles: ['admin', 'vendedor', 'operador'] },
   { to: '/crm', label: 'CRM', icon: BriefcaseIcon, roles: ['admin', 'vendedor', 'operador'] },
@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
 // Group structure — semantic sections of the sidebar
 const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> = [
   { id: 'overview', label: null, paths: ['/'] },
-  { id: 'comercial', label: 'Gestión', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros', '/catalogo'] },
+  { id: 'comercial', label: 'Comercial', paths: ['/comercial', '/ventas', '/pos', '/crm', '/terceros', '/catalogo'] },
   { id: 'operaciones', label: 'Operaciones', paths: ['/productos', '/inventario', '/recetas'] },
   { id: 'finanzas', label: 'Finanzas', paths: ['/cartera', '/contabilidad', '/reportes'] },
   { id: 'empresa', label: 'Empresa', paths: ['/config', '/soporte'] },
