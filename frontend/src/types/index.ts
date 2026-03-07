@@ -340,9 +340,9 @@ export interface DetalleAsiento {
 
 export interface BalancePrueba {
   cuentas: BalanceCuenta[];
-  total_debito: number;
-  total_credito: number;
-  diferencia: number;
+  total_debito: string;
+  total_credito: string;
+  diferencia: string;
   balanceado: boolean;
 }
 
@@ -352,9 +352,9 @@ export interface BalanceCuenta {
   nombre: string;
   tipo_cuenta: string;
   naturaleza: string;
-  total_debito: number;
-  total_credito: number;
-  saldo: number;
+  total_debito: string;
+  total_credito: string;
+  saldo: string;
 }
 
 export interface LineaEstadoResultados {

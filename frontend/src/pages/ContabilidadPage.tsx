@@ -261,15 +261,15 @@ export default function ContabilidadPage() {
               <div className="flex flex-wrap items-center gap-4 px-4 py-3 cv-elevated border-b cv-divider">
                 <div className="flex-1 min-w-[100px]">
                   <span className="text-xs cv-muted">Total Debito</span>
-                  <p className="font-semibold cv-text">{formatCurrency(balance.total_debito)}</p>
+                  <p className="font-semibold cv-text">{formatCurrency(parseFloat(balance.total_debito))}</p>
                 </div>
                 <div className="flex-1 min-w-[100px]">
                   <span className="text-xs cv-muted">Total Credito</span>
-                  <p className="font-semibold cv-text">{formatCurrency(balance.total_credito)}</p>
+                  <p className="font-semibold cv-text">{formatCurrency(parseFloat(balance.total_credito))}</p>
                 </div>
                 <div className="flex-1 min-w-[100px]">
                   <span className={`cv-badge ${balance.balanceado ? 'cv-badge-positive' : 'cv-badge-negative'}`}>
-                    {balance.balanceado ? 'Balanceado' : `Diferencia: ${formatCurrency(balance.diferencia)}`}
+                    {balance.balanceado ? 'Balanceado' : `Diferencia: ${formatCurrency(parseFloat(balance.diferencia))}`}
                   </span>
                 </div>
               </div>
@@ -293,10 +293,10 @@ export default function ContabilidadPage() {
                         <td className="font-mono text-xs font-medium">{c.codigo}</td>
                         <td>{c.nombre}</td>
                         <td className="text-xs cv-muted">{c.tipo_cuenta}</td>
-                        <td className="text-right cv-muted">{formatCurrency(c.total_debito)}</td>
-                        <td className="text-right cv-muted">{formatCurrency(c.total_credito)}</td>
-                        <td className={`text-right font-semibold ${c.saldo >= 0 ? '' : 'cv-negative'}`}>
-                          {formatCurrency(c.saldo)}
+                        <td className="text-right cv-muted">{formatCurrency(parseFloat(c.total_debito))}</td>
+                        <td className="text-right cv-muted">{formatCurrency(parseFloat(c.total_credito))}</td>
+                        <td className={`text-right font-semibold ${parseFloat(c.saldo) >= 0 ? '' : 'cv-negative'}`}>
+                          {formatCurrency(parseFloat(c.saldo))}
                         </td>
                       </tr>
                     ))}
@@ -312,13 +312,13 @@ export default function ContabilidadPage() {
                     title={c.nombre}
                     subtitle={`${c.codigo} · ${c.tipo_cuenta}`}
                     badge={
-                      <span className={`cv-badge font-mono ${c.saldo >= 0 ? 'cv-badge-neutral' : 'cv-badge-negative'}`}>
-                        {formatCurrency(c.saldo)}
+                      <span className={`cv-badge font-mono ${parseFloat(c.saldo) >= 0 ? 'cv-badge-neutral' : 'cv-badge-negative'}`}>
+                        {formatCurrency(parseFloat(c.saldo))}
                       </span>
                     }
                     fields={[
-                      { label: 'Debito', value: formatCurrency(c.total_debito) },
-                      { label: 'Credito', value: formatCurrency(c.total_credito) },
+                      { label: 'Debito', value: formatCurrency(parseFloat(c.total_debito)) },
+                      { label: 'Credito', value: formatCurrency(parseFloat(c.total_credito)) },
                     ]}
                   />
                 ))}
