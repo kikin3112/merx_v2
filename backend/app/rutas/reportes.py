@@ -8,7 +8,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session, joinedload
 
 from ..datos.db import get_db
-from ..datos.modelos import Cartera, Compras, Inventarios, Productos, Terceros, Ventas, VentasDetalle
+from ..datos.modelos import Cartera, Inventarios, Productos, Terceros, Ventas, VentasDetalle
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, require_tenant_roles
 
@@ -698,7 +698,7 @@ async def gastos_vs_ingresos(
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
-    """Ingresos (ventas confirmadas/facturadas) vs gastos (compras recibidas) en el período."""
+    """Ingresos (ventas confirmadas/facturadas) vs COGS (costo de lo vendido) en el período."""
     if not fecha_inicio:
         fecha_inicio = date.today() - timedelta(days=30)
     if not fecha_fin:
@@ -706,7 +706,7 @@ async def gastos_vs_ingresos(
 
     ventas = (
         db.query(Ventas)
-        .options(joinedload(Ventas.detalles))
+        .options(joinedload(Ventas.detalles).joinedload(VentasDetalle.producto).joinedload(Productos.inventarios))
         .filter(
             Ventas.tenant_id == ctx.tenant_id,
             Ventas.estado.in_(["CONFIRMADA", "FACTURADA"]),
@@ -716,20 +716,17 @@ async def gastos_vs_ingresos(
         .all()
     )
 
-    compras = (
-        db.query(Compras)
-        .options(joinedload(Compras.detalles))
-        .filter(
-            Compras.tenant_id == ctx.tenant_id,
-            Compras.estado == "RECIBIDA",
-            Compras.fecha_compra >= fecha_inicio,
-            Compras.fecha_compra <= fecha_fin,
-        )
-        .all()
-    )
-
     ingresos = float(sum(v.total_venta for v in ventas))
-    gastos = float(sum(c.total_compra for c in compras))
+
+    # COGS: cantidad vendida × costo_promedio_ponderado por línea
+    cogs = Decimal("0")
+    for venta in ventas:
+        for detalle in venta.detalles:
+            inv = getattr(detalle.producto, "inventarios", None)
+            costo = inv.costo_promedio_ponderado if inv else Decimal("0")
+            cogs += detalle.cantidad * (costo or Decimal("0"))
+
+    gastos = float(cogs)
     margen = ingresos - gastos
     margen_porcentaje = round(margen / ingresos * 100, 1) if ingresos > 0 else 0.0
 
