@@ -153,8 +153,17 @@ def actualizar_venta(db: Session, venta_id: UUID, venta_data: VentasUpdate, tena
         raise ValueError("No se puede modificar una venta anulada")
 
     if venta_data.estado is not None:
-        if venta_data.estado == "ANULADA" and venta.estado == "FACTURADA":
-            raise ValueError("No se puede anular una venta facturada")
+        # State machine: FACTURADA y CONFIRMADA son estados finales vía PATCH.
+        # Las transiciones desde FACTURADA solo ocurren a través de POST /anular.
+        if venta.estado == "FACTURADA":
+            raise ValueError(
+                "No se puede cambiar el estado de una venta facturada por esta vía. "
+                "Use el endpoint POST /anular para anularla."
+            )
+        if venta.estado == "CONFIRMADA" and venta_data.estado == "PENDIENTE":
+            raise ValueError(
+                "No se puede revertir una venta confirmada a PENDIENTE. " "El inventario ya fue descontado."
+            )
         venta.estado = venta_data.estado
 
     if venta_data.observaciones is not None:
@@ -179,7 +188,11 @@ def anular_venta(db: Session, venta_id: UUID, tenant_id: UUID, motivo: str = Non
     if venta.estado == "CONFIRMADA":
         servicio_inv = ServicioInventario(db, tenant_id)
         for detalle in venta.detalles:
-            producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+            producto = (
+                db.query(Productos)
+                .filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id)
+                .first()
+            )
             if producto and producto.maneja_inventario:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -217,7 +230,9 @@ def confirmar_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
     # Descontar inventario
     servicio_inv = ServicioInventario(db, tenant_id)
     for detalle in venta.detalles:
-        producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+        producto = (
+            db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
+        )
         if producto and producto.maneja_inventario:
             servicio_inv.crear_movimiento(
                 producto_id=detalle.producto_id,

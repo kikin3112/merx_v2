@@ -33,7 +33,7 @@ logger = setup_logger(__name__)
 
 def _crear_cartera_cobrar(db: Session, factura: Ventas, tenant_id: UUID):
     """Crea un registro de cartera (cuenta por cobrar) para una factura emitida."""
-    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id, Terceros.tenant_id == tenant_id).first()
     plazo = tercero.plazo_pago_dias if tercero and tercero.plazo_pago_dias else 30
     fecha_venc = factura.fecha_venta + timedelta(days=plazo)
 
@@ -117,7 +117,7 @@ def _get_detalles_pdf(detalles, db: Session, tenant_id: UUID) -> list:
 def _generar_pdf_factura(db: Session, factura: Ventas, tenant_id: UUID) -> bytes:
     """Genera el PDF de una factura."""
     tenant_info = _get_tenant_info(db, tenant_id)
-    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+    tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id, Terceros.tenant_id == tenant_id).first()
     cliente_info = _get_cliente_info(tercero) if tercero else {"nombre": "Cliente"}
     detalles_pdf = _get_detalles_pdf(factura.detalles, db, tenant_id)
 
@@ -196,7 +196,9 @@ async def pos_factura(
     # Descontar inventario
     servicio_inv = ServicioInventario(db, tenant_id)
     for detalle in factura.detalles:
-        producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+        producto = (
+            db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
+        )
         if producto and producto.maneja_inventario:
             try:
                 servicio_inv.crear_movimiento(
@@ -395,7 +397,9 @@ async def emitir_factura(
     # Descontar inventario
     servicio_inv = ServicioInventario(db, tenant_id)
     for detalle in factura.detalles:
-        producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+        producto = (
+            db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
+        )
         if producto and producto.maneja_inventario:
             try:
                 servicio_inv.crear_movimiento(
@@ -517,7 +521,11 @@ async def anular_factura(
     if factura.estado == "FACTURADA":
         servicio_inv = ServicioInventario(db, tenant_id)
         for detalle in factura.detalles:
-            producto = db.query(Productos).filter(Productos.id == detalle.producto_id).first()
+            producto = (
+                db.query(Productos)
+                .filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id)
+                .first()
+            )
             if producto and producto.maneja_inventario:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -528,10 +536,11 @@ async def anular_factura(
                     observaciones=f"Reversión por anulación factura {factura.numero_venta}",
                 )
 
-        # Asiento contable de reversión
+        # Asiento contable de reversión en fecha actual (no en fecha original,
+        # pues el período original puede estar cerrado — E2 fix).
         servicio_cont = ServicioContabilidad(db, tenant_id)
         servicio_cont.crear_asiento_anulacion_venta(
-            fecha=factura.fecha_venta,
+            fecha=date.today(),
             subtotal=factura.subtotal,
             total_iva=factura.total_iva,
             total=factura.total_venta,
