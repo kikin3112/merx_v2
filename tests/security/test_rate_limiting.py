@@ -62,7 +62,7 @@ class TestLoginRateLimit:
         Send RATE_LIMIT+1 login attempts with wrong credentials.
         The (RATE_LIMIT+1)th request should return 429.
         """
-        payload = {"username": "brute@force.com", "password": "wrongpassword"}
+        payload = {"email": "brute@force.com", "password": "wrongpassword"}
         status_codes = []
 
         for i in range(RATE_LIMIT + 2):
@@ -80,7 +80,7 @@ class TestLoginRateLimit:
         After hitting the rate limit, the response should include
         Retry-After or X-RateLimit-Reset header.
         """
-        payload = {"username": "brute2@force.com", "password": "wrongpassword"}
+        payload = {"email": "brute2@force.com", "password": "wrongpassword"}
 
         for _ in range(RATE_LIMIT + 1):
             resp = client.post(LOGIN_URL, json=payload)
@@ -121,12 +121,12 @@ class TestPasswordBruteForce:
         """
         # Non-existent email
         resp1 = client.post(LOGIN_URL, json={
-            "username": "doesnotexist@example.com",
+            "email": "doesnotexist@example.com",
             "password": "wrongpass"
         })
         # Possibly existent but wrong password
         resp2 = client.post(LOGIN_URL, json={
-            "username": "admin@test.com",
+            "email": "admin@test.com",
             "password": "wrongpass"
         })
 

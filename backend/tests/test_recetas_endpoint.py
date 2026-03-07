@@ -53,7 +53,7 @@ async def test_asistente_ia_fase1_returns_schema():
     ):
         client = TestClient(app)
         response = client.post(
-            f"/api/v1/recetas/{receta_id}/asistente-ia",
+            f"/api/v1/produccion/{receta_id}/asistente-ia",
             json={"messages": []},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -89,7 +89,7 @@ async def test_asistente_ia_fase2_returns_respuesta():
     ):
         client = TestClient(app)
         response = client.post(
-            f"/api/v1/recetas/{receta_id}/asistente-ia",
+            f"/api/v1/produccion/{receta_id}/asistente-ia",
             json={"messages": messages},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -119,7 +119,7 @@ async def test_asistente_ia_tenant_isolation():
     ):
         client = TestClient(app)
         response = client.post(
-            f"/api/v1/recetas/{receta_id}/asistente-ia",
+            f"/api/v1/produccion/{receta_id}/asistente-ia",
             json={"messages": []},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -175,7 +175,7 @@ async def test_asistente_ia_invalid_body():
     try:
         client = TestClient(app)
         response = client.post(
-            f"/api/v1/recetas/{receta_id}/asistente-ia",
+            f"/api/v1/produccion/{receta_id}/asistente-ia",
             json={"messages": "not-a-list"},  # invalid: Pydantic expects list[MensajeChat]
             headers={
                 "Authorization": f"Bearer {token}",
