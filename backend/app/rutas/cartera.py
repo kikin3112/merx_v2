@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from sqlalchemy.orm import Session
 from ..datos.db import get_db
 from ..datos.esquemas import CarteraCreate, CarteraResponse, PagoCarteraCreate, PagoCarteraResponse
 from ..datos.modelos import Cartera, MediosPago, PagosCartera
+from ..servicios.servicio_contabilidad import ServicioContabilidad
+from ..utils.constantes_contables import VENTA_CONTADO, VENTA_CREDITO
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, require_tenant_roles
 
@@ -169,6 +172,34 @@ async def registrar_pago(
         cartera.estado = "PAGADA"
     elif cartera.saldo_pendiente < cartera.valor_total:
         cartera.estado = "PARCIAL"
+
+    # Accounting entry: DEBE Caja (VENTA_CONTADO.debito) / HABER CxC (VENTA_CREDITO.debito)
+    try:
+        svc_cont = ServicioContabilidad(db, ctx.tenant_id)
+        cuenta_caja = svc_cont._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
+        cuenta_cxc = svc_cont._obtener_cuenta_configurada(VENTA_CREDITO, "debito")
+        svc_cont.crear_asiento(
+            fecha=data.fecha_pago,
+            tipo_asiento="COBRO_CARTERA",
+            concepto=f"Cobro cartera {cartera_id}",
+            detalles=[
+                {
+                    "cuenta_id": cuenta_caja.id,
+                    "debito": data.valor_pago,
+                    "credito": Decimal("0"),
+                    "descripcion": f"Cobro cartera {cartera_id}",
+                },
+                {
+                    "cuenta_id": cuenta_cxc.id,
+                    "debito": Decimal("0"),
+                    "credito": data.valor_pago,
+                    "descripcion": f"Cancelación CxC {cartera_id}",
+                },
+            ],
+            documento_referencia=str(cartera_id),
+        )
+    except ValueError as e:
+        logger.warning(f"Asiento COBRO_CARTERA no creado para cartera {cartera_id}: {e}")
 
     db.commit()
     db.refresh(pago)

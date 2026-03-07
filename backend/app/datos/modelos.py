@@ -1088,7 +1088,7 @@ class AsientosContables(TenantAuditMixin, Base):
         Index("idx_asientos_tenant_tercero", "tenant_id", "tercero_id"),
         Index("idx_asientos_periodo", "periodo_id"),
         CheckConstraint(
-            "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'OTRO')",
+            "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'COBRO_CARTERA', 'OTRO')",
             name="check_tipo_asiento_valido",
         ),
         CheckConstraint("estado IN ('ACTIVO', 'ANULADO')", name="check_estado_asiento_valido"),
