@@ -535,11 +535,13 @@ async def anular_factura(
                 .first()
             )
             if producto and producto.maneja_inventario:
+                # C-17: usar CPP histórico del detalle; fallback a CPP actual si detalle no tiene costo
+                costo_reversal = detalle.costo_unitario or servicio_inv.obtener_costo_promedio(detalle.producto_id)
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
                     tipo=TipoMovimiento.ENTRADA,
                     cantidad=detalle.cantidad,
-                    costo_unitario=servicio_inv.obtener_costo_promedio(detalle.producto_id),
+                    costo_unitario=costo_reversal,
                     documento_referencia=f"ANUL-{factura.numero_venta}",
                     observaciones=f"Reversión por anulación factura {factura.numero_venta}",
                 )

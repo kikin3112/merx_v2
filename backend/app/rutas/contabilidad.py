@@ -115,15 +115,17 @@ async def estado_resultados(
 async def balance_prueba(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
+    tipo: str = Query("acumulado", pattern="^(acumulado|movimientos)$"),
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Genera balance de prueba.
-    Muestra por cada cuenta con movimiento: total débito, total crédito y saldo.
+    tipo=acumulado (default): saldos históricos acumulados hasta fecha_fin.
+    tipo=movimientos: solo movimientos del período fecha_inicio..fecha_fin.
     """
     servicio = ServicioContabilidad(db, ctx.tenant_id)
-    resultados = servicio.obtener_balance_prueba(fecha_inicio, fecha_fin)
+    resultados = servicio.obtener_balance_prueba(fecha_inicio, fecha_fin, tipo)
 
     # Totales
     total_debito = sum(Decimal(r["total_debito"]) for r in resultados)

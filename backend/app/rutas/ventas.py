@@ -274,7 +274,7 @@ async def facturar_venta_endpoint(
     Si está PENDIENTE, auto-confirma primero (descuenta inventario).
     Luego agrega contabilidad + PDF.
     """
-    venta = obtener_venta(db, venta_id, tenant_id)
+    venta = obtener_venta(db, venta_id, tenant_id, lock=True)  # C-11: lock pesimista anti doble-facturación
 
     # Idempotente: si ya está facturada, retornar sin error
     if venta.estado == "FACTURADA":

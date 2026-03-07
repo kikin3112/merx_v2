@@ -476,7 +476,10 @@ class ServicioContabilidad:
         }
 
     def obtener_balance_prueba(
-        self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None
+        self,
+        fecha_inicio: Optional[date] = None,
+        fecha_fin: Optional[date] = None,
+        tipo: str = "acumulado",
     ) -> List[dict]:
         """
         Genera balance de prueba: para cada cuenta, suma débitos y créditos.
@@ -506,10 +509,16 @@ class ServicioContabilidad:
             )
         )
 
-        if fecha_inicio:
-            query = query.filter(AsientosContables.fecha >= fecha_inicio)
-        if fecha_fin:
-            query = query.filter(AsientosContables.fecha <= fecha_fin)
+        if tipo == "acumulado":
+            # C-06: Saldo histórico acumulado — sin filtro de inicio, solo corte de fecha
+            if fecha_fin:
+                query = query.filter(AsientosContables.fecha <= fecha_fin)
+        else:
+            # Movimientos del período solamente
+            if fecha_inicio:
+                query = query.filter(AsientosContables.fecha >= fecha_inicio)
+            if fecha_fin:
+                query = query.filter(AsientosContables.fecha <= fecha_fin)
 
         query = query.group_by(
             CuentasContables.id,

@@ -1109,10 +1109,10 @@ class AsientosContables(TenantAuditMixin, Base):
 # ============================================================================
 
 
-class DetallesAsiento(TenantMixin, Base):
+class DetallesAsiento(TenantAuditMixin, Base):
     """
     Líneas de asientos contables.
-    Modelo con multi-tenancy.
+    Modelo con multi-tenancy, soft-delete y auditoría completa (C-13).
     """
 
     __tablename__ = "detalles_asiento"
