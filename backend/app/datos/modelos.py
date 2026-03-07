@@ -362,6 +362,7 @@ class VentasDetalle(TenantMixin, Base):
     precio_unitario = Column(Numeric(15, 2), nullable=False)
     descuento = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
     porcentaje_iva = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
+    costo_unitario = Column(Numeric(15, 2), nullable=True, default=Decimal("0.00"))
 
     # Relaciones
     venta = relationship("Ventas", back_populates="detalles")
