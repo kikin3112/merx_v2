@@ -23,6 +23,7 @@ from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_pdf import ServicioPDF
 from ..servicios.servicio_sse import sse_manager
+from ..utils.cufe import formatear_valor_cufe, generar_cufe
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
@@ -405,7 +406,9 @@ async def emitir_factura(
             db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
         )
         if producto and producto.maneja_inventario:
-            cogs_total += detalle.cantidad * servicio_inv.obtener_costo_promedio(detalle.producto_id)
+            cpp = servicio_inv.obtener_costo_promedio(detalle.producto_id)
+            cogs_total += detalle.cantidad * cpp
+            detalle.costo_unitario = cpp  # Persist historical CPP for future reversals (C-01)
             try:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -439,6 +442,29 @@ async def emitir_factura(
                 factura.url_pdf = key
     except Exception as e:
         logger.warning(f"Error generando PDF para factura {factura.numero_venta}: {e}")
+
+    # Generar CUFE (C-23) — Resolución DIAN 000042/2016
+    try:
+        tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+        tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+        if tenant and tenant.nit and tercero:
+            from datetime import datetime as _dt
+
+            llave_tecnica = (tenant.configuracion or {}).get("dian_llave_tecnica", "TEST_LLAVE_TECNICA")
+            tipo_ambiente = (tenant.configuracion or {}).get("dian_tipo_ambiente", "2")
+            factura.cufe = generar_cufe(
+                nit_emisor=tenant.nit.replace("-", "").replace(" ", ""),
+                fecha_hora=_dt.now().strftime("%Y%m%d%H%M%S"),
+                numero_factura=factura.numero_venta,
+                valor_total=formatear_valor_cufe(factura.total_venta),
+                valor_iva=formatear_valor_cufe(factura.total_iva),
+                codigo_tipo_operacion="01",
+                nit_receptor=tercero.numero_documento,
+                tipo_ambiente=tipo_ambiente,
+                llave_tecnica=llave_tecnica,
+            )
+    except Exception as e:
+        logger.warning(f"CUFE no generado para factura {factura.numero_venta}: {e}")
 
     factura.estado = "FACTURADA"
 
@@ -533,17 +559,25 @@ async def anular_factura(
                 .first()
             )
             if producto and producto.maneja_inventario:
+                # C-17: usar CPP histórico del detalle; fallback a CPP actual si detalle no tiene costo
+                costo_reversal = detalle.costo_unitario or servicio_inv.obtener_costo_promedio(detalle.producto_id)
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
                     tipo=TipoMovimiento.ENTRADA,
                     cantidad=detalle.cantidad,
-                    costo_unitario=servicio_inv.obtener_costo_promedio(detalle.producto_id),
+                    costo_unitario=costo_reversal,
                     documento_referencia=f"ANUL-{factura.numero_venta}",
                     observaciones=f"Reversión por anulación factura {factura.numero_venta}",
                 )
 
         # Asiento contable de reversión en fecha actual (no en fecha original,
         # pues el período original puede estar cerrado — E2 fix).
+        # Compute COGS reversal from historical costo_unitario on each detail (C-01)
+        cogs_reversal = Decimal("0")
+        for detalle in factura.detalles:
+            if detalle.costo_unitario and detalle.costo_unitario > 0:
+                cogs_reversal += detalle.cantidad * detalle.costo_unitario
+
         servicio_cont = ServicioContabilidad(db, tenant_id)
         servicio_cont.crear_asiento_anulacion_venta(
             fecha=date.today(),
@@ -552,6 +586,7 @@ async def anular_factura(
             total=factura.total_venta,
             documento_referencia=factura.numero_venta,
             tercero_id=factura.tercero_id,
+            cogs=cogs_reversal if cogs_reversal > 0 else None,  # C-01 fix
         )
 
     factura.estado = "ANULADA"

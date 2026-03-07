@@ -1,9 +1,10 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
@@ -12,6 +13,19 @@ from ..datos.modelos import AsientosContables
 from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, require_tenant_roles
+
+
+class AperturaItem(BaseModel):
+    cuenta_id: UUID
+    debito: Decimal = Decimal("0")
+    credito: Decimal = Decimal("0")
+
+
+class AsientoAperturaRequest(BaseModel):
+    fecha: date
+    concepto: str = "Asiento de apertura"
+    saldos: List[AperturaItem]
+
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -115,15 +129,17 @@ async def estado_resultados(
 async def balance_prueba(
     fecha_inicio: Optional[date] = Query(None),
     fecha_fin: Optional[date] = Query(None),
+    tipo: str = Query("acumulado", pattern="^(acumulado|movimientos)$"),
     db: Session = Depends(get_db),
     ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
 ):
     """
     Genera balance de prueba.
-    Muestra por cada cuenta con movimiento: total débito, total crédito y saldo.
+    tipo=acumulado (default): saldos históricos acumulados hasta fecha_fin.
+    tipo=movimientos: solo movimientos del período fecha_inicio..fecha_fin.
     """
     servicio = ServicioContabilidad(db, ctx.tenant_id)
-    resultados = servicio.obtener_balance_prueba(fecha_inicio, fecha_fin)
+    resultados = servicio.obtener_balance_prueba(fecha_inicio, fecha_fin, tipo)
 
     # Totales
     total_debito = sum(Decimal(r["total_debito"]) for r in resultados)
@@ -137,3 +153,47 @@ async def balance_prueba(
         "diferencia": str(diferencia),
         "balanceado": abs(diferencia) < Decimal("0.01"),
     }
+
+
+@router.get("/balance-general")
+async def balance_general(
+    fecha_corte: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
+):
+    """
+    C-21: Balance General (Estado de Situación Financiera) a una fecha de corte.
+    Activos (1xxx), Pasivos (2xxx), Patrimonio (3xxx).
+    Verifica ecuación contable: activos = pasivos + patrimonio.
+    """
+    servicio = ServicioContabilidad(db, ctx.tenant_id)
+    return servicio.obtener_balance_general(fecha_corte)
+
+
+@router.post("/asiento-apertura", status_code=status.HTTP_201_CREATED)
+async def crear_asiento_apertura(
+    data: AsientoAperturaRequest,
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
+):
+    """
+    C-07: Crea asiento de apertura para registrar saldos iniciales históricos.
+    Tipo APERTURA — bypasses anti-hopping check para fechas del pasado.
+    Los saldos deben estar balanceados: sum(debito) == sum(credito).
+    """
+    servicio = ServicioContabilidad(db, ctx.tenant_id)
+
+    saldos = [{"cuenta_id": item.cuenta_id, "debito": item.debito, "credito": item.credito} for item in data.saldos]
+
+    try:
+        asiento = servicio.crear_asiento_apertura(
+            fecha=data.fecha,
+            saldos=saldos,
+            concepto=data.concepto,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db.commit()
+    db.refresh(asiento)
+    return asiento

@@ -19,6 +19,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..datos.audit_listeners import set_current_user_id
 from ..datos.db import get_db
 from ..datos.modelos import Usuarios
 from ..utils.logger import set_request_context, setup_logger
@@ -335,8 +336,9 @@ def get_current_user(
     if not user.estado:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
-    # Establecer contexto de usuario para logging
+    # Establecer contexto de usuario para logging y auditoría (A-11)
     set_request_context(user_id=str(user.id))
+    set_current_user_id(user.id)
 
     return user
 
@@ -423,8 +425,9 @@ def get_current_user_with_tenant(
                 status_code=status.HTTP_403_FORBIDDEN, detail="El tenant_id del header no coincide con el del token"
             )
 
-    # Establecer contexto de usuario para logging
+    # Establecer contexto de usuario para logging y auditoría (A-11)
     set_request_context(user_id=str(user.id))
+    set_current_user_id(user.id)
 
     return UserContext(user=user, tenant_id=tenant_id, rol_en_tenant=rol_en_tenant)
 

@@ -11,6 +11,23 @@ from ..utils.seguridad import UserContext, require_tenant_roles
 router = APIRouter()
 logger = setup_logger(__name__)
 
+# A-04: Naturaleza esperada de la cuenta DÉBITO por concepto contable (PUC colombiano)
+# Activos/Gastos/COGS = DEBITO. Pasivos/Patrimonio/Ingresos = CREDITO.
+_DEBITO_NATURALEZA_REQUERIDA: dict[str, str] = {
+    "VENTA_CONTADO": "DEBITO",  # 1105 Caja — activo
+    "VENTA_CREDITO": "DEBITO",  # 1305 CxC — activo
+    "COBRO_CARTERA": "DEBITO",  # 1105 Caja — activo
+    "COMPRA_CONTADO": "DEBITO",  # 1435 Inventario — activo
+    "COSTO_VENTAS": "DEBITO",  # 6135 COGS — costo de ventas
+    "PRODUCCION": "DEBITO",  # 1435 Producto terminado — activo
+}
+# Naturaleza esperada de la cuenta CRÉDITO por concepto
+_CREDITO_NATURALEZA_REQUERIDA: dict[str, str] = {
+    "VENTA_CONTADO": "CREDITO",  # 4135 Ventas — ingreso
+    "VENTA_CREDITO": "CREDITO",  # 4135 Ventas — ingreso
+    "IVA_VENTAS": "CREDITO",  # 2408 IVA por pagar — pasivo
+}
+
 
 @router.post("/inicializar")
 async def inicializar_configuracion(
@@ -90,6 +107,17 @@ async def actualizar_configuracion(
         )
         if not cuenta:
             raise HTTPException(status_code=400, detail="Cuenta débito no encontrada")
+        # A-04: validar naturaleza esperada para el concepto
+        if concepto in _DEBITO_NATURALEZA_REQUERIDA:
+            nat_requerida = _DEBITO_NATURALEZA_REQUERIDA[concepto]
+            if cuenta.naturaleza != nat_requerida:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Para {concepto}, la cuenta débito debe tener naturaleza {nat_requerida}. "
+                        f"Cuenta {cuenta.codigo} tiene naturaleza {cuenta.naturaleza}."
+                    ),
+                )
         config.cuenta_debito_id = data.cuenta_debito_id
 
     if data.cuenta_credito_id is not None:
@@ -100,6 +128,17 @@ async def actualizar_configuracion(
         )
         if not cuenta:
             raise HTTPException(status_code=400, detail="Cuenta crédito no encontrada")
+        # A-04: validar naturaleza esperada para el concepto
+        if concepto in _CREDITO_NATURALEZA_REQUERIDA:
+            nat_requerida = _CREDITO_NATURALEZA_REQUERIDA[concepto]
+            if cuenta.naturaleza != nat_requerida:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Para {concepto}, la cuenta crédito debe tener naturaleza {nat_requerida}. "
+                        f"Cuenta {cuenta.codigo} tiene naturaleza {cuenta.naturaleza}."
+                    ),
+                )
         config.cuenta_credito_id = data.cuenta_credito_id
 
     if data.descripcion is not None:

@@ -1361,3 +1361,35 @@ async def subir_logo_tenant(
     )
 
     return TenantResponse.model_validate(tenant)
+
+
+@router.post(
+    "/{tenant_id}/reseed-contabilidad",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(get_superadmin)],
+    summary="Re-siembra config contable para tenant existente (idempotente)",
+)
+async def reseed_configuracion_contable(
+    tenant_id: UUID,
+    db: Session = Depends(get_db),
+    superadmin: Usuarios = Depends(get_superadmin),
+):
+    """
+    Re-aplica cuentas contables y configuración de conceptos (VENTA_CONTADO,
+    COMPRA_CONTADO, etc.) para tenants creados antes del seed automático.
+    Idempotente: sólo inserta lo que falta.
+    """
+    from ..datos.modelos import Tenants
+
+    tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    servicio = ServicioTenants(db)
+    cuentas_map = servicio._seed_cuentas_contables(tenant_id)
+    servicio._seed_configuracion_contable(tenant_id, cuentas_map)
+    servicio._seed_secuencias(tenant_id)
+    servicio._seed_medios_pago(tenant_id)
+    db.commit()
+
+    return {"detail": f"Config contable re-sembrada para tenant {tenant_id}"}

@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -253,6 +254,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # ============================================================================
 # CONFIGURACIÓN DE MIDDLEWARE
 # ============================================================================
+
+# 0. Rate limiting (debe ir antes que todo para rechazar early)
+app.add_middleware(SlowAPIMiddleware)
 
 # 1. Request tracking (debe ser el primero)
 app.add_middleware(RequestContextMiddleware)

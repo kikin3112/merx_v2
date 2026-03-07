@@ -128,9 +128,9 @@ def listar_ventas(
     return query.order_by(Ventas.fecha_venta.desc()).offset(skip).limit(limit).all()
 
 
-def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
-    """Obtiene una venta por ID."""
-    venta = (
+def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID, lock: bool = False) -> Ventas:
+    """Obtiene una venta por ID. Si lock=True, adquiere SELECT FOR UPDATE (previene doble facturación)."""
+    query = (
         db.query(Ventas)
         .options(
             selectinload(Ventas.created_by_user),
@@ -140,8 +140,10 @@ def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID) -> Ventas:
             selectinload(Ventas.envios),
         )
         .filter(Ventas.id == venta_id, Ventas.tenant_id == tenant_id)
-        .first()
     )
+    if lock:
+        query = query.with_for_update()
+    venta = query.first()
 
     if not venta:
         raise HTTPException(status_code=404, detail=f"Venta con ID {venta_id} no encontrada")

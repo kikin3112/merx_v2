@@ -6,7 +6,7 @@ Extrae el user_id del token JWT y lo establece en ContextVar para auditoría aut
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ..datos.audit_listeners import clear_current_user_id, set_current_user_id
+from ..datos.audit_listeners import clear_current_user_id
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -35,42 +35,17 @@ class UserContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """
         Procesa cada request:
-        1. Verifica si la ruta está excluida
-        2. Extrae user_id del request.state (si existe)
-        3. Lo establece en ContextVar para auditoría
-        4. Limpia el contexto al finalizar
+        1. Ejecuta el request (el dependency get_current_user establece el ContextVar)
+        2. Limpia el contexto al finalizar
+
+        A-11: El ContextVar ya es establecido por get_current_user/get_current_user_with_tenant
+        en seguridad.py — más confiable que leer request.state antes de call_next.
         """
-        path = request.url.path
-
-        # Verificar si la ruta está excluida
-        if self._is_excluded_path(path):
-            return await call_next(request)
-
         try:
-            # Intentar extraer user_id del request.state
-            # (get_current_user dependency lo establece)
-            user_id = None
-
-            # El user_id se establece en request.state.current_user cuando
-            # el dependency get_current_user se ejecuta en las rutas protegidas
-            if hasattr(request.state, "current_user"):
-                user = request.state.current_user
-                if hasattr(user, "id"):
-                    user_id = user.id
-                elif isinstance(user, dict) and "id" in user:
-                    user_id = user["id"]
-
-            # Establecer en ContextVar si existe
-            if user_id:
-                set_current_user_id(user_id)
-                logger.debug(f"User context establecido: {user_id}")
-
-            # Procesar request
             response = await call_next(request)
             return response
-
         finally:
-            # Siempre limpiar contexto al terminar
+            # Limpiar siempre al terminar el request
             clear_current_user_id()
 
     def _is_excluded_path(self, path: str) -> bool:

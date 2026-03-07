@@ -166,14 +166,8 @@ async def registrar_pago(
     )
     db.add(pago)
 
-    cartera.saldo_pendiente -= data.valor_pago
-    if cartera.saldo_pendiente <= 0:
-        cartera.saldo_pendiente = 0
-        cartera.estado = "PAGADA"
-    elif cartera.saldo_pendiente < cartera.valor_total:
-        cartera.estado = "PARCIAL"
-
-    # Accounting entry: DEBE Caja (VENTA_CONTADO.debito) / HABER CxC (VENTA_CREDITO.debito)
+    # Accounting entry FIRST — atomic with payment (C-04)
+    # DEBE Caja (VENTA_CONTADO.debito) / HABER CxC (VENTA_CREDITO.debito)
     try:
         svc_cont = ServicioContabilidad(db, ctx.tenant_id)
         cuenta_caja = svc_cont._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
@@ -199,7 +193,19 @@ async def registrar_pago(
             documento_referencia=str(cartera_id),
         )
     except ValueError as e:
-        logger.warning(f"Asiento COBRO_CARTERA no creado para cartera {cartera_id}: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Contabilidad no configurada — configure VENTA_CONTADO y VENTA_CREDITO antes de registrar pagos: {e}",
+        )
+
+    # Update balance only after accounting entry succeeds
+    cartera.saldo_pendiente -= data.valor_pago
+    if cartera.saldo_pendiente <= 0:
+        cartera.saldo_pendiente = Decimal("0")
+        cartera.estado = "PAGADA"
+    elif cartera.saldo_pendiente < cartera.valor_total:
+        cartera.estado = "PARCIAL"
 
     db.commit()
     db.refresh(pago)

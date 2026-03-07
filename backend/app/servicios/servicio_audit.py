@@ -73,8 +73,11 @@ class ServicioAuditLog:
             return log_entry
         except Exception as e:
             audit_db.rollback()
-            logger.error(f"Error registrando audit log: {e}", exc_info=True)
-            # No re-lanzar: el audit log no debe bloquear la operación principal
+            logger.critical(
+                f"AUDIT LOG FAILURE — acción crítica sin trazabilidad: {e}",
+                exc_info=True,
+            )
+            raise  # A-14: fail-fast — no swallow audit failures
         finally:
             audit_db.close()
 

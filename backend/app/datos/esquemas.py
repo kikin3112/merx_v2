@@ -174,11 +174,11 @@ class ProductoUpdate(BaseModel):
     categoria: Optional[str] = None
     unidad_medida: Optional[str] = None
     maneja_inventario: Optional[bool] = None
-    porcentaje_iva: Optional[Decimal] = None
+    porcentaje_iva: Optional[Decimal] = Field(None, ge=0, le=100)
     tipo_iva: Optional[str] = None
-    precio_venta: Optional[Decimal] = None
-    stock_minimo: Optional[Decimal] = None
-    stock_maximo: Optional[Decimal] = None
+    precio_venta: Optional[Decimal] = Field(None, ge=0)
+    stock_minimo: Optional[Decimal] = Field(None, ge=0)
+    stock_maximo: Optional[Decimal] = Field(None, ge=0)
     estado: Optional[bool] = None
 
 
@@ -311,7 +311,7 @@ class VentasCreate(BaseModel):
     fecha_venta: date
     descuento_global: Decimal = Field(default=Decimal("0.00"), ge=0, le=100, description="Descuento global % (0-100)")
     observaciones: Optional[str] = None
-    detalles: List[VentasDetalleCreate]
+    detalles: List[VentasDetalleCreate] = Field(..., min_length=1)
 
 
 class VentasUpdate(BaseModel):
@@ -1242,7 +1242,7 @@ class PagoCarteraBase(BaseModel):
 
 
 class PagoCarteraCreate(PagoCarteraBase):
-    pass
+    cartera_id: Optional[UUID] = None  # viene del path param, no requerido en body
 
 
 class PagoCarteraResponse(PagoCarteraBase):

@@ -72,10 +72,14 @@ class ServicioContabilidad:
 
         return cuenta
 
-    def _validar_periodo(self, fecha: date) -> UUID:
+    def _validar_periodo(self, fecha: date, permitir_retroactivo: bool = False) -> UUID:
         """
         Valida que el período de la fecha esté abierto.
         Auto-crea período ABIERTO si no existe.
+
+        C-08: Si el período no existe y está > 2 meses en el pasado, lanza ValueError
+              a menos que permitir_retroactivo=True (usado por asiento de apertura).
+
         Retorna periodo_id.
         """
         anio, mes = fecha.year, fecha.month
@@ -91,6 +95,18 @@ class ServicioContabilidad:
         )
 
         if not periodo:
+            if not permitir_retroactivo:
+                # C-08: Block entries > 2 months in the past
+                from datetime import date as _hoy
+
+                hoy = _hoy.today()
+                meses_atras = (hoy.year - anio) * 12 + (hoy.month - mes)
+                if meses_atras > 2:
+                    raise ValueError(
+                        f"No se puede crear asiento en período {mes}/{anio}: "
+                        f"está {meses_atras} meses en el pasado. "
+                        f"Use POST /contabilidad/asiento-apertura para saldos iniciales históricos."
+                    )
             periodo = PeriodosContables(tenant_id=self.tenant_id, anio=anio, mes=mes, estado="ABIERTO")
             self.db.add(periodo)
             self.db.flush()
@@ -108,6 +124,7 @@ class ServicioContabilidad:
         detalles: List[dict],
         documento_referencia: Optional[str] = None,
         tercero_id: Optional[UUID] = None,
+        permitir_retroactivo: bool = False,
     ) -> AsientosContables:
         """
         Crea un asiento contable validando que esté balanceado.
@@ -140,7 +157,7 @@ class ServicioContabilidad:
             raise ValueError("El asiento no puede tener todos los valores en cero")
 
         # Validar período contable
-        periodo_id = self._validar_periodo(fecha)
+        periodo_id = self._validar_periodo(fecha, permitir_retroactivo=permitir_retroactivo)
 
         # Generar número
         numero = generar_numero_secuencia(self.db, "ASIENTOS", self.tenant_id)
@@ -476,7 +493,10 @@ class ServicioContabilidad:
         }
 
     def obtener_balance_prueba(
-        self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None
+        self,
+        fecha_inicio: Optional[date] = None,
+        fecha_fin: Optional[date] = None,
+        tipo: str = "acumulado",
     ) -> List[dict]:
         """
         Genera balance de prueba: para cada cuenta, suma débitos y créditos.
@@ -499,13 +519,23 @@ class ServicioContabilidad:
                 AsientosContables,
                 (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
             )
-            .filter(CuentasContables.tenant_id == self.tenant_id, CuentasContables.acepta_movimiento)
+            .filter(
+                CuentasContables.tenant_id == self.tenant_id,
+                CuentasContables.acepta_movimiento,
+                AsientosContables.deleted_at.is_(None),  # C-05: exclude soft-deleted entries
+            )
         )
 
-        if fecha_inicio:
-            query = query.filter(AsientosContables.fecha >= fecha_inicio)
-        if fecha_fin:
-            query = query.filter(AsientosContables.fecha <= fecha_fin)
+        if tipo == "acumulado":
+            # C-06: Saldo histórico acumulado — sin filtro de inicio, solo corte de fecha
+            if fecha_fin:
+                query = query.filter(AsientosContables.fecha <= fecha_fin)
+        else:
+            # Movimientos del período solamente
+            if fecha_inicio:
+                query = query.filter(AsientosContables.fecha >= fecha_inicio)
+            if fecha_fin:
+                query = query.filter(AsientosContables.fecha <= fecha_fin)
 
         query = query.group_by(
             CuentasContables.id,
@@ -537,3 +567,164 @@ class ServicioContabilidad:
                 )
 
         return resultados
+
+    # =========================================================================
+    # BALANCE GENERAL (C-21)
+    # =========================================================================
+
+    def obtener_balance_general(self, fecha_corte: Optional[date] = None) -> dict:
+        """
+        Balance General (Estado de Situación Financiera) a una fecha de corte.
+
+        Activos  (1xxx): saldo = débito - crédito
+        Pasivos  (2xxx): saldo = crédito - débito
+        Patrimonio (3xxx): saldo = crédito - débito
+
+        Verifica ecuación contable: activos == pasivos + patrimonio (± $0.01)
+        """
+        if fecha_corte is None:
+            fecha_corte = date.today()
+
+        query = (
+            self.db.query(
+                CuentasContables.id,
+                CuentasContables.codigo,
+                CuentasContables.nombre,
+                func.coalesce(func.sum(DetallesAsiento.debito), 0).label("total_debito"),
+                func.coalesce(func.sum(DetallesAsiento.credito), 0).label("total_credito"),
+            )
+            .outerjoin(
+                DetallesAsiento,
+                (DetallesAsiento.cuenta_id == CuentasContables.id) & (DetallesAsiento.tenant_id == self.tenant_id),
+            )
+            .outerjoin(
+                AsientosContables,
+                (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
+            )
+            .filter(
+                CuentasContables.tenant_id == self.tenant_id,
+                CuentasContables.acepta_movimiento.is_(True),
+                (
+                    CuentasContables.codigo.like("1%")
+                    | CuentasContables.codigo.like("2%")
+                    | CuentasContables.codigo.like("3%")
+                ),
+                AsientosContables.deleted_at.is_(None),
+                AsientosContables.fecha <= fecha_corte,
+            )
+            .group_by(
+                CuentasContables.id,
+                CuentasContables.codigo,
+                CuentasContables.nombre,
+            )
+            .order_by(CuentasContables.codigo)
+        )
+
+        activos_lineas = []
+        pasivos_lineas = []
+        patrimonio_lineas = []
+        total_activos = Decimal("0")
+        total_pasivos = Decimal("0")
+        total_patrimonio = Decimal("0")
+
+        for row in query.all():
+            debito = Decimal(str(row.total_debito))
+            credito = Decimal(str(row.total_credito))
+
+            if row.codigo.startswith("1"):
+                saldo = debito - credito  # Activo: natural DEBITO
+                if saldo != 0:
+                    activos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_activos += saldo
+            elif row.codigo.startswith("2"):
+                saldo = credito - debito  # Pasivo: natural CREDITO
+                if saldo != 0:
+                    pasivos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_pasivos += saldo
+            elif row.codigo.startswith("3"):
+                saldo = credito - debito  # Patrimonio: natural CREDITO
+                if saldo != 0:
+                    patrimonio_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_patrimonio += saldo
+
+        diferencia = total_activos - (total_pasivos + total_patrimonio)
+
+        return {
+            "activos": {"total": str(total_activos), "lineas": activos_lineas},
+            "pasivos": {"total": str(total_pasivos), "lineas": pasivos_lineas},
+            "patrimonio": {"total": str(total_patrimonio), "lineas": patrimonio_lineas},
+            "balanceado": abs(diferencia) < Decimal("0.01"),
+            "diferencia": str(diferencia),
+            "fecha_corte": str(fecha_corte),
+        }
+
+    # =========================================================================
+    # ASIENTO DE APERTURA (C-07)
+    # =========================================================================
+
+    def crear_asiento_apertura(
+        self,
+        fecha: date,
+        saldos: List[dict],
+        concepto: str = "Asiento de apertura",
+    ) -> AsientosContables:
+        """
+        Crea asiento de apertura para registrar saldos iniciales del tenant.
+        Bypasses period-hopping check (permitir_retroactivo=True).
+
+        saldos: list of {cuenta_id, debito, credito}
+        El asiento debe estar balanceado (sum(debito) == sum(credito)).
+        tipo_asiento = "APERTURA"
+        """
+        return self.crear_asiento(
+            fecha=fecha,
+            tipo_asiento="APERTURA",
+            concepto=concepto,
+            detalles=saldos,
+            documento_referencia=f"APERTURA-{fecha.isoformat()}",
+            permitir_retroactivo=True,
+        )
+
+    # =========================================================================
+    # ASIENTO DE PRODUCCIÓN (C-15)
+    # =========================================================================
+
+    def crear_asiento_produccion(
+        self,
+        fecha: date,
+        costo_produccion: Decimal,
+        documento_referencia: str,
+        tercero_id: Optional[UUID] = None,
+    ) -> AsientosContables:
+        """
+        Crea asiento contable para producción desde receta.
+        DEBE 1435 (Producto terminado) / HABER 1430 (Materia prima)
+        Usa cuentas configuradas con concepto PRODUCCION.
+        Raises ValueError si PRODUCCION config no encontrada.
+        """
+        from ..utils.constantes_contables import PRODUCCION
+
+        cuenta_pt = self._obtener_cuenta_configurada(PRODUCCION, "debito")
+        cuenta_mp = self._obtener_cuenta_configurada(PRODUCCION, "credito")
+
+        return self.crear_asiento(
+            fecha=fecha,
+            tipo_asiento="PRODUCCION",
+            concepto=f"Producción según {documento_referencia}",
+            detalles=[
+                {
+                    "cuenta_id": cuenta_pt.id,
+                    "debito": costo_produccion,
+                    "credito": Decimal("0"),
+                    "descripcion": f"Entrada PT {documento_referencia}",
+                },
+                {
+                    "cuenta_id": cuenta_mp.id,
+                    "debito": Decimal("0"),
+                    "credito": costo_produccion,
+                    "descripcion": f"Salida MP {documento_referencia}",
+                },
+            ],
+            documento_referencia=documento_referencia,
+            tercero_id=tercero_id,
+        )
