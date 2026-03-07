@@ -16,6 +16,7 @@ import type {
   ConfiguracionContable,
   PeriodoContable,
   BalancePrueba,
+  EstadoResultados,
   DashboardKPIs,
   VentaDiaria,
   ProductoMasVendido,
@@ -270,6 +271,8 @@ export const contabilidad = {
   crearAsiento: (data: unknown) => client.post<AsientoContable>('/contabilidad/asientos', data),
   balancePrueba: (params?: Record<string, unknown>) =>
     client.get<BalancePrueba>('/contabilidad/balance-prueba', { params }),
+  estadoResultados: (params?: Record<string, unknown>) =>
+    client.get<EstadoResultados>('/contabilidad/estado-resultados', { params }),
 };
 
 // Configuración Contable

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contabilidad, configuracionContable } from '../api/endpoints';
 import { formatCurrency, formatDate, statusColor } from '../utils/format';
 import DataCard from '../components/ui/DataCard';
-import type { AsientoContable, BalancePrueba, ConfiguracionContable } from '../types';
+import type { AsientoContable, BalancePrueba, ConfiguracionContable, EstadoResultados } from '../types';
 
 function AsientoRow({ asiento }: { asiento: AsientoContable }) {
   const [expanded, setExpanded] = useState(false);
@@ -135,7 +135,7 @@ function AsientoMobileCard({ asiento }: { asiento: AsientoContable }) {
 }
 
 export default function ContabilidadPage() {
-  const [tab, setTab] = useState<'asientos' | 'balance' | 'configuracion'>('asientos');
+  const [tab, setTab] = useState<'asientos' | 'balance' | 'estado' | 'configuracion'>('asientos');
   const queryClient = useQueryClient();
 
   const { data: asientos, isLoading: loadingAsientos } = useQuery<AsientoContable[]>({
@@ -148,6 +148,12 @@ export default function ContabilidadPage() {
     queryKey: ['balance-prueba'],
     queryFn: () => contabilidad.balancePrueba().then((r) => r.data),
     enabled: tab === 'balance',
+  });
+
+  const { data: estadoResultados, isLoading: loadingEstado } = useQuery<EstadoResultados>({
+    queryKey: ['estado-resultados'],
+    queryFn: () => contabilidad.estadoResultados().then((r) => r.data),
+    enabled: tab === 'estado',
   });
 
   const { data: configs, isLoading: loadingConfigs } = useQuery<ConfiguracionContable[]>({
@@ -172,6 +178,7 @@ export default function ContabilidadPage() {
         {[
           { id: 'asientos' as const, label: 'Asientos Contables' },
           { id: 'balance' as const, label: 'Balance de Prueba' },
+          { id: 'estado' as const, label: 'Estado de Resultados' },
           { id: 'configuracion' as const, label: 'Configuracion' },
         ].map((t) => (
           <button
@@ -323,6 +330,110 @@ export default function ContabilidadPage() {
                   <p className="text-sm">Emite facturas para generar asientos automaticos</p>
                 </div>
               )}
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* Estado de Resultados */}
+      {tab === 'estado' && (
+        <div className="space-y-4">
+          {loadingEstado ? (
+            <div className="cv-card p-8 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 cv-elevated rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : estadoResultados ? (
+            <>
+              {/* KPI row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bento-cell">
+                  <p className="bento-kpi-label">Ingresos</p>
+                  <p className="bento-kpi-val cv-positive">{formatCurrency(parseFloat(estadoResultados.ingresos.total))}</p>
+                </div>
+                <div className="bento-cell">
+                  <p className="bento-kpi-label">Utilidad Bruta</p>
+                  <p className={`bento-kpi-val ${parseFloat(estadoResultados.utilidad_bruta) >= 0 ? '' : 'cv-negative'}`}>
+                    {formatCurrency(parseFloat(estadoResultados.utilidad_bruta))}
+                  </p>
+                </div>
+                <div className="bento-cell">
+                  <p className="bento-kpi-label">Utilidad Neta</p>
+                  <p className={`bento-kpi-val ${parseFloat(estadoResultados.utilidad_neta) >= 0 ? '' : 'cv-negative'}`}>
+                    {formatCurrency(parseFloat(estadoResultados.utilidad_neta))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ingresos */}
+              <div className="cv-card overflow-hidden">
+                <div className="px-4 py-3 cv-elevated border-b cv-divider flex items-center justify-between">
+                  <p className="font-medium cv-text">Ingresos</p>
+                  <span className="cv-badge cv-badge-positive font-mono">
+                    {formatCurrency(parseFloat(estadoResultados.ingresos.total))}
+                  </span>
+                </div>
+                {estadoResultados.ingresos.lineas.length > 0 ? (
+                  <table className="w-full text-sm">
+                    <thead className="cv-table-header">
+                      <tr>
+                        <th className="text-left">Codigo</th>
+                        <th className="text-left">Cuenta</th>
+                        <th className="text-right">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="cv-table-body">
+                      {estadoResultados.ingresos.lineas.map((l) => (
+                        <tr key={l.codigo}>
+                          <td className="font-mono text-xs cv-muted">{l.codigo}</td>
+                          <td>{l.nombre}</td>
+                          <td className="text-right font-mono cv-positive">{formatCurrency(parseFloat(l.saldo))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="px-4 py-6 text-sm cv-muted text-center">Sin movimientos de ingresos</p>
+                )}
+              </div>
+
+              {/* Gastos */}
+              <div className="cv-card overflow-hidden">
+                <div className="px-4 py-3 cv-elevated border-b cv-divider flex items-center justify-between">
+                  <p className="font-medium cv-text">Gastos y Costos</p>
+                  <span className="cv-badge cv-badge-negative font-mono">
+                    {formatCurrency(parseFloat(estadoResultados.gastos.total))}
+                  </span>
+                </div>
+                {estadoResultados.gastos.lineas.length > 0 ? (
+                  <table className="w-full text-sm">
+                    <thead className="cv-table-header">
+                      <tr>
+                        <th className="text-left">Codigo</th>
+                        <th className="text-left">Cuenta</th>
+                        <th className="text-right">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="cv-table-body">
+                      {estadoResultados.gastos.lineas.map((l) => (
+                        <tr key={l.codigo}>
+                          <td className="font-mono text-xs cv-muted">{l.codigo}</td>
+                          <td>
+                            {l.nombre}
+                            {l.codigo.startsWith('6') && (
+                              <span className="ml-2 cv-badge cv-badge-neutral text-xs">COGS</span>
+                            )}
+                          </td>
+                          <td className="text-right font-mono cv-negative">{formatCurrency(parseFloat(l.saldo))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="px-4 py-6 text-sm cv-muted text-center">Sin movimientos de gastos</p>
+                )}
+              </div>
             </>
           ) : null}
         </div>
