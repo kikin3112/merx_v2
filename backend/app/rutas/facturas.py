@@ -405,7 +405,9 @@ async def emitir_factura(
             db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
         )
         if producto and producto.maneja_inventario:
-            cogs_total += detalle.cantidad * servicio_inv.obtener_costo_promedio(detalle.producto_id)
+            cpp = servicio_inv.obtener_costo_promedio(detalle.producto_id)
+            cogs_total += detalle.cantidad * cpp
+            detalle.costo_unitario = cpp  # Persist historical CPP for future reversals (C-01)
             try:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -544,6 +546,12 @@ async def anular_factura(
 
         # Asiento contable de reversión en fecha actual (no en fecha original,
         # pues el período original puede estar cerrado — E2 fix).
+        # Compute COGS reversal from historical costo_unitario on each detail (C-01)
+        cogs_reversal = Decimal("0")
+        for detalle in factura.detalles:
+            if detalle.costo_unitario and detalle.costo_unitario > 0:
+                cogs_reversal += detalle.cantidad * detalle.costo_unitario
+
         servicio_cont = ServicioContabilidad(db, tenant_id)
         servicio_cont.crear_asiento_anulacion_venta(
             fecha=date.today(),
@@ -552,6 +560,7 @@ async def anular_factura(
             total=factura.total_venta,
             documento_referencia=factura.numero_venta,
             tercero_id=factura.tercero_id,
+            cogs=cogs_reversal if cogs_reversal > 0 else None,  # C-01 fix
         )
 
     factura.estado = "ANULADA"

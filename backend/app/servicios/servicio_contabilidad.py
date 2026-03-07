@@ -499,7 +499,11 @@ class ServicioContabilidad:
                 AsientosContables,
                 (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
             )
-            .filter(CuentasContables.tenant_id == self.tenant_id, CuentasContables.acepta_movimiento)
+            .filter(
+                CuentasContables.tenant_id == self.tenant_id,
+                CuentasContables.acepta_movimiento,
+                AsientosContables.deleted_at.is_(None),  # C-05: exclude soft-deleted entries
+            )
         )
 
         if fecha_inicio:

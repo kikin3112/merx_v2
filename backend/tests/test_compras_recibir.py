@@ -250,9 +250,9 @@ def test_recibir_compra_no_encontrada(client, tenant_admin_token):
     assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.text}"
 
 
-def test_recibir_compra_sin_config_contable_igual_recibe(client, db_session, tenant_admin_token):
-    """PUT /compras/{id}/recibir without COMPRA_CONTADO config → 200, inventory updated, NO accounting entry.
-    Verifies graceful skip: accounting failure does not block reception.
+def test_recibir_compra_sin_config_contable_hace_rollback(client, db_session, tenant_admin_token):
+    """PUT /compras/{id}/recibir without COMPRA_CONTADO config → 400, ROLLBACK.
+    C-03 fix: accounting is now atomic — config required before receiving.
     """
     tenant_id = UUID(tenant_admin_token["tenant_id"])
 
@@ -267,11 +267,16 @@ def test_recibir_compra_sin_config_contable_igual_recibe(client, db_session, ten
         headers=_headers(tenant_admin_token),
     )
 
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
-    body = response.json()
-    assert body["estado"] == "RECIBIDA"
+    # Must fail — accounting config required (C-03)
+    assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.text}"
 
-    # Inventory IS updated despite missing accounting config
+    db_session.expire_all()
+
+    # Estado stays PENDIENTE (rollback)
+    compra_db = db_session.query(Compras).filter(Compras.id == compra.id).first()
+    assert compra_db.estado == EstadoCompra.PENDIENTE, f"Expected PENDIENTE after rollback, got {compra_db.estado}"
+
+    # Inventory NOT updated (rollback) — row may not exist if it was created by the movement
     inv = (
         db_session.query(Inventarios)
         .filter(
@@ -280,10 +285,11 @@ def test_recibir_compra_sin_config_contable_igual_recibe(client, db_session, ten
         )
         .first()
     )
-    assert inv is not None, "Inventarios row should exist"
-    assert inv.cantidad_disponible == Decimal("10"), f"Expected 10, got {inv.cantidad_disponible}"
+    # Either the row doesn't exist (rolled back) or quantity is still 0
+    if inv is not None:
+        assert inv.cantidad_disponible == Decimal("0"), f"Expected 0 after rollback, got {inv.cantidad_disponible}"
 
-    # NO AsientosContables created (accounting was skipped gracefully)
+    # NO AsientosContables created
     asiento = (
         db_session.query(AsientosContables)
         .filter(

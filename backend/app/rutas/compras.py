@@ -157,7 +157,7 @@ async def recibir_compra(
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    # Accounting entry — COMPRA_CONTADO config must exist; skip gracefully if not
+    # Accounting entry — COMPRA_CONTADO config required; fail-fast if missing (C-03)
     try:
         svc_cont = ServicioContabilidad(db, tenant_id)
         svc_cont.crear_asiento_compra(
@@ -167,7 +167,11 @@ async def recibir_compra(
             tercero_id=compra.tercero_id,
         )
     except ValueError as e:
-        logger.warning(f"Asiento COMPRA_CONTADO no creado para {compra.numero_compra}: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Contabilidad no configurada — configure COMPRA_CONTADO antes de recibir compras: {e}",
+        )
 
     compra.estado = EstadoCompra.RECIBIDA
     db.commit()

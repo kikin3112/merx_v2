@@ -1,5 +1,5 @@
 import uuid
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
@@ -25,6 +25,15 @@ from sqlalchemy.orm import relationship
 
 from .db import Base
 from .mixins import TenantAuditMixin, TenantMixin
+
+# Quantize helper — explicit 2-decimal rounding for all monetary calculations (A-01)
+_CENT = Decimal("0.01")
+
+
+def _q(value: Decimal) -> Decimal:
+    """Round to 2 decimal places using ROUND_HALF_UP (Colombian accounting standard)."""
+    return value.quantize(_CENT, rounding=ROUND_HALF_UP)
+
 
 # ============================================================================
 # ENUMS PARA ESTADOS
@@ -325,14 +334,14 @@ class Ventas(TenantAuditMixin, Base):
         iva_lineas = sum(detalle.valor_iva for detalle in self.detalles)
         dg = self.descuento_global or Decimal("0")
         if dg == 0:
-            return iva_lineas
+            return _q(iva_lineas)
         factor = (Decimal("100") - dg) / Decimal("100")
-        return iva_lineas * factor
+        return _q(iva_lineas * factor)
 
     @hybrid_property
     def total_venta(self) -> Decimal:
         """Base gravable + IVA"""
-        return self.base_gravable + self.total_iva
+        return _q(self.base_gravable + self.total_iva)
 
     __table_args__ = (
         Index("idx_ventas_tenant_fecha_estado", "tenant_id", "fecha_venta", "estado"),
@@ -387,12 +396,12 @@ class VentasDetalle(TenantMixin, Base):
     @hybrid_property
     def valor_iva(self) -> Decimal:
         """Base Gravable * (Porcentaje IVA / 100)"""
-        return self.base_gravable * (self.porcentaje_iva / Decimal("100"))
+        return _q(self.base_gravable * (self.porcentaje_iva / Decimal("100")))
 
     @hybrid_property
     def total_linea(self) -> Decimal:
         """Base Gravable + IVA"""
-        return self.base_gravable + self.valor_iva
+        return _q(self.base_gravable + self.valor_iva)
 
     __table_args__ = (
         Index("idx_ventas_detalle_tenant_venta", "tenant_id", "venta_id"),
@@ -488,13 +497,13 @@ class Compras(TenantAuditMixin, Base):
         iva_lineas = sum(d.valor_iva for d in self.detalles)
         dg = self.descuento_global or Decimal("0")
         if dg == 0:
-            return iva_lineas
+            return _q(iva_lineas)
         factor = (Decimal("100") - dg) / Decimal("100")
-        return iva_lineas * factor
+        return _q(iva_lineas * factor)
 
     @hybrid_property
     def total_compra(self) -> Decimal:
-        return self.base_gravable + self.total_iva
+        return _q(self.base_gravable + self.total_iva)
 
     __table_args__ = (
         Index("idx_compras_tenant_fecha_estado", "tenant_id", "fecha_compra", "estado"),
@@ -548,12 +557,12 @@ class ComprasDetalle(TenantMixin, Base):
     @hybrid_property
     def valor_iva(self) -> Decimal:
         """Base Gravable * (Porcentaje IVA / 100)"""
-        return self.base_gravable * (self.porcentaje_iva / Decimal("100"))
+        return _q(self.base_gravable * (self.porcentaje_iva / Decimal("100")))
 
     @hybrid_property
     def total_linea(self) -> Decimal:
         """Base Gravable + IVA"""
-        return self.base_gravable + self.valor_iva
+        return _q(self.base_gravable + self.valor_iva)
 
     __table_args__ = (
         Index("idx_compras_detalle_tenant_compra", "tenant_id", "compra_id"),

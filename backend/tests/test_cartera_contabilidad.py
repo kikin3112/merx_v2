@@ -191,9 +191,9 @@ def test_pago_cartera_crea_asiento_contable(client, db_session, tenant_admin_tok
     assert total_debito == Decimal("100000"), f"Expected total_debito=100000, got {total_debito}"
 
 
-def test_pago_cartera_sin_config_contable_igual_funciona(client, db_session, tenant_admin_token):
-    """POST /cartera/{id}/pagos without accounting config → 201, no AsientosContables created.
-    Payment must succeed even when VENTA_CONTADO/VENTA_CREDITO config is absent.
+def test_pago_cartera_sin_config_contable_hace_rollback(client, db_session, tenant_admin_token):
+    """POST /cartera/{id}/pagos without accounting config → 400, payment NOT persisted.
+    Accounting is required for payment atomicity (C-04 audit fix).
     """
     tenant_id = UUID(tenant_admin_token["tenant_id"])
 
@@ -202,6 +202,8 @@ def test_pago_cartera_sin_config_contable_igual_funciona(client, db_session, ten
     # Deliberately NO _seed_config_contable — accounting config absent
     cartera = _seed_cartera(db_session, tenant_id, tercero.id)
     db_session.commit()
+
+    saldo_original = cartera.saldo_pendiente
 
     response = client.post(
         f"/api/v1/cartera/{cartera.id}/pagos",
@@ -214,15 +216,24 @@ def test_pago_cartera_sin_config_contable_igual_funciona(client, db_session, ten
         headers=_headers(tenant_admin_token),
     )
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    # Must fail — VENTA_CONTADO / VENTA_CREDITO config required (C-04)
+    assert (
+        response.status_code == 400
+    ), f"Expected 400 when accounting config missing, got {response.status_code}: {response.text}"
 
-    # NO AsientosContables created (graceful skip)
-    asiento = (
-        db_session.query(AsientosContables)
-        .filter(
-            AsientosContables.tenant_id == tenant_id,
-            AsientosContables.tipo_asiento == "COBRO_CARTERA",
-        )
-        .first()
+    # Saldo should be unchanged (rollback)
+    db_session.expire_all()
+    cartera_db = db_session.query(Cartera).filter(Cartera.id == cartera.id).first()
+    assert (
+        cartera_db.saldo_pendiente == saldo_original
+    ), f"Expected saldo_pendiente={saldo_original} after rollback, got {cartera_db.saldo_pendiente}"
+
+    # No payment persisted
+    from app.datos.modelos import PagosCartera
+
+    count_pagos = (
+        db_session.query(PagosCartera)
+        .filter(PagosCartera.cartera_id == cartera.id, PagosCartera.tenant_id == tenant_id)
+        .count()
     )
-    assert asiento is None, "No accounting entry should exist when config is missing"
+    assert count_pagos == 0, f"No PagosCartera should exist after rollback, got {count_pagos}"
