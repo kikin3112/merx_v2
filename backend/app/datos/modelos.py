@@ -362,6 +362,7 @@ class VentasDetalle(TenantMixin, Base):
     precio_unitario = Column(Numeric(15, 2), nullable=False)
     descuento = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
     porcentaje_iva = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
+    costo_unitario = Column(Numeric(15, 2), nullable=True, default=Decimal("0.00"))
 
     # Relaciones
     venta = relationship("Ventas", back_populates="detalles")
@@ -1087,7 +1088,7 @@ class AsientosContables(TenantAuditMixin, Base):
         Index("idx_asientos_tenant_tercero", "tenant_id", "tercero_id"),
         Index("idx_asientos_periodo", "periodo_id"),
         CheckConstraint(
-            "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'OTRO')",
+            "tipo_asiento IN ('VENTAS', 'COMPRAS', 'PRODUCCION', 'AJUSTE', 'NOMINA', 'COBRO_CARTERA', 'OTRO')",
             name="check_tipo_asiento_valido",
         ),
         CheckConstraint("estado IN ('ACTIVO', 'ANULADO')", name="check_estado_asiento_valido"),

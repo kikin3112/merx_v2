@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List
 from uuid import UUID
 
@@ -6,7 +7,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..datos.db import get_db
 from ..datos.esquemas import ComprasCreate, ComprasResponse
-from ..datos.modelos import Compras, ComprasDetalle, Terceros, Usuarios
+from ..datos.modelos import Compras, ComprasDetalle, EstadoCompra, Productos, Terceros, TipoMovimiento, Usuarios
+from ..servicios.servicio_contabilidad import ServicioContabilidad
+from ..servicios.servicio_inventario import ServicioInventario
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
@@ -99,4 +102,75 @@ async def obtener_compra(
     )
     if not compra:
         raise HTTPException(status_code=404, detail="Compra no encontrada")
+    return ComprasResponse.model_validate(compra)
+
+
+@router.put("/{compra_id}/recibir", response_model=ComprasResponse)
+async def recibir_compra(
+    compra_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Usuarios = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_tenant_id_from_token),
+):
+    """
+    Recibe una compra PENDIENTE:
+    - Transiciona estado PENDIENTE → RECIBIDA
+    - Crea movimiento ENTRADA en inventario por cada detalle (actualiza CPP)
+    - Crea asiento contable COMPRA_CONTADO (DEBE: 1435 Inventario / HABER: 1105 Caja)
+    """
+    compra = (
+        db.query(Compras)
+        .options(
+            selectinload(Compras.detalles).selectinload(ComprasDetalle.producto),
+        )
+        .filter(Compras.id == compra_id, Compras.tenant_id == tenant_id)
+        .first()
+    )
+    if not compra:
+        raise HTTPException(status_code=404, detail="Compra no encontrada")
+
+    if compra.estado != EstadoCompra.PENDIENTE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"La compra no puede recibirse en estado '{compra.estado.value}'. Solo compras PENDIENTE.",
+        )
+
+    svc_inv = ServicioInventario(db, tenant_id)
+
+    for detalle in compra.detalles:
+        producto: Productos = detalle.producto
+        if not producto or not producto.maneja_inventario:
+            continue
+
+        descuento = detalle.descuento or Decimal("0")
+        costo_neto = detalle.precio_unitario * (1 - descuento / Decimal("100"))
+
+        try:
+            svc_inv.crear_movimiento(
+                producto_id=detalle.producto_id,
+                tipo=TipoMovimiento.ENTRADA,
+                cantidad=detalle.cantidad,
+                costo_unitario=costo_neto,
+                documento_referencia=compra.numero_compra,
+                observaciones=f"Recepción compra {compra.numero_compra}",
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    # Accounting entry — COMPRA_CONTADO config must exist; skip gracefully if not
+    try:
+        svc_cont = ServicioContabilidad(db, tenant_id)
+        svc_cont.crear_asiento_compra(
+            fecha=compra.fecha_compra,
+            base_gravable=compra.base_gravable,
+            documento_referencia=compra.numero_compra,
+            tercero_id=compra.tercero_id,
+        )
+    except ValueError as e:
+        logger.warning(f"Asiento COMPRA_CONTADO no creado para {compra.numero_compra}: {e}")
+
+    compra.estado = EstadoCompra.RECIBIDA
+    db.commit()
+    db.refresh(compra)
+    logger.info(f"Compra recibida: {compra.numero_compra}")
     return ComprasResponse.model_validate(compra)

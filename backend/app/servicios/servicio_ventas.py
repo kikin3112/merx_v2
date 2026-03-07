@@ -57,6 +57,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
     db.flush()
 
     # Crear detalles
+    servicio_inv = ServicioInventario(db, tenant_id)
     for detalle_data in venta_data.detalles:
         producto = (
             db.query(Productos)
@@ -77,6 +78,8 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         if porcentaje_iva == Decimal("0.00"):
             porcentaje_iva = producto.porcentaje_iva
 
+        cpp = servicio_inv.obtener_costo_promedio(detalle_data.producto_id)
+
         detalle = VentasDetalle(
             tenant_id=tenant_id,
             venta_id=nueva_venta.id,
@@ -85,6 +88,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
             precio_unitario=precio_unitario,
             descuento=detalle_data.descuento,
             porcentaje_iva=porcentaje_iva,
+            costo_unitario=cpp,
         )
         db.add(detalle)
 

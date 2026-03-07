@@ -17,7 +17,7 @@ from ..datos.modelos import (
     DetallesAsiento,
     PeriodosContables,
 )
-from ..utils.constantes_contables import COSTO_VENTAS, IVA_VENTAS, VENTA_CONTADO
+from ..utils.constantes_contables import COMPRA_CONTADO, COSTO_VENTAS, IVA_VENTAS, VENTA_CONTADO
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 
@@ -353,6 +353,127 @@ class ServicioContabilidad:
             documento_referencia=f"ANUL-{documento_referencia}",
             tercero_id=tercero_id,
         )
+
+    def crear_asiento_compra(
+        self,
+        fecha: date,
+        base_gravable: Decimal,
+        documento_referencia: str,
+        tercero_id: Optional[UUID] = None,
+    ) -> AsientosContables:
+        """
+        Creates COMPRA_CONTADO accounting entry.
+        DEBE: 1435 Inventario (COMPRA_CONTADO.debito)
+        HABER: 1105 Caja (COMPRA_CONTADO.credito)
+        Amount: base_gravable (without IVA — do NOT capitalize IVA into inventory)
+        Raises ValueError if COMPRA_CONTADO config not found.
+        """
+        cuenta_inventario = self._obtener_cuenta_configurada(COMPRA_CONTADO, "debito")
+        cuenta_caja = self._obtener_cuenta_configurada(COMPRA_CONTADO, "credito")
+
+        detalles = [
+            {
+                "cuenta_id": cuenta_inventario.id,
+                "debito": base_gravable,
+                "credito": Decimal("0"),
+                "descripcion": f"Compra {documento_referencia}",
+            },
+            {
+                "cuenta_id": cuenta_caja.id,
+                "debito": Decimal("0"),
+                "credito": base_gravable,
+                "descripcion": f"Pago compra {documento_referencia}",
+            },
+        ]
+
+        return self.crear_asiento(
+            fecha=fecha,
+            tipo_asiento="COMPRAS",
+            concepto=f"Compra según {documento_referencia}",
+            detalles=detalles,
+            documento_referencia=documento_referencia,
+            tercero_id=tercero_id,
+        )
+
+    def obtener_estado_resultados(self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None) -> dict:
+        """
+        Estado de Resultados (P&L).
+        Agrupa cuentas por prefijo:
+        - 4xxx: Ingresos — saldo = credito - debito
+        - 5xxx: Gastos operacionales — saldo = debito - credito
+        - 6xxx: COGS (Costo de ventas) — saldo = debito - credito
+        """
+        query = (
+            self.db.query(
+                CuentasContables.id,
+                CuentasContables.codigo,
+                CuentasContables.nombre,
+                func.coalesce(func.sum(DetallesAsiento.debito), 0).label("total_debito"),
+                func.coalesce(func.sum(DetallesAsiento.credito), 0).label("total_credito"),
+            )
+            .outerjoin(
+                DetallesAsiento,
+                (DetallesAsiento.cuenta_id == CuentasContables.id) & (DetallesAsiento.tenant_id == self.tenant_id),
+            )
+            .outerjoin(
+                AsientosContables,
+                (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
+            )
+            .filter(
+                CuentasContables.tenant_id == self.tenant_id,
+                CuentasContables.acepta_movimiento,
+                (
+                    CuentasContables.codigo.like("4%")
+                    | CuentasContables.codigo.like("5%")
+                    | CuentasContables.codigo.like("6%")
+                ),
+            )
+        )
+
+        if fecha_inicio:
+            query = query.filter(AsientosContables.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.filter(AsientosContables.fecha <= fecha_fin)
+
+        query = query.group_by(
+            CuentasContables.id,
+            CuentasContables.codigo,
+            CuentasContables.nombre,
+        ).order_by(CuentasContables.codigo)
+
+        ingresos_lineas = []
+        gastos_lineas = []
+        total_ingresos = Decimal("0")
+        total_gastos = Decimal("0")
+        cogs_total = Decimal("0")
+
+        for row in query.all():
+            debito = Decimal(str(row.total_debito))
+            credito = Decimal(str(row.total_credito))
+
+            if row.codigo.startswith("4"):
+                saldo = credito - debito
+                if saldo != 0:
+                    ingresos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_ingresos += saldo
+            else:
+                # 5xxx or 6xxx — natural balance DEBITO
+                saldo = debito - credito
+                if saldo != 0:
+                    gastos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_gastos += saldo
+                    if row.codigo.startswith("6"):
+                        cogs_total += saldo
+
+        utilidad_bruta = total_ingresos - cogs_total
+        utilidad_neta = total_ingresos - total_gastos
+
+        return {
+            "ingresos": {"total": str(total_ingresos), "lineas": ingresos_lineas},
+            "gastos": {"total": str(total_gastos), "lineas": gastos_lineas},
+            "utilidad_bruta": str(utilidad_bruta),
+            "utilidad_neta": str(utilidad_neta),
+        }
 
     def obtener_balance_prueba(
         self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None

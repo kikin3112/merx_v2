@@ -94,6 +94,22 @@ async def crear_asiento(
     return asiento
 
 
+@router.get("/estado-resultados")
+async def estado_resultados(
+    fecha_inicio: Optional[date] = Query(None),
+    fecha_fin: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    ctx: UserContext = Depends(require_tenant_roles("admin", "contador")),
+):
+    """
+    Estado de Resultados (P&L).
+    Ingresos (4xxx), COGS (6xxx), Gastos Operacionales (5xxx).
+    Retorna ingresos, gastos, utilidad_bruta y utilidad_neta.
+    """
+    servicio = ServicioContabilidad(db, ctx.tenant_id)
+    return servicio.obtener_estado_resultados(fecha_inicio, fecha_fin)
+
+
 @router.get("/balance-prueba")
 async def balance_prueba(
     fecha_inicio: Optional[date] = Query(None),
