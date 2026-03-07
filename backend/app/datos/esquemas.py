@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
@@ -174,11 +174,11 @@ class ProductoUpdate(BaseModel):
     categoria: Optional[str] = None
     unidad_medida: Optional[str] = None
     maneja_inventario: Optional[bool] = None
-    porcentaje_iva: Optional[Decimal] = Field(None, ge=0, le=100)
+    porcentaje_iva: Optional[Annotated[Decimal, Field(ge=0, le=100)]] = None
     tipo_iva: Optional[str] = None
-    precio_venta: Optional[Decimal] = Field(None, ge=0)
-    stock_minimo: Optional[Decimal] = Field(None, ge=0)
-    stock_maximo: Optional[Decimal] = Field(None, ge=0)
+    precio_venta: Optional[Annotated[Decimal, Field(ge=0)]] = None
+    stock_minimo: Optional[Annotated[Decimal, Field(ge=0)]] = None
+    stock_maximo: Optional[Annotated[Decimal, Field(ge=0)]] = None
     estado: Optional[bool] = None
 
 
