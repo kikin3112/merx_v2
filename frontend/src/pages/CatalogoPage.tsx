@@ -8,6 +8,15 @@ import { formatCurrency } from '../utils/format';
 const CATALOGO_UNDER_CONSTRUCTION = true;
 
 export default function CatalogoPage() {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const { data, isLoading } = useQuery<Producto[]>({
+    queryKey: ['productos-catalogo'],
+    queryFn: () => productos.list({ estado: true }).then((r) => r.data),
+    enabled: !CATALOGO_UNDER_CONSTRUCTION,
+  });
+
   if (CATALOGO_UNDER_CONSTRUCTION) {
     return (
       <div>
@@ -20,18 +29,10 @@ export default function CatalogoPage() {
     );
   }
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const { data, isLoading } = useQuery<Producto[]>({
-    queryKey: ['productos-catalogo'],
-    queryFn: () => productos.list({ estado: true }).then((r) => r.data),
-  });
-
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   };

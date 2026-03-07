@@ -10,6 +10,7 @@ from ..datos.esquemas import VentaEnvioCreate, VentasCreate, VentasResponse, Ven
 from ..datos.modelos import Productos, Usuarios, VentaEnvio, VentasDetalle
 from ..servicios.servicio_almacenamiento import ServicioAlmacenamiento
 from ..servicios.servicio_contabilidad import ServicioContabilidad
+from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_ventas import (
     actualizar_venta,
     anular_venta,
@@ -290,7 +291,15 @@ async def facturar_venta_endpoint(
         venta = confirmar_venta(db, venta.id, tenant_id)
         db.flush()
 
-    # Crear asiento contable automático
+    # Calcular COGS con CPP actual para el asiento contable (E8 fix)
+    servicio_inv = ServicioInventario(db, tenant_id)
+    cogs_total = Decimal("0")
+    for _det in venta.detalles:
+        _prod = db.query(Productos).filter(Productos.id == _det.producto_id, Productos.tenant_id == tenant_id).first()
+        if _prod and _prod.maneja_inventario:
+            cogs_total += _det.cantidad * servicio_inv.obtener_costo_promedio(_det.producto_id)
+
+    # Crear asiento contable automático (con COGS si hay productos de inventario)
     servicio_cont = ServicioContabilidad(db, tenant_id)
     servicio_cont.crear_asiento_venta(
         fecha=venta.fecha_venta,
@@ -299,6 +308,7 @@ async def facturar_venta_endpoint(
         total=venta.total_venta,
         documento_referencia=venta.numero_venta,
         tercero_id=venta.tercero_id,
+        cogs=cogs_total if cogs_total > 0 else None,
     )
 
     # Generar PDF

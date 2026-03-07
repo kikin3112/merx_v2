@@ -17,7 +17,7 @@ from ..datos.modelos import (
     DetallesAsiento,
     PeriodosContables,
 )
-from ..utils.constantes_contables import IVA_VENTAS, VENTA_CONTADO
+from ..utils.constantes_contables import COSTO_VENTAS, IVA_VENTAS, VENTA_CONTADO
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 
@@ -193,6 +193,7 @@ class ServicioContabilidad:
         total: Decimal,
         documento_referencia: str,
         tercero_id: Optional[UUID] = None,
+        cogs: Optional[Decimal] = None,
     ) -> AsientosContables:
         """
         Crea asiento contable automático para una venta/factura.
@@ -201,6 +202,10 @@ class ServicioContabilidad:
         DEBE: Cuenta configurada VENTA_CONTADO.debito (ej: 1105 Caja)
         HABER: Cuenta configurada VENTA_CONTADO.credito (ej: 4135 Ventas)
         HABER: Cuenta configurada IVA_VENTAS.credito (ej: 2408 IVA) -- si hay IVA
+
+        Si se proporciona cogs (Costo de Ventas calculado antes del movimiento):
+        DEBE: Cuenta COSTO_VENTAS.debito (ej: 6135 Costo de mercancía vendida)
+        HABER: Cuenta COSTO_VENTAS.credito (ej: 1435 Inventario) — E8 fix (NIIF 15)
         """
         cuenta_caja = self._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
         cuenta_ventas = self._obtener_cuenta_configurada(VENTA_CONTADO, "credito")
@@ -234,6 +239,31 @@ class ServicioContabilidad:
                 }
             )
 
+        if cogs and cogs > 0:
+            try:
+                cuenta_costo = self._obtener_cuenta_configurada(COSTO_VENTAS, "debito")
+                cuenta_inventario = self._obtener_cuenta_configurada(COSTO_VENTAS, "credito")
+                detalles.append(
+                    {
+                        "cuenta_id": cuenta_costo.id,
+                        "debito": cogs,
+                        "credito": Decimal("0"),
+                        "descripcion": f"Costo de ventas {documento_referencia}",
+                    }
+                )
+                detalles.append(
+                    {
+                        "cuenta_id": cuenta_inventario.id,
+                        "debito": Decimal("0"),
+                        "credito": cogs,
+                        "descripcion": f"Salida inventario {documento_referencia}",
+                    }
+                )
+            except ValueError:
+                logger.warning(
+                    f"Configuración COSTO_VENTAS no encontrada — asiento sin COGS para {documento_referencia}"
+                )
+
         return self.crear_asiento(
             fecha=fecha,
             tipo_asiento="VENTAS",
@@ -251,10 +281,12 @@ class ServicioContabilidad:
         total: Decimal,
         documento_referencia: str,
         tercero_id: Optional[UUID] = None,
+        cogs: Optional[Decimal] = None,
     ) -> AsientosContables:
         """
         Crea asiento contable de reversión para anulación de venta.
         Invierte el asiento original usando cuentas de ConfiguracionContable.
+        Si se proporciona cogs, revierte también el asiento COGS.
         """
         cuenta_caja = self._obtener_cuenta_configurada(VENTA_CONTADO, "debito")
         cuenta_ventas = self._obtener_cuenta_configurada(VENTA_CONTADO, "credito")
@@ -287,6 +319,31 @@ class ServicioContabilidad:
                     "descripcion": f"Anulación IVA venta {documento_referencia}",
                 }
             )
+
+        if cogs and cogs > 0:
+            try:
+                cuenta_costo = self._obtener_cuenta_configurada(COSTO_VENTAS, "debito")
+                cuenta_inventario = self._obtener_cuenta_configurada(COSTO_VENTAS, "credito")
+                detalles.append(
+                    {
+                        "cuenta_id": cuenta_costo.id,
+                        "debito": Decimal("0"),
+                        "credito": cogs,
+                        "descripcion": f"Anulación costo de ventas {documento_referencia}",
+                    }
+                )
+                detalles.append(
+                    {
+                        "cuenta_id": cuenta_inventario.id,
+                        "debito": cogs,
+                        "credito": Decimal("0"),
+                        "descripcion": f"Reingreso inventario {documento_referencia}",
+                    }
+                )
+            except ValueError:
+                logger.warning(
+                    f"Configuración COSTO_VENTAS no encontrada — anulación sin reversión COGS para {documento_referencia}"
+                )
 
         return self.crear_asiento(
             fecha=fecha,

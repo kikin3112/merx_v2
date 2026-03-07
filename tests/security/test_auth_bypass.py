@@ -29,9 +29,9 @@ TEST_DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost
 # Protected API paths that should require authentication
 PROTECTED_ENDPOINTS = [
     ("GET",    "/api/v1/productos"),
-    ("GET",    "/api/v1/clientes"),
+    ("GET",    "/api/v1/terceros/"),
     ("GET",    "/api/v1/usuarios"),
-    ("GET",    "/api/v1/inventario/stock"),
+    ("GET",    "/api/v1/inventarios/"),
     ("POST",   "/api/v1/productos"),
     ("DELETE", "/api/v1/productos/some-id"),
 ]
@@ -199,9 +199,13 @@ class TestRoleEscalation:
 
     def test_vendedor_cannot_access_superadmin(self, client, tenant_and_token):
         """Vendedor JWT must not grant access to superadmin endpoints."""
-        resp = client.get(
-            "/api/v1/superadmin/tenants",
-            headers={"Authorization": f"Bearer {tenant_and_token['token']}"},
+        tenant_id = str(tenant_and_token["tenant"].id)
+        resp = client.post(
+            "/api/v1/admin/seed",
+            headers={
+                "Authorization": f"Bearer {tenant_and_token['token']}",
+                "X-Tenant-ID": tenant_id,
+            },
         )
         assert resp.status_code in (401, 403), (
             f"Vendedor accessing superadmin returned {resp.status_code}, expected 403"

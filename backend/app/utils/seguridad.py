@@ -744,9 +744,15 @@ def verify_clerk_token(token: str) -> dict:
         )
 
 
-def get_tenant_id_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UUID:
+def get_tenant_id_from_token(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> UUID:
     """
     Dependencia para extraer tenant_id directamente del token JWT.
+
+    Valida que el tenant_id del JWT coincida con el header X-Tenant-ID
+    para prevenir cross-tenant access (C4).
 
     Útil cuando solo se necesita el tenant_id sin cargar el usuario completo.
 
@@ -762,6 +768,7 @@ def get_tenant_id_from_token(credentials: HTTPAuthorizationCredentials = Depends
 
     Raises:
         HTTPException 401: Si el token es inválido o no tiene tenant_id
+        HTTPException 403: Si tenant_id del token no coincide con X-Tenant-ID header
     """
     token = credentials.credentials
     payload = decode_access_token(token)
@@ -775,10 +782,20 @@ def get_tenant_id_from_token(credentials: HTTPAuthorizationCredentials = Depends
         )
 
     try:
-        return UUID(tenant_id_str)
+        tenant_id = UUID(tenant_id_str)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido: tenant_id malformado",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Validar que el tenant_id del JWT coincida con el header X-Tenant-ID (C4)
+    header_tenant_id: Optional[UUID] = getattr(request.state, "tenant_id", None)
+    if header_tenant_id and header_tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El tenant_id del header no coincide con el del token",
+        )
+
+    return tenant_id
