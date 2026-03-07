@@ -368,6 +368,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     """
     Maneja errores de rate limiting (429 Too Many Requests).
+    Incluye Retry-After header según RFC 6585.
     """
     logger.warning(
         f"Rate limit excedido: {request.method} {request.url.path}",
@@ -378,6 +379,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         content={
             "detail": "Demasiadas solicitudes. Intente de nuevo en un momento.",
         },
+        headers={"Retry-After": "60"},
     )
 
 
