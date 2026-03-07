@@ -181,6 +181,13 @@ class ProductoUpdate(BaseModel):
     stock_maximo: Optional[Annotated[Decimal, Field(ge=0)]] = None
     estado: Optional[bool] = None
 
+    @field_validator("precio_venta", "stock_minimo", "stock_maximo", "porcentaje_iva", mode="before")
+    @classmethod
+    def validar_no_negativo(cls, v: object) -> object:
+        if v is not None and Decimal(str(v)) < Decimal("0"):
+            raise ValueError("El valor debe ser mayor o igual a 0")
+        return v
+
 
 class ProductoResponse(ProductoBase):
     id: UUID
