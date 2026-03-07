@@ -270,7 +270,7 @@ export default function DashboardPage() {
         {/* Ingresos vs Gastos — columna derecha */}
         {canViewReports && (
           <div className="cv-card p-5 flex flex-col">
-            <h2 className="text-sm font-semibold cv-text mb-1">Ingresos vs gastos</h2>
+            <h2 className="text-sm font-semibold cv-text mb-1">Ingresos vs Costo de Ventas</h2>
             {gastosLoading ? (
               <div className="flex-1 flex items-center justify-center text-sm cv-muted">Cargando...</div>
             ) : gastosError ? (
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                       <Pie
                         data={[
                           { name: 'Ingresos', value: gastosVsIngresos.ingresos },
-                          { name: 'Gastos', value: gastosVsIngresos.gastos },
+                          { name: 'Costo de Ventas', value: gastosVsIngresos.gastos },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between py-1.5 border-b cv-divider">
                     <div className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: '#FF7A7A' }} />
-                      <span className="text-xs cv-muted">Gastos</span>
+                      <span className="text-xs cv-muted">Costo de Ventas</span>
                     </div>
                     <span className="text-xs font-semibold cv-text">{formatTooltipValue(gastosVsIngresos.gastos)}</span>
                   </div>
