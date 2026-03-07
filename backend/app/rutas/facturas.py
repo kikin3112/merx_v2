@@ -193,13 +193,15 @@ async def pos_factura(
 
     db.flush()
 
-    # Descontar inventario
+    # Descontar inventario y calcular COGS (CPP antes del movimiento, E8 fix)
     servicio_inv = ServicioInventario(db, tenant_id)
+    cogs_total = Decimal("0")
     for detalle in factura.detalles:
         producto = (
             db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
         )
         if producto and producto.maneja_inventario:
+            cogs_total += detalle.cantidad * servicio_inv.obtener_costo_promedio(detalle.producto_id)
             try:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -211,7 +213,7 @@ async def pos_factura(
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=f"Error de inventario para {producto.nombre}: {str(e)}")
 
-    # Crear asiento contable automático
+    # Crear asiento contable automático (con COGS si hay productos de inventario)
     servicio_cont = ServicioContabilidad(db, tenant_id)
     servicio_cont.crear_asiento_venta(
         fecha=factura.fecha_venta,
@@ -220,6 +222,7 @@ async def pos_factura(
         total=factura.total_venta,
         documento_referencia=factura.numero_venta,
         tercero_id=factura.tercero_id,
+        cogs=cogs_total if cogs_total > 0 else None,
     )
 
     # Generar PDF
@@ -394,13 +397,15 @@ async def emitir_factura(
             detail=f"Solo se pueden emitir facturas en estado PENDIENTE. Estado actual: {factura.estado}",
         )
 
-    # Descontar inventario
+    # Descontar inventario y calcular COGS (CPP antes del movimiento, E8 fix)
     servicio_inv = ServicioInventario(db, tenant_id)
+    cogs_total = Decimal("0")
     for detalle in factura.detalles:
         producto = (
             db.query(Productos).filter(Productos.id == detalle.producto_id, Productos.tenant_id == tenant_id).first()
         )
         if producto and producto.maneja_inventario:
+            cogs_total += detalle.cantidad * servicio_inv.obtener_costo_promedio(detalle.producto_id)
             try:
                 servicio_inv.crear_movimiento(
                     producto_id=detalle.producto_id,
@@ -412,7 +417,7 @@ async def emitir_factura(
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=f"Error de inventario para {producto.nombre}: {str(e)}")
 
-    # Crear asiento contable automático
+    # Crear asiento contable automático (con COGS si hay productos de inventario)
     servicio_cont = ServicioContabilidad(db, tenant_id)
     servicio_cont.crear_asiento_venta(
         fecha=factura.fecha_venta,
@@ -421,6 +426,7 @@ async def emitir_factura(
         total=factura.total_venta,
         documento_referencia=factura.numero_venta,
         tercero_id=factura.tercero_id,
+        cogs=cogs_total if cogs_total > 0 else None,
     )
 
     # Generar PDF y subir a S3 si está habilitado
