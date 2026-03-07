@@ -17,7 +17,7 @@ from ..datos.modelos import (
     DetallesAsiento,
     PeriodosContables,
 )
-from ..utils.constantes_contables import COSTO_VENTAS, IVA_VENTAS, VENTA_CONTADO
+from ..utils.constantes_contables import COMPRA_CONTADO, COSTO_VENTAS, IVA_VENTAS, VENTA_CONTADO
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 
@@ -351,6 +351,47 @@ class ServicioContabilidad:
             concepto=f"Anulación venta {documento_referencia}",
             detalles=detalles,
             documento_referencia=f"ANUL-{documento_referencia}",
+            tercero_id=tercero_id,
+        )
+
+    def crear_asiento_compra(
+        self,
+        fecha: date,
+        base_gravable: Decimal,
+        documento_referencia: str,
+        tercero_id: Optional[UUID] = None,
+    ) -> AsientosContables:
+        """
+        Creates COMPRA_CONTADO accounting entry.
+        DEBE: 1435 Inventario (COMPRA_CONTADO.debito)
+        HABER: 1105 Caja (COMPRA_CONTADO.credito)
+        Amount: base_gravable (without IVA — do NOT capitalize IVA into inventory)
+        Raises ValueError if COMPRA_CONTADO config not found.
+        """
+        cuenta_inventario = self._obtener_cuenta_configurada(COMPRA_CONTADO, "debito")
+        cuenta_caja = self._obtener_cuenta_configurada(COMPRA_CONTADO, "credito")
+
+        detalles = [
+            {
+                "cuenta_id": cuenta_inventario.id,
+                "debito": base_gravable,
+                "credito": Decimal("0"),
+                "descripcion": f"Compra {documento_referencia}",
+            },
+            {
+                "cuenta_id": cuenta_caja.id,
+                "debito": Decimal("0"),
+                "credito": base_gravable,
+                "descripcion": f"Pago compra {documento_referencia}",
+            },
+        ]
+
+        return self.crear_asiento(
+            fecha=fecha,
+            tipo_asiento="COMPRAS",
+            concepto=f"Compra según {documento_referencia}",
+            detalles=detalles,
+            documento_referencia=documento_referencia,
             tercero_id=tercero_id,
         )
 

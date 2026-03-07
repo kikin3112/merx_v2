@@ -206,6 +206,20 @@ def test_recibir_compra_actualiza_inventario_y_crea_asiento(client, db_session, 
     )
     assert asiento is not None, "AsientosContables COMPRAS should exist"
 
+    # Verify accounting entry amount (base_gravable, not total_compra)
+    from app.datos.modelos import DetallesAsiento
+
+    detalles_asiento = (
+        db_session.query(DetallesAsiento)
+        .filter(
+            DetallesAsiento.asiento_id == asiento.id,
+            DetallesAsiento.tenant_id == tenant_id,
+        )
+        .all()
+    )
+    total_debito = sum(d.debito for d in detalles_asiento)
+    assert total_debito == Decimal("50000"), f"Expected debito=50000, got {total_debito}"
+
 
 def test_recibir_compra_ya_recibida_falla(client, db_session, tenant_admin_token):
     """PUT /compras/{id}/recibir on already RECIBIDA compra → 400."""
@@ -234,3 +248,48 @@ def test_recibir_compra_no_encontrada(client, tenant_admin_token):
     )
 
     assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.text}"
+
+
+def test_recibir_compra_sin_config_contable_igual_recibe(client, db_session, tenant_admin_token):
+    """PUT /compras/{id}/recibir without COMPRA_CONTADO config → 200, inventory updated, NO accounting entry.
+    Verifies graceful skip: accounting failure does not block reception.
+    """
+    tenant_id = UUID(tenant_admin_token["tenant_id"])
+
+    tercero = _seed_tercero_proveedor(db_session, tenant_id)
+    producto = _seed_producto(db_session, tenant_id)
+    # Deliberately NO _seed_config_contable — COMPRA_CONTADO config absent
+    compra = _seed_compra(db_session, tenant_id, tercero.id, producto.id)
+    db_session.commit()
+
+    response = client.put(
+        f"/api/v1/compras/{compra.id}/recibir",
+        headers=_headers(tenant_admin_token),
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    body = response.json()
+    assert body["estado"] == "RECIBIDA"
+
+    # Inventory IS updated despite missing accounting config
+    inv = (
+        db_session.query(Inventarios)
+        .filter(
+            Inventarios.tenant_id == tenant_id,
+            Inventarios.producto_id == producto.id,
+        )
+        .first()
+    )
+    assert inv is not None, "Inventarios row should exist"
+    assert inv.cantidad_disponible == Decimal("10"), f"Expected 10, got {inv.cantidad_disponible}"
+
+    # NO AsientosContables created (accounting was skipped gracefully)
+    asiento = (
+        db_session.query(AsientosContables)
+        .filter(
+            AsientosContables.tenant_id == tenant_id,
+            AsientosContables.tipo_asiento == "COMPRAS",
+        )
+        .first()
+    )
+    assert asiento is None, "No accounting entry should exist when config is missing"

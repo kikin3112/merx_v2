@@ -1,4 +1,3 @@
-from datetime import date
 from decimal import Decimal
 from typing import List
 from uuid import UUID
@@ -11,7 +10,6 @@ from ..datos.esquemas import ComprasCreate, ComprasResponse
 from ..datos.modelos import Compras, ComprasDetalle, EstadoCompra, Productos, Terceros, TipoMovimiento, Usuarios
 from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_inventario import ServicioInventario
-from ..utils.constantes_contables import COMPRA_CONTADO
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.seguridad import get_current_user, get_tenant_id_from_token
@@ -147,44 +145,29 @@ async def recibir_compra(
         descuento = detalle.descuento or Decimal("0")
         costo_neto = detalle.precio_unitario * (1 - descuento / Decimal("100"))
 
-        svc_inv.crear_movimiento(
-            producto_id=detalle.producto_id,
-            tipo=TipoMovimiento.ENTRADA,
-            cantidad=detalle.cantidad,
-            costo_unitario=costo_neto,
-            documento_referencia=compra.numero_compra,
-            observaciones=f"Recepción compra {compra.numero_compra}",
-        )
+        try:
+            svc_inv.crear_movimiento(
+                producto_id=detalle.producto_id,
+                tipo=TipoMovimiento.ENTRADA,
+                cantidad=detalle.cantidad,
+                costo_unitario=costo_neto,
+                documento_referencia=compra.numero_compra,
+                observaciones=f"Recepción compra {compra.numero_compra}",
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     # Accounting entry — COMPRA_CONTADO config must exist; skip gracefully if not
     try:
         svc_cont = ServicioContabilidad(db, tenant_id)
-        cuenta_inventario = svc_cont._obtener_cuenta_configurada(COMPRA_CONTADO, "debito")
-        cuenta_caja = svc_cont._obtener_cuenta_configurada(COMPRA_CONTADO, "credito")
-        monto = compra.total_compra
-        svc_cont.crear_asiento(
-            fecha=date.today(),
-            tipo_asiento="COMPRAS",
-            concepto=f"Compra según {compra.numero_compra}",
-            detalles=[
-                {
-                    "cuenta_id": cuenta_inventario.id,
-                    "debito": monto,
-                    "credito": Decimal("0"),
-                    "descripcion": f"Compra {compra.numero_compra}",
-                },
-                {
-                    "cuenta_id": cuenta_caja.id,
-                    "debito": Decimal("0"),
-                    "credito": monto,
-                    "descripcion": f"Pago compra {compra.numero_compra}",
-                },
-            ],
+        svc_cont.crear_asiento_compra(
+            fecha=compra.fecha_compra,
+            base_gravable=compra.base_gravable,
             documento_referencia=compra.numero_compra,
             tercero_id=compra.tercero_id,
         )
     except ValueError as e:
-        logger.warning(f"Configuración contable COMPRA_CONTADO no disponible — asiento omitido: {e}")
+        logger.warning(f"Asiento COMPRA_CONTADO no creado para {compra.numero_compra}: {e}")
 
     compra.estado = EstadoCompra.RECIBIDA
     db.commit()
