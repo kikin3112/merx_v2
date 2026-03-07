@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
@@ -125,13 +126,14 @@ async def balance_prueba(
     resultados = servicio.obtener_balance_prueba(fecha_inicio, fecha_fin)
 
     # Totales
-    total_debito = sum(r["total_debito"] for r in resultados)
-    total_credito = sum(r["total_credito"] for r in resultados)
+    total_debito = sum(Decimal(r["total_debito"]) for r in resultados)
+    total_credito = sum(Decimal(r["total_credito"]) for r in resultados)
+    diferencia = total_debito - total_credito
 
     return {
         "cuentas": resultados,
-        "total_debito": total_debito,
-        "total_credito": total_credito,
-        "diferencia": total_debito - total_credito,
-        "balanceado": abs(total_debito - total_credito) < 0.01,
+        "total_debito": str(total_debito),
+        "total_credito": str(total_credito),
+        "diferencia": str(diferencia),
+        "balanceado": abs(diferencia) < Decimal("0.01"),
     }
