@@ -395,6 +395,86 @@ class ServicioContabilidad:
             tercero_id=tercero_id,
         )
 
+    def obtener_estado_resultados(self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None) -> dict:
+        """
+        Estado de Resultados (P&L).
+        Agrupa cuentas por prefijo:
+        - 4xxx: Ingresos — saldo = credito - debito
+        - 5xxx: Gastos operacionales — saldo = debito - credito
+        - 6xxx: COGS (Costo de ventas) — saldo = debito - credito
+        """
+        query = (
+            self.db.query(
+                CuentasContables.id,
+                CuentasContables.codigo,
+                CuentasContables.nombre,
+                func.coalesce(func.sum(DetallesAsiento.debito), 0).label("total_debito"),
+                func.coalesce(func.sum(DetallesAsiento.credito), 0).label("total_credito"),
+            )
+            .outerjoin(
+                DetallesAsiento,
+                (DetallesAsiento.cuenta_id == CuentasContables.id) & (DetallesAsiento.tenant_id == self.tenant_id),
+            )
+            .outerjoin(
+                AsientosContables,
+                (AsientosContables.id == DetallesAsiento.asiento_id) & (AsientosContables.estado == "ACTIVO"),
+            )
+            .filter(
+                CuentasContables.tenant_id == self.tenant_id,
+                CuentasContables.acepta_movimiento,
+                (
+                    CuentasContables.codigo.like("4%")
+                    | CuentasContables.codigo.like("5%")
+                    | CuentasContables.codigo.like("6%")
+                ),
+            )
+        )
+
+        if fecha_inicio:
+            query = query.filter(AsientosContables.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.filter(AsientosContables.fecha <= fecha_fin)
+
+        query = query.group_by(
+            CuentasContables.id,
+            CuentasContables.codigo,
+            CuentasContables.nombre,
+        ).order_by(CuentasContables.codigo)
+
+        ingresos_lineas = []
+        gastos_lineas = []
+        total_ingresos = Decimal("0")
+        total_gastos = Decimal("0")
+        cogs_total = Decimal("0")
+
+        for row in query.all():
+            debito = Decimal(str(row.total_debito))
+            credito = Decimal(str(row.total_credito))
+
+            if row.codigo.startswith("4"):
+                saldo = credito - debito
+                if saldo != 0:
+                    ingresos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_ingresos += saldo
+            else:
+                # 5xxx or 6xxx — natural balance DEBITO
+                saldo = debito - credito
+                if saldo != 0:
+                    gastos_lineas.append({"codigo": row.codigo, "nombre": row.nombre, "saldo": str(saldo)})
+                    total_gastos += saldo
+                    if row.codigo.startswith("6"):
+                        cogs_total += saldo
+
+        utilidad_bruta = total_ingresos - cogs_total
+        utilidad_neta = total_ingresos - total_gastos
+
+        return {
+            "ingresos": {"total": str(total_ingresos), "lineas": ingresos_lineas},
+            "gastos": {"total": str(total_gastos), "lineas": gastos_lineas},
+            "utilidad_bruta": str(utilidad_bruta),
+            "utilidad_neta": str(utilidad_neta),
+        }
+
     def obtener_balance_prueba(
         self, fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None
     ) -> List[dict]:
