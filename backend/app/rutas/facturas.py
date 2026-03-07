@@ -23,6 +23,7 @@ from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_inventario import ServicioInventario
 from ..servicios.servicio_pdf import ServicioPDF
 from ..servicios.servicio_sse import sse_manager
+from ..utils.cufe import formatear_valor_cufe, generar_cufe
 from ..utils.logger import setup_logger
 from ..utils.secuencia_helper import generar_numero_secuencia
 from ..utils.seguridad import UserContext, get_current_user, get_tenant_id_from_token, require_tenant_roles
@@ -441,6 +442,29 @@ async def emitir_factura(
                 factura.url_pdf = key
     except Exception as e:
         logger.warning(f"Error generando PDF para factura {factura.numero_venta}: {e}")
+
+    # Generar CUFE (C-23) — Resolución DIAN 000042/2016
+    try:
+        tenant = db.query(Tenants).filter(Tenants.id == tenant_id).first()
+        tercero = db.query(Terceros).filter(Terceros.id == factura.tercero_id).first()
+        if tenant and tenant.nit and tercero:
+            from datetime import datetime as _dt
+
+            llave_tecnica = (tenant.configuracion or {}).get("dian_llave_tecnica", "TEST_LLAVE_TECNICA")
+            tipo_ambiente = (tenant.configuracion or {}).get("dian_tipo_ambiente", "2")
+            factura.cufe = generar_cufe(
+                nit_emisor=tenant.nit.replace("-", "").replace(" ", ""),
+                fecha_hora=_dt.now().strftime("%Y%m%d%H%M%S"),
+                numero_factura=factura.numero_venta,
+                valor_total=formatear_valor_cufe(factura.total_venta),
+                valor_iva=formatear_valor_cufe(factura.total_iva),
+                codigo_tipo_operacion="01",
+                nit_receptor=tercero.numero_documento,
+                tipo_ambiente=tipo_ambiente,
+                llave_tecnica=llave_tecnica,
+            )
+    except Exception as e:
+        logger.warning(f"CUFE no generado para factura {factura.numero_venta}: {e}")
 
     factura.estado = "FACTURADA"
 

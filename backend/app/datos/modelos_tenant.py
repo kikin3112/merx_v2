@@ -109,6 +109,9 @@ class Tenants(Base):
     fecha_fin_suscripcion = Column(DateTime, nullable=True)
     dias_gracia = Column(Integer, default=5)
 
+    # DIAN: Régimen tributario del tenant (C-24)
+    regimen_tributario = Column(String(50), nullable=True, default="RESPONSABLE_IVA")
+
     # Configuración general (JSON flexible)
     configuracion = Column(JSONB, nullable=True, default=dict)
 
@@ -123,6 +126,11 @@ class Tenants(Base):
     __table_args__ = (
         CheckConstraint(
             "estado IN ('activo', 'suspendido', 'cancelado', 'trial', 'pendiente')", name="check_estado_tenant_valido"
+        ),
+        CheckConstraint(
+            "regimen_tributario IS NULL OR regimen_tributario IN "
+            "('RESPONSABLE_IVA', 'REGIMEN_SIMPLE', 'REGIMEN_ESPECIAL', 'NO_RESPONSABLE')",
+            name="check_regimen_tributario_tenant_valido",
         ),
         Index("idx_tenants_estado", "estado"),
         Index("idx_tenants_plan", "plan_id"),

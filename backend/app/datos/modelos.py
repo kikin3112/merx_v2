@@ -68,6 +68,15 @@ class TipoMovimiento(str, PyEnum):
     DEVOLUCION = "DEVOLUCION"
 
 
+class RegimentTributario(str, PyEnum):
+    """Régimen tributario colombiano (DIAN)."""
+
+    RESPONSABLE_IVA = "RESPONSABLE_IVA"
+    REGIMEN_SIMPLE = "REGIMEN_SIMPLE"
+    REGIMEN_ESPECIAL = "REGIMEN_ESPECIAL"
+    NO_RESPONSABLE = "NO_RESPONSABLE"
+
+
 # ============================================================================
 # MODELO: Usuarios
 # ============================================================================
@@ -122,6 +131,8 @@ class Terceros(TenantAuditMixin, Base):
     telefono = Column(String(50))
     email = Column(String(100))
     estado = Column(Boolean, default=True, nullable=False)
+    # Tributario DIAN (C-24)
+    regimen_tributario = Column(String(50), nullable=True, default=RegimentTributario.RESPONSABLE_IVA.value)
     # CRM fields
     notas = Column(Text)
     limite_credito = Column(Numeric(15, 2), default=Decimal("0.00"), server_default="0.00")
@@ -139,6 +150,11 @@ class Terceros(TenantAuditMixin, Base):
     __table_args__ = (
         CheckConstraint("tipo_documento IN ('CC', 'NIT', 'CE', 'PAS', 'TI')", name="check_tipo_documento_valido"),
         CheckConstraint("tipo_tercero IN ('CLIENTE', 'PROVEEDOR', 'AMBOS')", name="check_tipo_tercero_valido"),
+        CheckConstraint(
+            "regimen_tributario IS NULL OR regimen_tributario IN "
+            "('RESPONSABLE_IVA', 'REGIMEN_SIMPLE', 'REGIMEN_ESPECIAL', 'NO_RESPONSABLE')",
+            name="check_regimen_tributario_tercero_valido",
+        ),
         # Número de documento único por tenant
         Index("idx_terceros_tenant_documento", "tenant_id", "numero_documento", unique=True),
     )
@@ -292,6 +308,8 @@ class Ventas(TenantAuditMixin, Base):
     descuento_global = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     observaciones = Column(Text)
     url_pdf = Column(String(500), nullable=True)
+    # DIAN: Código Único de Factura Electrónica — SHA-384 (C-23)
+    cufe = Column(String(96), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -461,6 +479,9 @@ class Compras(TenantAuditMixin, Base):
     estado = Column(Enum(EstadoCompra), nullable=False, default=EstadoCompra.PENDIENTE)
     descuento_global = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     observaciones = Column(Text)
+    # DIAN: Retenciones calculadas al recibir la compra (C-22)
+    retencion_renta = Column(Numeric(15, 2), nullable=True, default=None)
+    retencion_ica = Column(Numeric(15, 2), nullable=True, default=None)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
