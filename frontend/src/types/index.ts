@@ -357,6 +357,19 @@ export interface BalanceCuenta {
   saldo: number;
 }
 
+export interface LineaEstadoResultados {
+  codigo: string;
+  nombre: string;
+  saldo: string;
+}
+
+export interface EstadoResultados {
+  ingresos: { total: string; lineas: LineaEstadoResultados[] };
+  gastos: { total: string; lineas: LineaEstadoResultados[] };
+  utilidad_bruta: string;
+  utilidad_neta: string;
+}
+
 // ---- Dashboard / Reportes ----
 
 export interface DashboardKPIs {
