@@ -2,6 +2,7 @@
 Rutas para gestion de Recetas (BOM) y produccion.
 """
 
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -30,6 +31,7 @@ from ..datos.modelos import (
     RecetasIngredientes,
     Usuarios,
 )
+from ..servicios.servicio_contabilidad import ServicioContabilidad
 from ..servicios.servicio_costos_indirectos import ServicioCostosIndirectos
 from ..servicios.servicio_ia_costeo import ServicioIACosteo
 from ..servicios.servicio_inventario import ServicioInventario
@@ -539,10 +541,23 @@ async def producir_desde_receta(
             usuario_id=ctx.user.id,
             observaciones=produccion_data.observaciones,
         )
-        return ProduccionResponse(**resultado)
-
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # C-15: Crear asiento contable de producción (try/except — no bloquea si falta config)
+    try:
+        svc_cont = ServicioContabilidad(db, ctx.tenant_id)
+        svc_cont.crear_asiento_produccion(
+            fecha=date.today(),
+            costo_produccion=Decimal(str(resultado["costo_total"])),
+            documento_referencia=resultado["documento_referencia"],
+        )
+        db.commit()
+    except (ValueError, Exception) as e:
+        logger.warning(f"C-15: No se pudo crear asiento de producción para {resultado['documento_referencia']}: {e}")
+        db.rollback()
+
+    return ProduccionResponse(**resultado)
 
 
 @router.get("/{receta_id}/validar-stock")

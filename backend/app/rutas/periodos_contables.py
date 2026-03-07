@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..datos.db import get_db
 from ..datos.modelos import AsientosContables, PeriodosContables
+from ..servicios.servicio_audit import ServicioAuditLog
 from ..utils.logger import setup_logger
 from ..utils.seguridad import UserContext, require_tenant_roles
 
@@ -123,6 +124,18 @@ async def reabrir_periodo(
 
     db.commit()
     db.refresh(periodo)
+
+    # A-07: Registrar auditoría de reapertura
+    svc_audit = ServicioAuditLog(db)
+    svc_audit.registrar(
+        actor_id=ctx.user.id,
+        actor_email=ctx.user.email,
+        action="REABRIR_PERIODO",
+        resource_type="periodos_contables",
+        resource_id=periodo.id,
+        tenant_id=ctx.tenant_id,
+        changes={"anio": anio, "mes": mes, "estado_nuevo": "ABIERTO"},
+    )
 
     total_asientos = (
         db.query(func.count(AsientosContables.id))
