@@ -32,7 +32,7 @@ export function Hero() {
               background: 'var(--primary-dim)',
             }}
           >
-            ERP para emprendedor@s solitari@s
+            Asistente administrativo para emprendedor@s solitari@s
           </p>
 
           {/* Heading */}
