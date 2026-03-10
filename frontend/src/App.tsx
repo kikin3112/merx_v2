@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
+import { useThemeStore } from './stores/themeStore';
 import { usePageTracking } from './hooks/useAnalytics';
 import AppShell from './components/layout/AppShell';
 import ImpersonationBanner from './components/ImpersonationBanner';
@@ -69,10 +71,21 @@ function AnalyticsTracker() {
   return null;
 }
 
+function ColombiaThemeSync() {
+  const syncColombiaTheme = useThemeStore((s) => s.syncColombiaTheme);
+  useEffect(() => {
+    syncColombiaTheme();
+    const id = setInterval(syncColombiaTheme, 60_000); // revisa cada minuto
+    return () => clearInterval(id);
+  }, [syncColombiaTheme]);
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ColombiaThemeSync />
         <AnalyticsTracker />
         <ImpersonationBanner />
         <Routes>
