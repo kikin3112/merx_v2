@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tenants, usuariosAdmin, pqrs as pqrsApi } from '../api/endpoints';
+import { tenants, usuariosAdmin, pqrs as pqrsApi, calificaciones as calificacionesApi } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import { useAuthStore } from '../stores/authStore';
@@ -20,6 +20,7 @@ import type {
   UserTenantMembership,
   ImpersonationResponse,
   TicketPQRSAdmin,
+  CalificacionResponse,
 } from '../types';
 
 // ============================================================================
@@ -68,7 +69,7 @@ export default function TenantsPage() {
   const qc = useQueryClient();
 
   // --- State ---
-  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios' | 'tickets'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios' | 'tickets' | 'calificaciones'>('tenants');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
@@ -181,6 +182,18 @@ export default function TenantsPage() {
         ...(filtroTicketTipo ? { tipo: filtroTicketTipo } : {}),
       }).then((r) => r.data),
     enabled: activeTab === 'tickets',
+  });
+
+  // Calificaciones query + moderation
+  const [filtroCalEstado, setFiltroCalEstado] = useState('');
+  const { data: calificacionesData, isLoading: loadingCal, refetch: refetchCal } = useQuery<CalificacionResponse[]>({
+    queryKey: ['calificaciones-admin', filtroCalEstado],
+    queryFn: () => calificacionesApi.adminList(filtroCalEstado ? { estado: filtroCalEstado } : {}).then((r) => r.data),
+    enabled: activeTab === 'calificaciones',
+  });
+  const moderarMut = useMutation({
+    mutationFn: ({ id, estado }: { id: string; estado: string }) => calificacionesApi.moderar(id, estado),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['calificaciones-admin'] }); refetchCal(); },
   });
 
   const responderTicketMut = useMutation({
@@ -383,7 +396,7 @@ export default function TenantsPage() {
 
       {/* Tabs */}
       <div className="flex border-b cv-divider mb-4">
-        {(['tenants', 'planes', 'usuarios', 'tickets'] as const).map((tab) => (
+        {(['tenants', 'planes', 'usuarios', 'tickets', 'calificaciones'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -393,7 +406,7 @@ export default function TenantsPage() {
                 : 'border-transparent cv-muted'
             }`}
           >
-            {tab === 'tenants' ? 'Tenants' : tab === 'planes' ? 'Planes' : tab === 'usuarios' ? 'Usuarios' : 'Tickets PQRS'}
+            {tab === 'tenants' ? 'Tenants' : tab === 'planes' ? 'Planes' : tab === 'usuarios' ? 'Usuarios' : tab === 'tickets' ? 'Tickets PQRS' : 'Calificaciones'}
           </button>
         ))}
       </div>
@@ -1189,6 +1202,77 @@ export default function TenantsPage() {
                   {responderTicketMut.isPending ? 'Enviando...' : 'Enviar respuesta'}
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: Calificaciones */}
+      {activeTab === 'calificaciones' && (
+        <div>
+          {/* Filtros */}
+          <div className="flex gap-2 mb-4">
+            {(['', 'pendiente', 'aprobada', 'rechazada'] as const).map((e) => (
+              <button
+                key={e}
+                onClick={() => setFiltroCalEstado(e)}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                  filtroCalEstado === e
+                    ? 'bg-[var(--cv-primary)] text-[var(--cv-bg)]'
+                    : 'cv-elevated cv-muted hover:opacity-80'
+                }`}
+              >
+                {e === '' ? 'Todas' : e.charAt(0).toUpperCase() + e.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {loadingCal ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <div key={i} className="h-20 cv-elevated rounded-lg animate-pulse" />)}
+            </div>
+          ) : !calificacionesData?.length ? (
+            <p className="cv-muted text-sm py-8 text-center">Sin calificaciones{filtroCalEstado ? ` en estado "${filtroCalEstado}"` : ''}.</p>
+          ) : (
+            <div className="space-y-3">
+              {calificacionesData.map((cal) => (
+                <div key={cal.id} className="cv-card p-4 flex flex-col sm:flex-row sm:items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-medium cv-text text-sm">{cal.nombre_empresa || '—'}</span>
+                      <span className={`cv-badge ${cal.estado === 'aprobada' ? 'cv-badge-positive' : cal.estado === 'rechazada' ? 'cv-badge-negative' : 'cv-badge-accent'}`}>
+                        {cal.estado}
+                      </span>
+                      <span className="text-xs cv-muted">{formatDate(cal.created_at)}</span>
+                    </div>
+                    <div className="flex gap-0.5 mb-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <span key={s} className={s <= cal.estrellas ? 'text-[var(--cv-primary)]' : 'cv-muted'}>★</span>
+                      ))}
+                    </div>
+                    {cal.titulo && <p className="text-sm font-medium cv-text">{cal.titulo}</p>}
+                    {cal.comentario && <p className="text-sm cv-muted mt-0.5 line-clamp-2">{cal.comentario}</p>}
+                  </div>
+                  {cal.estado === 'pendiente' && (
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => moderarMut.mutate({ id: cal.id, estado: 'aprobada' })}
+                        disabled={moderarMut.isPending}
+                        className="rounded px-3 py-1.5 text-xs font-medium bg-[var(--cv-positive-dim)] text-[var(--cv-positive)] hover:opacity-80 transition-opacity disabled:opacity-50"
+                      >
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() => moderarMut.mutate({ id: cal.id, estado: 'rechazada' })}
+                        disabled={moderarMut.isPending}
+                        className="rounded px-3 py-1.5 text-xs font-medium bg-[var(--cv-negative-dim)] text-[var(--cv-negative)] hover:opacity-80 transition-opacity disabled:opacity-50"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
