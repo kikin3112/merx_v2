@@ -112,6 +112,8 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         "/api/v1/admin/seed",
         "/api/v1/auth/clerk-exchange",  # Clerk: no tiene tenant aún al intercambiar token
         "/api/v1/auth/clerk-webhook",  # Clerk: webhook del sistema, sin tenant
+        "/api/v1/calificaciones/admin",  # Superadmin: no selecciona tenant
+        "/api/v1/calificaciones/publicas",  # Público: landing page sin tenant
     }
 
     # Prefijos que no requieren tenant_id
@@ -196,6 +198,10 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
         # Verificar prefijos
         if path.startswith(self.EXCLUDED_PREFIXES):
+            return True
+
+        # Superadmin: moderación de calificaciones (UUID variable en path)
+        if path.endswith("/moderar") and "/calificaciones/" in path:
             return True
 
         return False

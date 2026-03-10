@@ -1946,6 +1946,7 @@ class CalificacionResponse(BaseModel):
     estrellas: int
     titulo: Optional[str] = None
     comentario: Optional[str] = None
+    nombre_empresa: Optional[str] = None
     estado: str
     created_at: datetime
     updated_at: Optional[datetime] = None

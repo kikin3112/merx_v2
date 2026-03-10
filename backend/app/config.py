@@ -189,6 +189,11 @@ class Settings(BaseSettings):
         description="Clerk JWKS URL (e.g., https://xxx.clerk.accounts.dev/.well-known/jwks.json)",
     )
 
+    SUPERADMIN_EMAIL: Optional[str] = Field(
+        default=None,
+        description="Email del superadmin del sistema. Si coincide con un usuario Clerk, se le asigna es_superadmin=True automáticamente.",
+    )
+
     # ============================================================================
     # IA / LLM
     # ============================================================================

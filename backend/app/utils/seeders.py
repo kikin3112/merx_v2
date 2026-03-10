@@ -10,6 +10,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..datos.db import SessionLocal
 from ..datos.modelos import (
     ConfiguracionContable,
@@ -115,6 +116,14 @@ def seed_superadmin_and_tenant(db: Session, plan_id: UUID) -> tuple[UUID, UUID]:
         db.add(superadmin)
         db.flush()
         logger.info("  Superadmin creado: superadmin@chandelier.com / superadmin123")
+
+    # Si SUPERADMIN_EMAIL está configurado, asegurar que ese usuario tenga es_superadmin=True
+    if settings.SUPERADMIN_EMAIL:
+        sa_email_user = db.query(Usuarios).filter(Usuarios.email == settings.SUPERADMIN_EMAIL).first()
+        if sa_email_user and not sa_email_user.es_superadmin:
+            sa_email_user.es_superadmin = True
+            db.flush()
+            logger.info(f"  es_superadmin=True aplicado a {settings.SUPERADMIN_EMAIL} via SUPERADMIN_EMAIL")
 
     # Tenant demo
     tenant = db.query(Tenants).filter(Tenants.slug == "demo").first()
