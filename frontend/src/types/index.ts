@@ -1169,6 +1169,7 @@ export interface CalificacionResponse {
   estrellas: number;
   titulo: string | null;
   comentario: string | null;
+  nombre_empresa: string | null;
   estado: string;
   created_at: string;
 }
