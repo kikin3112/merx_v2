@@ -90,7 +90,10 @@ export default function MobileDrawer({ open, onClose }: Props) {
           {superadminItems.length > 0 && (
             <>
               {mainItems.length > 0 && <div className="my-2 mx-3 border-t" style={{ borderColor: 'var(--cv-border)' }} />}
-              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider font-mono" style={{ color: 'var(--cv-muted)' }}>
+              <p
+                className="px-3 pt-3 pb-1.5 text-[9px] font-mono tracking-[0.15em] uppercase"
+                style={{ color: 'rgba(168,168,168,0.45)' }}
+              >
                 SuperAdmin
               </p>
               {superadminTabItems.map((item) => {
@@ -102,8 +105,9 @@ export default function MobileDrawer({ open, onClose }: Props) {
                     key={item.to}
                     to={item.to}
                     onClick={onClose}
-                    className={`cv-nav-item flex items-center gap-2 pl-7 pr-3 py-2 rounded-lg text-sm${isActive ? ' active font-medium' : ''}`}
+                    className={`cv-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-[2px]${isActive ? ' active' : ''}`}
                   >
+                    <item.icon className="h-5 w-5 shrink-0" />
                     {item.label}
                   </NavLink>
                 );
