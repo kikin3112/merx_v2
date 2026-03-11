@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tenants, usuariosAdmin, pqrs as pqrsApi, calificaciones as calificacionesApi } from '../api/endpoints';
@@ -75,9 +75,13 @@ export default function TenantsPage() {
 
   // --- State ---
   const tabParam = searchParams.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(
-    tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : 'tenants'
-  );
+  const resolvedTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : 'tenants';
+  const [activeTab, setActiveTab] = useState<TabType>(resolvedTab);
+
+  // Sync activeTab when URL search params change (sidebar/drawer navigation)
+  useEffect(() => {
+    setActiveTab(resolvedTab);
+  }, [resolvedTab]);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
