@@ -1448,6 +1448,7 @@ class TokenWithTenants(BaseModel):
     expires_in: int
     user: "UsuarioResponse"
     tenants: List[TenantBriefResponse] = []
+    is_new_user: bool = False
 
 
 class TokenWithTenant(BaseModel):

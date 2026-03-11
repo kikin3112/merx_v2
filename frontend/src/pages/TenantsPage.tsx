@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tenants, usuariosAdmin, pqrs as pqrsApi, calificaciones as calificacionesApi } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -65,11 +66,18 @@ function ProgressBar({ value, max, label }: { value: number; max: number; label:
 // MAIN COMPONENT
 // ============================================================================
 
+const VALID_TABS = ['tenants', 'planes', 'usuarios', 'tickets', 'calificaciones'] as const;
+type TabType = typeof VALID_TABS[number];
+
 export default function TenantsPage() {
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   // --- State ---
-  const [activeTab, setActiveTab] = useState<'tenants' | 'planes' | 'usuarios' | 'tickets' | 'calificaciones'>('tenants');
+  const tabParam = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(
+    tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : 'tenants'
+  );
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 

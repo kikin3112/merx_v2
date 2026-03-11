@@ -36,7 +36,7 @@ async def crear_nueva_venta(
 ):
     """Crea una nueva venta."""
     try:
-        nueva_venta = crear_venta(db, venta_data, tenant_id)
+        nueva_venta = crear_venta(db, venta_data, tenant_id, user_id=current_user.id)
         db.commit()
 
         logger.info(
@@ -109,7 +109,7 @@ async def actualizar_venta_endpoint(
 ):
     """Actualiza una venta existente."""
     try:
-        venta = actualizar_venta(db, venta_id, venta_data, tenant_id)
+        venta = actualizar_venta(db, venta_id, venta_data, tenant_id, user_id=current_user.id)
         db.commit()
 
         logger.info(
@@ -157,6 +157,7 @@ async def reemplazar_venta(
     venta.fecha_venta = data.fecha_venta
     venta.descuento_global = getattr(data, "descuento_global", Decimal("0.00")) or Decimal("0.00")
     venta.observaciones = data.observaciones
+    venta.updated_by = current_user.id
 
     # Borrar detalles existentes
     db.query(VentasDetalle).filter(VentasDetalle.venta_id == venta_id, VentasDetalle.tenant_id == tenant_id).delete()
@@ -350,7 +351,7 @@ async def pos_venta_rapida(
     Combina crear_venta() + confirmar_venta() para flujo rápido de punto de venta.
     """
     try:
-        nueva_venta = crear_venta(db, venta_data, tenant_id)
+        nueva_venta = crear_venta(db, venta_data, tenant_id, user_id=current_user.id)
         db.flush()
 
         venta_confirmada = confirmar_venta(db, nueva_venta.id, tenant_id)

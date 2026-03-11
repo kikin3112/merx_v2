@@ -63,6 +63,19 @@ const superadminItems: NavItem[] = [
   { to: '/tenants', label: 'Tenants', icon: BuildingOffice2Icon, roles: [] },
 ];
 
+export interface SuperadminTabItem {
+  to: string;
+  label: string;
+}
+
+export const superadminTabItems: SuperadminTabItem[] = [
+  { to: '/tenants', label: 'Tenants' },
+  { to: '/tenants?tab=planes', label: 'Planes' },
+  { to: '/tenants?tab=usuarios', label: 'Usuarios' },
+  { to: '/tenants?tab=tickets', label: 'Tickets PQRS' },
+  { to: '/tenants?tab=calificaciones', label: 'Calificaciones' },
+];
+
 const BOTTOM_NAV_PATHS = ['/', '/comercial', '/pos', '/productos'];
 
 export function useNavigation() {

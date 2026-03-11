@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useNavigation } from '../../hooks/useNavigation';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { XMarkIcon, StarIcon } from '@heroicons/react/24/outline';
+import { useNavigation, superadminTabItems } from '../../hooks/useNavigation';
 import { useAuthStore } from '../../stores/authStore';
 import LogoutButton from './LogoutButton';
+import CalificacionModal from '../CalificacionModal';
 
 interface Props {
   open: boolean;
@@ -12,7 +13,9 @@ interface Props {
 
 export default function MobileDrawer({ open, onClose }: Props) {
   const { mainItems, superadminItems, isSuperadminOnly, user } = useNavigation();
+  const location = useLocation();
   const { tenantName } = useAuthStore();
+  const [showCalificacion, setShowCalificacion] = useState(false);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -90,22 +93,37 @@ export default function MobileDrawer({ open, onClose }: Props) {
               <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider font-mono" style={{ color: 'var(--cv-muted)' }}>
                 SuperAdmin
               </p>
-              {superadminItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `cv-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium${isActive ? ' active' : ''}`
-                  }
-                >
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  {item.label}
-                </NavLink>
-              ))}
+              {superadminTabItems.map((item) => {
+                const [itemPath, itemSearch] = item.to.split('?');
+                const isActive = location.pathname === itemPath &&
+                  (itemSearch ? location.search === `?${itemSearch}` : !location.search);
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onClose}
+                    className={`cv-nav-item flex items-center gap-2 pl-7 pr-3 py-2 rounded-lg text-sm${isActive ? ' active font-medium' : ''}`}
+                  >
+                    {item.label}
+                  </NavLink>
+                );
+              })}
             </>
           )}
         </nav>
+
+        {/* Calificar el sistema */}
+        {!isSuperadminOnly && (
+          <div className="px-2 pb-2">
+            <button
+              onClick={() => { setShowCalificacion(true); onClose(); }}
+              className="cv-nav-item flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
+            >
+              <StarIcon className="h-5 w-5 shrink-0" />
+              Calificar el sistema
+            </button>
+          </div>
+        )}
 
         {/* User footer */}
         <div className="border-t p-3 pb-[env(safe-area-inset-bottom)]" style={{ borderColor: 'var(--cv-border)' }}>
@@ -123,6 +141,10 @@ export default function MobileDrawer({ open, onClose }: Props) {
           </div>
         </div>
       </aside>
+
+      {showCalificacion && (
+        <CalificacionModal onClose={() => setShowCalificacion(false)} />
+      )}
     </>
   );
 }

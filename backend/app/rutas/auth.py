@@ -411,6 +411,7 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
     # Buscar o crear usuario
     es_superadmin_email = settings.SUPERADMIN_EMAIL and email.lower() == settings.SUPERADMIN_EMAIL.lower()
     user = db.query(Usuarios).filter(Usuarios.email == email).first()
+    is_new_user = False
     if not user:
         # Lazy sync: crear usuario sin tenant, con password aleatorio
         nombre = clerk_payload.get("first_name", "") or ""
@@ -428,6 +429,7 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
+        is_new_user = True
         logger.info(f"Usuario creado via Clerk sync: {email}")
     elif es_superadmin_email and not user.es_superadmin:
         # El usuario ya existe pero no tiene es_superadmin — corregir
@@ -471,6 +473,7 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UsuarioResponse.model_validate(user),
         tenants=tenants_response,
+        is_new_user=is_new_user,
     )
 
 

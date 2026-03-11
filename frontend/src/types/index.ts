@@ -61,6 +61,7 @@ export interface LoginResponse {
   expires_in: number;
   user: User;
   tenants: Tenant[];
+  is_new_user?: boolean;
 }
 
 export interface TenantTokenResponse {
