@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { StarIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
-import { useNavigation } from '../../hooks/useNavigation';
+import { useNavigation, superadminTabItems } from '../../hooks/useNavigation';
 import CalificacionModal from '../CalificacionModal';
 import LogoutButton from './LogoutButton';
 
@@ -19,6 +19,7 @@ export default function Sidebar() {
   const { tenantName, tenantLogo } = useAuthStore();
   const { navGroups, superadminItems, isSuperadminOnly, user } = useNavigation();
   const { theme, toggleTheme } = useThemeStore();
+  const location = useLocation();
   const [showCalificacion, setShowCalificacion] = useState(false);
 
   const logoSrc = buildLogoUrl(tenantLogo);
@@ -86,18 +87,21 @@ export default function Sidebar() {
             >
               SuperAdmin
             </p>
-            {superadminItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `cv-nav-item flex items-center gap-[10px] px-[10px] py-[9px] rounded-[10px] text-[13px] font-medium mb-[2px]${isActive ? ' active' : ''}`
-                }
-              >
-                <item.icon className="h-[18px] w-[18px] shrink-0" />
-                {item.label}
-              </NavLink>
-            ))}
+            {superadminTabItems.map((item) => {
+              const [itemPath, itemSearch] = item.to.split('?');
+              const isActive = location.pathname === itemPath &&
+                (itemSearch ? location.search === `?${itemSearch}` : !location.search);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={`cv-nav-item flex items-center gap-[10px] px-[10px] py-[9px] rounded-[10px] text-[13px] font-medium mb-[2px]${isActive ? ' active' : ''}`}
+                >
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </div>
         )}
       </nav>
