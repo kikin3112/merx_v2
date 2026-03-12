@@ -273,17 +273,23 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
         # para no duplicar la llamada a calcular_costo_receta.
         costo_unitario_completo: Decimal = Decimal(str(context.get("costo_unitario_completo", "0")))
 
-        # Fix 1: precio_sugerido must be >= costo_unitario_completo (no vender a pérdida neta)
-        if validated.precio_sugerido < costo_unitario_completo:
-            precios_viables = [
+        # Fix 1: Anclar precio_sugerido al escenario "Precio objetivo" para consistencia
+        # con calcular-costo.precio_sugerido (única fuente de verdad matemática).
+        precio_objetivo_escenario: Optional[Decimal] = next(
+            (
                 Decimal(str(e["precio"]))
                 for e in context.get("escenarios", [])
-                if e.get("viabilidad") in ("VIABLE", "CRITICO")
-                and Decimal(str(e.get("precio", 0))) > costo_unitario_completo
-            ]
-            precio_corregido = min(precios_viables) if precios_viables else costo_unitario_completo
-            validated = validated.model_copy(update={"precio_sugerido": precio_corregido})
-            logger.warning(f"Socia: precio_sugerido < costo_unitario_completo corregido a {precio_corregido}")
+                if str(e.get("nombre", "")).startswith("Precio objetivo")
+            ),
+            None,
+        )
+        if precio_objetivo_escenario is not None and precio_objetivo_escenario > 0:
+            validated = validated.model_copy(update={"precio_sugerido": precio_objetivo_escenario})
+            logger.info(f"Socia: precio_sugerido anclado al escenario objetivo → {precio_objetivo_escenario}")
+        elif validated.precio_sugerido < costo_unitario_completo:
+            # Fallback: nunca vender por debajo del costo completo
+            validated = validated.model_copy(update={"precio_sugerido": costo_unitario_completo})
+            logger.warning(f"Socia: precio_sugerido < costo_unitario_completo, corregido a {costo_unitario_completo}")
 
         # Fix 2: margen_esperado recalculado deterministicamente usando costo total
         # (margen neto, no margen de contribución) — consistente con calcular_costo_receta
