@@ -24,7 +24,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 from .db import Base
-from .mixins import TenantAuditMixin, TenantMixin
+from .mixins import TenantAuditMixin, TenantMixin, UTCDateTime
 
 # Quantize helper — explicit 2-decimal rounding for all monetary calculations (A-01)
 _CENT = Decimal("0.01")
@@ -97,7 +97,7 @@ class Usuarios(Base):
     rol = Column(String(50), nullable=False, default="operador")  # Rol global
     estado = Column(Boolean, default=True, nullable=False)
     es_superadmin = Column(Boolean, default=False, nullable=False)  # SuperAdmin del sistema
-    ultimo_acceso = Column(DateTime(timezone=True), nullable=True)
+    ultimo_acceso = Column(UTCDateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -814,8 +814,8 @@ class CostosIndirectos(TenantAuditMixin, Base):
     monto = Column(Numeric(15, 2), nullable=False)
     tipo = Column(Enum(TipoCostoIndirecto), nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(UTCDateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(UTCDateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         CheckConstraint("monto >= 0", name="check_costo_indirecto_monto_positivo"),
@@ -834,10 +834,10 @@ class SociaProgress(TenantAuditMixin, Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
     logro_id = Column(String(50), nullable=False)
-    desbloqueado_en = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    desbloqueado_en = Column(UTCDateTime, nullable=False, server_default=func.now())
     nivel_actual = Column(String(20), default="emprendedora", nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(UTCDateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(UTCDateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relaciones
     usuario = relationship("Usuarios", foreign_keys=[user_id])
@@ -1321,8 +1321,8 @@ class ProductoEquivalenciaUnidad(TenantMixin, Base):
     unidad_receta = Column(String(20), nullable=False)
     factor = Column(Numeric(15, 6), nullable=False)
     notas = Column(String(200), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(UTCDateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(UTCDateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relaciones
     producto = relationship("Productos")
@@ -1355,12 +1355,12 @@ class RecetaCostoHistorico(TenantMixin, Base):
     costo_unitario = Column(Numeric(15, 2), nullable=False)
     precio_sugerido = Column(Numeric(15, 2), nullable=True)
     confirmado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
-    confirmado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    confirmado_en = Column(UTCDateTime, server_default=func.now(), nullable=False)
     snapshot_detalle = Column(Text, nullable=True)  # JSON serializado
     vigente_desde = Column(Date, nullable=True)
     vigente_hasta = Column(Date, nullable=True)
     notas_confirmacion = Column(String(500), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(UTCDateTime, server_default=func.now(), nullable=False)
 
     # Relaciones
     receta = relationship("Recetas")

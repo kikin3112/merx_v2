@@ -5,9 +5,27 @@ Proporcionan campos comunes para multi-tenancy, auditoría y soft deletes.
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, func
+from sqlalchemy import Column, DateTime, ForeignKey, TypeDecorator, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declared_attr, relationship
+
+
+class UTCDateTime(TypeDecorator):
+    """
+    DateTime que garantiza que los valores cargados desde la DB tengan
+    siempre tzinfo=UTC, independientemente del comportamiento del driver.
+
+    Esto evita el bug donde psycopg2 retorna datetimes naive para columnas
+    TIMESTAMPTZ y el frontend los interpreta como hora local en vez de UTC.
+    """
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class TenantMixin:
@@ -45,7 +63,7 @@ class SoftDeleteMixin:
 
     @declared_attr
     def deleted_at(self):
-        return Column(DateTime(timezone=True), nullable=True, index=True)
+        return Column(UTCDateTime, nullable=True, index=True)
 
     @declared_attr
     def deleted_by(self):
@@ -80,11 +98,11 @@ class AuditMixin:
 
     @declared_attr
     def created_at(self):
-        return Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+        return Column(UTCDateTime, server_default=func.now(), nullable=False)
 
     @declared_attr
     def updated_at(self):
-        return Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+        return Column(UTCDateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     @declared_attr
     def created_by(self):
