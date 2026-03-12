@@ -144,7 +144,7 @@ export function CostoBreakdownChart({ costo: raw, costoEstandar, onFijarCosto, f
       {c.precio_sugerido && c.margen_objetivo && (
         <div className="cv-card p-3 flex items-center justify-between" style={{ background: 'var(--cv-primary-dim)', borderColor: 'var(--cv-primary)' }}>
           <div>
-            <p className="text-xs cv-primary font-medium">Tu Socia te sugiere</p>
+            <p className="text-xs cv-primary font-medium">Precio sugerido con tu margen</p>
             <p className="text-lg font-bold cv-text">{formatCurrency(c.precio_sugerido)}</p>
           </div>
           <div className="text-right">

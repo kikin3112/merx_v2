@@ -15,6 +15,7 @@ import {
   QueueListIcon,
   ShoppingBagIcon,
   BookOpenIcon,
+  StarIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/authStore';
 
@@ -61,6 +62,20 @@ const NAV_GROUPS: Array<{ id: string; label: string | null; paths: string[] }> =
 
 const superadminItems: NavItem[] = [
   { to: '/tenants', label: 'Tenants', icon: BuildingOffice2Icon, roles: [] },
+];
+
+export interface SuperadminTabItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
+export const superadminTabItems: SuperadminTabItem[] = [
+  { to: '/tenants', label: 'Tenants', icon: BuildingOffice2Icon },
+  { to: '/tenants?tab=planes', label: 'Planes', icon: CreditCardIcon },
+  { to: '/tenants?tab=usuarios', label: 'Usuarios', icon: UserGroupIcon },
+  { to: '/tenants?tab=tickets', label: 'Tickets PQRS', icon: LifebuoyIcon },
+  { to: '/tenants?tab=calificaciones', label: 'Calificaciones', icon: StarIcon },
 ];
 
 const BOTTOM_NAV_PATHS = ['/', '/comercial', '/pos', '/productos'];

@@ -22,6 +22,7 @@ engine = create_engine(
     pool_recycle=3600,  # Recicla conexiones cada hora
     pool_timeout=30,  # Timeout de 30 segundos para obtener conexión
     echo=settings.DEBUG,  # SQL logging solo en desarrollo
+    connect_args={"options": "-c timezone=UTC"},  # Garantiza datetimes UTC en todas las conexiones
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

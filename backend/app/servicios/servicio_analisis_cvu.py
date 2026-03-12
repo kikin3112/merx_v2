@@ -219,7 +219,18 @@ class ServicioAnalisisCVU:
         5. Precio premium — mercado * 1.30
         """
         receta = self._get_receta(receta_id)
-        cvu = self._calcular_cvu(receta_id)
+        # Calcular costo con CIF (mismo flujo que el endpoint /calcular-costo)
+        resultado_base = self._calculadora.calcular_costo_receta(receta_id)
+        costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
+        cif_fijo, cif_porc = self._indirectos.calcular_fijo_y_porcentaje(costo_base)
+        resultado_con_cif = self._calculadora.calcular_costo_receta(
+            receta_id, cif_fijo_mensual=cif_fijo, cif_porcentaje=cif_porc
+        )
+        cantidad = receta.cantidad_resultado if receta.cantidad_resultado > 0 else 1
+        # CVU (costo primo/cantidad) — para PE y análisis de contribución (excluye CIF fijo)
+        cvu = (Decimal(str(resultado_base["costo_primo"])) / cantidad).quantize(_D01, rounding=ROUND_HALF_UP)
+        # costo_unitario_completo incluye CIF prorrateado — única fuente de verdad para precio objetivo
+        costo_unitario_completo = Decimal(str(resultado_con_cif["costo_unitario"]))
         vol = Decimal(volumen)
 
         def _build_escenario(nombre: str, precio: Decimal, cf: Decimal, v: Decimal) -> dict:
@@ -268,13 +279,17 @@ class ServicioAnalisisCVU:
         escenarios.append(_build_escenario("Precio de equilibrio", precio_equilibrio, costos_fijos, vol))
 
         # 3. Precio objetivo (margen_objetivo de la receta)
+        # Usa costo_unitario_completo (con CIF) para que coincida exactamente con
+        # calcular_costo_receta.precio_sugerido — única fuente de verdad.
         margen_obj = getattr(receta, "margen_objetivo", None)
         if margen_obj and margen_obj > 0:
-            precio_objetivo = (cvu / (_ONE - margen_obj / _HUNDRED)).quantize(_D01, rounding=ROUND_HALF_UP)
+            precio_objetivo = (costo_unitario_completo / (_ONE - margen_obj / _HUNDRED)).quantize(
+                _D01, rounding=ROUND_HALF_UP
+            )
             escenarios.append(_build_escenario(f"Precio objetivo ({margen_obj}%)", precio_objetivo, costos_fijos, vol))
         else:
-            # Fallback: 60% margen objetivo por defecto
-            precio_objetivo = (cvu / Decimal("0.40")).quantize(_D01, rounding=ROUND_HALF_UP)
+            # Fallback: 60% margen objetivo por defecto sobre costo total
+            precio_objetivo = (costo_unitario_completo / Decimal("0.40")).quantize(_D01, rounding=ROUND_HALF_UP)
             escenarios.append(_build_escenario("Precio objetivo (60%)", precio_objetivo, costos_fijos, vol))
 
         # 4. Precio mercado
@@ -293,6 +308,7 @@ class ServicioAnalisisCVU:
         return {
             "receta_nombre": receta.nombre,
             "costo_variable_unitario": cvu,
+            "costo_unitario_completo": costo_unitario_completo,
             "escenarios": escenarios,
         }
 

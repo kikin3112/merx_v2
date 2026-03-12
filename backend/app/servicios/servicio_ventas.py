@@ -20,7 +20,7 @@ from ..utils.secuencia_helper import generar_numero_secuencia
 logger = setup_logger(__name__)
 
 
-def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Ventas:
+def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID, user_id: UUID = None) -> Ventas:
     """
     Crea una nueva venta con sus detalles.
 
@@ -28,6 +28,7 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         db: Sesión de base de datos
         venta_data: Datos de la venta a crear
         tenant_id: UUID del tenant
+        user_id: UUID del usuario que crea la venta (auditoría)
 
     Returns:
         Venta creada con todos los campos calculados
@@ -52,6 +53,8 @@ def crear_venta(db: Session, venta_data: VentasCreate, tenant_id: UUID) -> Venta
         estado="PENDIENTE",
         descuento_global=getattr(venta_data, "descuento_global", Decimal("0.00")) or Decimal("0.00"),
         observaciones=venta_data.observaciones,
+        created_by=user_id,
+        updated_by=user_id,
     )
     db.add(nueva_venta)
     db.flush()
@@ -151,7 +154,9 @@ def obtener_venta(db: Session, venta_id: UUID, tenant_id: UUID, lock: bool = Fal
     return venta
 
 
-def actualizar_venta(db: Session, venta_id: UUID, venta_data: VentasUpdate, tenant_id: UUID) -> Ventas:
+def actualizar_venta(
+    db: Session, venta_id: UUID, venta_data: VentasUpdate, tenant_id: UUID, user_id: UUID = None
+) -> Ventas:
     """Actualiza una venta existente."""
     venta = obtener_venta(db, venta_id, tenant_id)
 
@@ -174,6 +179,9 @@ def actualizar_venta(db: Session, venta_id: UUID, venta_data: VentasUpdate, tena
 
     if venta_data.observaciones is not None:
         venta.observaciones = venta_data.observaciones
+
+    if user_id is not None:
+        venta.updated_by = user_id
 
     logger.info(f"Venta {venta.numero_venta} actualizada - Estado: {venta.estado}")
 

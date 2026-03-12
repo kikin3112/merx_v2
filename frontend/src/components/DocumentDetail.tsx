@@ -681,7 +681,7 @@ export default function DocumentDetail({ tipo, doc, open, onClose, onUpdated }: 
 
           <div className="flex gap-2">
             {/* PDF */}
-            {!editing && (tipo === 'factura' || tipo === 'cotizacion') && (
+            {!editing && (tipo === 'factura' || tipo === 'cotizacion' || (tipo === 'venta' && doc.estado === 'FACTURADA')) && (
               <button
                 onClick={() => descargarPdf(doc.id, numero)}
                 className="cv-btn cv-btn-ghost"

@@ -105,5 +105,8 @@ def register_audit_listeners(session_factory) -> None:
         register_audit_listeners(SessionLocal)
         ```
     """
-    event.listen(session_factory, "before_flush", _auto_set_audit_fields)
+    # En SQLAlchemy 2.x, escuchar en Session (clase base) garantiza que el evento
+    # se dispare en TODAS las sesiones, no solo las del factory específico.
+    # event.listen(session_factory, ...) con una instancia de sessionmaker no propaga.
+    event.listen(Session, "before_flush", _auto_set_audit_fields)
     logger.info("Audit event listeners registered successfully")

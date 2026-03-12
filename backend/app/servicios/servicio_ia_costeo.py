@@ -6,7 +6,7 @@ Usa OpenRouter (API compatible con OpenAI) para orquestar el modelo LLM.
 import hashlib
 import json
 import re
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Optional
 from uuid import UUID
 
@@ -267,6 +267,38 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
             ) from exc
 
         validated = SociaAnalisisResponse(**raw)
+
+        # Post-validation: ground precio_sugerido and margen_esperado in real math
+        # costo_unitario_completo viene del contexto (ya calculado en generar_escenarios_precio)
+        # para no duplicar la llamada a calcular_costo_receta.
+        costo_unitario_completo: Decimal = Decimal(str(context.get("costo_unitario_completo", "0")))
+
+        # Fix 1: Anclar precio_sugerido al escenario "Precio objetivo" para consistencia
+        # con calcular-costo.precio_sugerido (única fuente de verdad matemática).
+        precio_objetivo_escenario: Optional[Decimal] = next(
+            (
+                Decimal(str(e["precio"]))
+                for e in context.get("escenarios", [])
+                if str(e.get("nombre", "")).startswith("Precio objetivo")
+            ),
+            None,
+        )
+        if precio_objetivo_escenario is not None and precio_objetivo_escenario > 0:
+            validated = validated.model_copy(update={"precio_sugerido": precio_objetivo_escenario})
+            logger.info(f"Socia: precio_sugerido anclado al escenario objetivo → {precio_objetivo_escenario}")
+        elif validated.precio_sugerido < costo_unitario_completo:
+            # Fallback: nunca vender por debajo del costo completo
+            validated = validated.model_copy(update={"precio_sugerido": costo_unitario_completo})
+            logger.warning(f"Socia: precio_sugerido < costo_unitario_completo, corregido a {costo_unitario_completo}")
+
+        # Fix 2: margen_esperado recalculado deterministicamente usando costo total
+        # (margen neto, no margen de contribución) — consistente con calcular_costo_receta
+        if validated.precio_sugerido > 0:
+            real_margen = (
+                (validated.precio_sugerido - costo_unitario_completo) / validated.precio_sugerido * Decimal("100")
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            validated = validated.model_copy(update={"margen_esperado": real_margen})
+
         result = validated.model_dump(mode="json")  # Decimals → str for JSONB storage
 
         receta.socia_cache = result

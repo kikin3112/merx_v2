@@ -61,6 +61,7 @@ export interface LoginResponse {
   expires_in: number;
   user: User;
   tenants: Tenant[];
+  is_new_user?: boolean;
 }
 
 export interface TenantTokenResponse {
@@ -1169,6 +1170,7 @@ export interface CalificacionResponse {
   estrellas: number;
   titulo: string | null;
   comentario: string | null;
+  nombre_empresa: string | null;
   estado: string;
   created_at: string;
 }

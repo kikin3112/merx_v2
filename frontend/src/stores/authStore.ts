@@ -26,7 +26,7 @@ interface AuthState {
   impersonation: ImpersonationState | null;
 
   login: (email: string, password: string) => Promise<Tenant[]>;
-  clerkExchange: (clerkToken: string) => Promise<Tenant[]>;
+  clerkExchange: (clerkToken: string) => Promise<{ tenants: Tenant[]; isNewUser: boolean }>;
   selectTenant: (tenantId: string) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => void;
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>()(
             // Redirigir a SelectTenantPage
           }
         }
-        return data.tenants;
+        return { tenants: data.tenants, isNewUser: data.is_new_user ?? false };
       },
 
       selectTenant: async (tenantId: string) => {

@@ -43,11 +43,23 @@ export default function ClerkCallbackPage() {
           return;
         }
 
-        const tenants = await clerkExchange(clerkToken);
+        const { tenants, isNewUser } = await clerkExchange(clerkToken);
         trackLogin('clerk');
 
+        // Leer el usuario actualizado directamente del store (sin closure stale)
+        const currentUser = useAuthStore.getState().user;
+
         if (tenants.length === 0) {
-          navigate('/registro/empresa', { replace: true });
+          if (currentUser?.es_superadmin) {
+            // Superadmin: siempre al panel de administración
+            navigate('/tenants', { replace: true });
+          } else if (isNewUser) {
+            // Usuario nuevo genuino: crear empresa
+            navigate('/registro/empresa', { replace: true });
+          } else {
+            // Usuario existente sin tenants activos: selección (mostrará lista vacía con mensaje)
+            navigate('/select-tenant', { replace: true });
+          }
         } else if (tenants.length === 1) {
           navigate('/', { replace: true });
         } else {

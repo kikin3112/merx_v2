@@ -409,7 +409,9 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
         )
 
     # Buscar o crear usuario
+    es_superadmin_email = settings.SUPERADMIN_EMAIL and email.lower() == settings.SUPERADMIN_EMAIL.lower()
     user = db.query(Usuarios).filter(Usuarios.email == email).first()
+    is_new_user = False
     if not user:
         # Lazy sync: crear usuario sin tenant, con password aleatorio
         nombre = clerk_payload.get("first_name", "") or ""
@@ -422,12 +424,18 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
             password_hash=hash_password(secrets.token_urlsafe(32)),
             rol="admin",
             estado=True,
-            es_superadmin=False,
+            es_superadmin=bool(es_superadmin_email),
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+        is_new_user = True
         logger.info(f"Usuario creado via Clerk sync: {email}")
+    elif es_superadmin_email and not user.es_superadmin:
+        # El usuario ya existe pero no tiene es_superadmin — corregir
+        user.es_superadmin = True
+        db.commit()
+        logger.info(f"es_superadmin=True asignado a {email} via SUPERADMIN_EMAIL")
 
     if not user.estado:
         raise HTTPException(
@@ -465,6 +473,7 @@ async def clerk_exchange(request: Request, db: Session = Depends(get_db)):
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UsuarioResponse.model_validate(user),
         tenants=tenants_response,
+        is_new_user=is_new_user,
     )
 
 
@@ -502,6 +511,8 @@ async def clerk_webhook(request: Request, db: Session = Depends(get_db)):
         logger.warning(f"Webhook Clerk sin email — evento: {event_type}")
         return {"status": "ok"}
 
+    es_superadmin_email = settings.SUPERADMIN_EMAIL and email.lower() == settings.SUPERADMIN_EMAIL.lower()
+
     if event_type == "user.created":
         existing = db.query(Usuarios).filter(Usuarios.email == email).first()
         if not existing:
@@ -514,11 +525,15 @@ async def clerk_webhook(request: Request, db: Session = Depends(get_db)):
                 password_hash=hash_password(secrets.token_urlsafe(32)),
                 rol="admin",
                 estado=True,
-                es_superadmin=False,
+                es_superadmin=bool(es_superadmin_email),
             )
             db.add(user)
             db.commit()
             logger.info(f"Usuario creado via webhook Clerk: {email}")
+        elif es_superadmin_email and not existing.es_superadmin:
+            existing.es_superadmin = True
+            db.commit()
+            logger.info(f"es_superadmin=True asignado a {email} via webhook Clerk")
 
     elif event_type == "user.updated":
         user = db.query(Usuarios).filter(Usuarios.email == email).first()

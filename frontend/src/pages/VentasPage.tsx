@@ -1,7 +1,7 @@
 import { HelpPanel } from '../components/tutorial/HelpPanel';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ventas } from '../api/endpoints';
+import { ventas, facturas } from '../api/endpoints';
 import { formatCurrency, formatDate, formatDateTime, statusColor } from '../utils/format';
 import type { Venta } from '../types';
 import DocumentForm from '../components/DocumentForm';
@@ -137,6 +137,18 @@ export default function VentasPage() {
     },
     onError: (err: any) => showError(err, 'Error al crear venta'),
   });
+
+  const handleDescargarFactura = (id: string, numero: string) => {
+    facturas.descargarPdf(id).then((res) => {
+      const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${numero}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+  };
 
   const confirmarMutation = useMutation({
     mutationFn: (id: string) => ventas.confirmar(id),
@@ -419,16 +431,12 @@ export default function VentasPage() {
                         )}
                         {v.estado === 'FACTURADA' && (
                           <>
-                            {v.url_pdf && (
-                              <a
-                                href={v.url_pdf}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded px-2 py-1 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)] hover:opacity-80 transition-opacity"
-                              >
-                                PDF
-                              </a>
-                            )}
+                            <button
+                              onClick={() => handleDescargarFactura(v.id, v.numero_venta)}
+                              className="rounded px-2 py-1 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)] hover:opacity-80 transition-opacity"
+                            >
+                              Factura
+                            </button>
                             <a
                               href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}${v.url_pdf ? `: ${v.url_pdf}` : ''}`)}`}
                               target="_blank"
@@ -518,16 +526,12 @@ export default function VentasPage() {
                     )}
                     {v.estado === 'FACTURADA' && (
                       <>
-                        {v.url_pdf && (
-                          <a
-                            href={v.url_pdf}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]"
-                          >
-                            PDF
-                          </a>
-                        )}
+                        <button
+                          onClick={() => handleDescargarFactura(v.id, v.numero_venta)}
+                          className="rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--cv-primary-dim)] text-[var(--cv-primary)]"
+                        >
+                          Factura
+                        </button>
                         <a
                           href={`https://wa.me/${v.tercero?.telefono?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(`Hola! Te comparto tu factura ${v.numero_venta}${v.url_pdf ? `: ${v.url_pdf}` : ''}`)}`}
                           target="_blank"
