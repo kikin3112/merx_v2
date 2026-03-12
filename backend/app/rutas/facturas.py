@@ -169,6 +169,8 @@ async def pos_factura(
         estado="PENDIENTE",
         descuento_global=getattr(data, "descuento_global", Decimal("0.00")) or Decimal("0.00"),
         observaciones=data.observaciones,
+        created_by=ctx.user.id,
+        updated_by=ctx.user.id,
     )
     db.add(factura)
     db.flush()
@@ -326,6 +328,8 @@ async def crear_factura(
         estado="PENDIENTE",
         descuento_global=getattr(data, "descuento_global", Decimal("0.00")) or Decimal("0.00"),
         observaciones=data.observaciones,
+        created_by=ctx.user.id,
+        updated_by=ctx.user.id,
     )
     db.add(factura)
     db.flush()
