@@ -5,26 +5,41 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+
+class UtcBaseModel(BaseModel):
+    """Base model que garantiza tzinfo=UTC en todos los campos datetime al serializar.
+    Soluciona el bug donde psycopg2 retorna datetimes naive y el frontend los interpreta
+    como hora local en vez de UTC."""
+
+    @model_validator(mode="after")
+    def _ensure_utc_datetimes(self):
+        for field_name in self.model_fields:
+            value = getattr(self, field_name, None)
+            if isinstance(value, datetime) and value.tzinfo is None:
+                object.__setattr__(self, field_name, value.replace(tzinfo=timezone.utc))
+        return self
+
+
 # ============================================================================
 # AUTENTICACIÓN
 # ============================================================================
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(UtcBaseModel):
     """Schema para request de login"""
 
     email: EmailStr = Field(..., description="Email del usuario")
     password: str = Field(..., min_length=1, description="Contraseña")
 
 
-class ChangePasswordRequest(BaseModel):
+class ChangePasswordRequest(UtcBaseModel):
     """Schema para cambio de contraseña"""
 
     current_password: str = Field(..., min_length=1, description="Contraseña actual")
     new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
 
 
-class Token(BaseModel):
+class Token(UtcBaseModel):
     """Schema para respuesta de autenticación con tokens"""
 
     access_token: str = Field(..., description="Token de acceso JWT")
@@ -39,7 +54,7 @@ class Token(BaseModel):
 # ============================================================================
 
 
-class UsuarioMini(BaseModel):
+class UsuarioMini(UtcBaseModel):
     """Schema mínimo de usuario para embeddings (creadores, etc.)"""
 
     id: UUID
@@ -49,7 +64,7 @@ class UsuarioMini(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class TerceroMini(BaseModel):
+class TerceroMini(UtcBaseModel):
     """Schema mínimo de tercero para embeddings en ventas."""
 
     id: UUID
@@ -60,7 +75,7 @@ class TerceroMini(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UsuarioBase(BaseModel):
+class UsuarioBase(UtcBaseModel):
     nombre: str = Field(..., max_length=100)
     email: EmailStr
     rol: str = Field(..., pattern="^(superadmin|admin|operador|contador|vendedor|readonly)$")
@@ -74,7 +89,7 @@ class UsuarioCreate(UsuarioBase):
     password: str = Field(..., min_length=8)
 
 
-class UsuarioUpdate(BaseModel):
+class UsuarioUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
     rol: Optional[str] = Field(None, pattern="^(admin|operador|contador|vendedor|readonly)$")
@@ -96,7 +111,7 @@ class UsuarioResponse(UsuarioBase):
 # ============================================================================
 
 
-class TerceroBase(BaseModel):
+class TerceroBase(UtcBaseModel):
     tipo_documento: str = Field(..., pattern="^(CC|NIT|CE|PAS|TI)$")
     numero_documento: str = Field(..., max_length=50)
     nombre: str = Field(..., max_length=200)
@@ -118,7 +133,7 @@ class TerceroCreate(TerceroBase):
     pass
 
 
-class TerceroUpdate(BaseModel):
+class TerceroUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     tipo_tercero: Optional[str] = None
     direccion: Optional[str] = None
@@ -147,7 +162,7 @@ class TerceroResponse(TerceroBase):
 # ============================================================================
 
 
-class ProductoBase(BaseModel):
+class ProductoBase(UtcBaseModel):
     codigo_interno: str = Field(..., max_length=50)
     codigo_barras: Optional[str] = Field(None, max_length=100)
     nombre: str = Field(..., max_length=200)
@@ -167,7 +182,7 @@ class ProductoCreate(ProductoBase):
     pass
 
 
-class ProductoUpdate(BaseModel):
+class ProductoUpdate(UtcBaseModel):
     codigo_barras: Optional[str] = None
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
@@ -203,7 +218,7 @@ class ProductoResponse(ProductoBase):
 # ============================================================================
 
 
-class InventarioBase(BaseModel):
+class InventarioBase(UtcBaseModel):
     producto_id: UUID
     cantidad_disponible: Decimal = Field(default=Decimal("0.00"), ge=0)
     costo_promedio_ponderado: Decimal = Field(default=Decimal("0.00"), ge=0)
@@ -214,7 +229,7 @@ class InventarioCreate(InventarioBase):
     pass
 
 
-class InventarioUpdate(BaseModel):
+class InventarioUpdate(UtcBaseModel):
     cantidad_disponible: Optional[Decimal] = None
     costo_promedio_ponderado: Optional[Decimal] = None
     valor_total: Optional[Decimal] = None
@@ -227,7 +242,7 @@ class InventarioResponse(InventarioBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MovimientoInventarioBase(BaseModel):
+class MovimientoInventarioBase(UtcBaseModel):
     producto_id: UUID
     tipo_movimiento: str  # Usa Enum del modelo
     cantidad: Decimal
@@ -256,7 +271,7 @@ class MovimientoInventarioResponse(MovimientoInventarioBase):
 # ============================================================================
 
 
-class VentasDetalleBase(BaseModel):
+class VentasDetalleBase(UtcBaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
@@ -300,14 +315,14 @@ class VentasDetalleResponse(VentasDetalleBase):
         return result
 
 
-class VentasBase(BaseModel):
+class VentasBase(UtcBaseModel):
     tercero_id: UUID
     fecha_venta: date
     estado: str = "PENDIENTE"
     observaciones: Optional[str] = None
 
 
-class VentasCreate(BaseModel):
+class VentasCreate(UtcBaseModel):
     """
     Schema para crear venta.
     NO requiere totales manuales del cliente.
@@ -321,17 +336,17 @@ class VentasCreate(BaseModel):
     detalles: List[VentasDetalleCreate] = Field(..., min_length=1)
 
 
-class VentasUpdate(BaseModel):
+class VentasUpdate(UtcBaseModel):
     estado: Optional[str] = None
     observaciones: Optional[str] = None
 
 
-class VentaEnvioCreate(BaseModel):
+class VentaEnvioCreate(UtcBaseModel):
     canal: str = Field(..., pattern="^(whatsapp|email)$")
     destinatario: str = Field(..., min_length=1, max_length=200)
 
 
-class VentaEnvioResponse(BaseModel):
+class VentaEnvioResponse(UtcBaseModel):
     id: UUID
     venta_id: UUID
     canal: str
@@ -341,7 +356,7 @@ class VentaEnvioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class VentasResponse(BaseModel):
+class VentasResponse(UtcBaseModel):
     """
     Schema de respuesta con todos los campos calculados
     """
@@ -381,7 +396,7 @@ class VentasResponse(BaseModel):
 # ============================================================================
 
 
-class ComprasDetalleBase(BaseModel):
+class ComprasDetalleBase(UtcBaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
@@ -406,14 +421,14 @@ class ComprasDetalleResponse(ComprasDetalleBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ComprasBase(BaseModel):
+class ComprasBase(UtcBaseModel):
     tercero_id: UUID
     fecha_compra: date
     estado: str = "PENDIENTE"
     observaciones: Optional[str] = None
 
 
-class ComprasCreate(BaseModel):
+class ComprasCreate(UtcBaseModel):
     """NO requiere totales manuales"""
 
     tercero_id: UUID
@@ -423,12 +438,12 @@ class ComprasCreate(BaseModel):
     detalles: List[ComprasDetalleCreate]
 
 
-class ComprasUpdate(BaseModel):
+class ComprasUpdate(UtcBaseModel):
     estado: Optional[str] = None
     observaciones: Optional[str] = None
 
 
-class ComprasResponse(BaseModel):
+class ComprasResponse(UtcBaseModel):
     id: UUID
     numero_compra: str
     tercero_id: UUID
@@ -460,7 +475,7 @@ class ComprasResponse(BaseModel):
 # ============================================================================
 
 
-class OrdenesProduccionDetalleBase(BaseModel):
+class OrdenesProduccionDetalleBase(UtcBaseModel):
     insumo_id: UUID
     cantidad_requerida: Decimal = Field(..., gt=0)
     costo_unitario: Decimal = Field(..., ge=0)
@@ -479,7 +494,7 @@ class OrdenesProduccionDetalleResponse(OrdenesProduccionDetalleBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class OrdenesProduccionBase(BaseModel):
+class OrdenesProduccionBase(UtcBaseModel):
     producto_id: UUID
     cantidad_producir: Decimal = Field(..., gt=0)
     fecha_inicio: date
@@ -488,7 +503,7 @@ class OrdenesProduccionBase(BaseModel):
     observaciones: Optional[str] = None
 
 
-class OrdenesProduccionCreate(BaseModel):
+class OrdenesProduccionCreate(UtcBaseModel):
     """NO requiere costo_estimado manual"""
 
     producto_id: UUID
@@ -499,13 +514,13 @@ class OrdenesProduccionCreate(BaseModel):
     detalles: List[OrdenesProduccionDetalleCreate]
 
 
-class OrdenesProduccionUpdate(BaseModel):
+class OrdenesProduccionUpdate(UtcBaseModel):
     fecha_fin_real: Optional[date] = None
     estado: Optional[str] = None
     observaciones: Optional[str] = None
 
 
-class OrdenesProduccionResponse(BaseModel):
+class OrdenesProduccionResponse(UtcBaseModel):
     id: UUID
     numero_orden: str
     producto_id: UUID
@@ -536,7 +551,7 @@ class OrdenesProduccionResponse(BaseModel):
 # ============================================================================
 
 
-class RecetaIngredienteBase(BaseModel):
+class RecetaIngredienteBase(UtcBaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     unidad: str = Field(default="UNIDAD", pattern="^(UNIDAD|GRAMO|KILOGRAMO|MILILITRO|LITRO|METRO|CENTIMETRO)$")
@@ -566,7 +581,7 @@ class RecetaIngredienteResponse(RecetaIngredienteBase):
         return instance
 
 
-class RecetaBase(BaseModel):
+class RecetaBase(UtcBaseModel):
     nombre: str = Field(..., max_length=200)
     descripcion: Optional[str] = None
     producto_resultado_id: UUID
@@ -585,7 +600,7 @@ class RecetaCreate(RecetaBase):
     ingredientes: List[RecetaIngredienteCreate] = Field(default=[])
 
 
-class RecetaUpdate(BaseModel):
+class RecetaUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     cantidad_resultado: Optional[Decimal] = None
@@ -627,7 +642,7 @@ class RecetaResponse(RecetaBase):
 # ============================================================================
 
 
-class IngredienteCostoDetalle(BaseModel):
+class IngredienteCostoDetalle(UtcBaseModel):
     producto_id: str
     producto_nombre: str
     cantidad: Decimal
@@ -642,7 +657,7 @@ class IngredienteCostoDetalle(BaseModel):
     porcentaje_del_total: Decimal = Decimal("0.00")
 
 
-class RecetaCostoResponse(BaseModel):
+class RecetaCostoResponse(UtcBaseModel):
     receta_id: str
     receta_nombre: str
     producto_resultado_id: str
@@ -680,7 +695,7 @@ class RecetaCostoResponse(BaseModel):
 # ============================================================================
 
 
-class EquivalenciaUnidadCreate(BaseModel):
+class EquivalenciaUnidadCreate(UtcBaseModel):
     unidad_receta: str = Field(..., description="Unidad usada en la receta (ej: GRAMO)")
     factor: Decimal = Field(
         ..., gt=0, description="Factor de conversión: cuántas unidades de inventario por 1 unidad_receta"
@@ -696,7 +711,7 @@ class EquivalenciaUnidadCreate(BaseModel):
         return v
 
 
-class EquivalenciaUnidadResponse(BaseModel):
+class EquivalenciaUnidadResponse(UtcBaseModel):
     id: UUID
     producto_id: UUID
     unidad_receta: str
@@ -712,12 +727,12 @@ class EquivalenciaUnidadResponse(BaseModel):
 # ============================================================================
 
 
-class FijarCostoRequest(BaseModel):
+class FijarCostoRequest(UtcBaseModel):
     notas: Optional[str] = Field(None, max_length=500)
     vigente_desde: Optional[date] = None
 
 
-class CostoEstandarResponse(BaseModel):
+class CostoEstandarResponse(UtcBaseModel):
     id: UUID
     receta_id: UUID
     costo_unitario: Decimal
@@ -733,12 +748,12 @@ class CostoEstandarResponse(BaseModel):
 # ============================================================================
 
 
-class ProduccionRequest(BaseModel):
+class ProduccionRequest(UtcBaseModel):
     cantidad: Decimal = Field(..., gt=0, description="Cantidad de lotes a producir")
     observaciones: Optional[str] = None
 
 
-class ProduccionResponse(BaseModel):
+class ProduccionResponse(UtcBaseModel):
     receta_id: str
     receta_nombre: str
     producto_resultado_id: str
@@ -750,6 +765,7 @@ class ProduccionResponse(BaseModel):
     costo_unitario: Decimal
     documento_referencia: str
     movimiento_id: str
+    asiento_contable_creado: bool = False
 
 
 # ============================================================================
@@ -757,7 +773,7 @@ class ProduccionResponse(BaseModel):
 # ============================================================================
 
 
-class CostoIndirectoCreate(BaseModel):
+class CostoIndirectoCreate(UtcBaseModel):
     nombre: str = Field(..., max_length=150, description="Ej: Empaque, Gas, Arrendamiento")
     monto: Decimal = Field(..., ge=0, description="COP por unidad (FIJO) o % del costo base (PORCENTAJE)")
     tipo: str = Field(..., description="FIJO o PORCENTAJE")
@@ -770,7 +786,7 @@ class CostoIndirectoCreate(BaseModel):
         return v
 
 
-class CostoIndirectoUpdate(BaseModel):
+class CostoIndirectoUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     monto: Optional[Decimal] = Field(None, ge=0)
     tipo: Optional[str] = None
@@ -784,7 +800,7 @@ class CostoIndirectoUpdate(BaseModel):
         return v
 
 
-class CostoIndirectoResponse(BaseModel):
+class CostoIndirectoResponse(UtcBaseModel):
     id: UUID
     nombre: str
     monto: Decimal
@@ -795,7 +811,7 @@ class CostoIndirectoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CostoIndirectoDetalle(BaseModel):
+class CostoIndirectoDetalle(UtcBaseModel):
     """Detalle de un costo indirecto aplicado en un cálculo."""
 
     id: str
@@ -810,14 +826,14 @@ class CostoIndirectoDetalle(BaseModel):
 # ============================================================================
 
 
-class CVURequest(BaseModel):
+class CVURequest(UtcBaseModel):
     receta_id: UUID
     precio_venta: Decimal = Field(gt=0, description="Precio de venta unitario en COP")
     costos_fijos_periodo: Decimal = Field(ge=0, description="Costos fijos totales del periodo (ej: mes)")
     volumen_esperado: int = Field(gt=0, description="Unidades esperadas a producir/vender en el periodo")
 
 
-class CVUResponse(BaseModel):
+class CVUResponse(UtcBaseModel):
     receta_nombre: str
     costo_variable_unitario: Decimal
     margen_contribucion_unitario: Decimal
@@ -829,13 +845,13 @@ class CVUResponse(BaseModel):
     utilidad_esperada: Decimal
 
 
-class VariacionSensibilidad(BaseModel):
+class VariacionSensibilidad(UtcBaseModel):
     variable: str = Field(..., description="precio_venta | mano_obra | ingrediente | costos_fijos | volumen")
     ingrediente_id: Optional[UUID] = None
     delta_porcentaje: Decimal = Field(..., description="Ej: 20 = +20%, -10 = -10%")
 
 
-class SensibilidadRequest(BaseModel):
+class SensibilidadRequest(UtcBaseModel):
     receta_id: UUID
     precio_venta: Decimal = Field(gt=0)
     costos_fijos: Decimal = Field(ge=0)
@@ -843,7 +859,7 @@ class SensibilidadRequest(BaseModel):
     variaciones: List[VariacionSensibilidad]
 
 
-class SensibilidadResultado(BaseModel):
+class SensibilidadResultado(UtcBaseModel):
     variable: str
     delta_porcentaje: Decimal
     nuevo_pe_unidades: Decimal
@@ -852,7 +868,7 @@ class SensibilidadResultado(BaseModel):
     impacto_pe_porcentaje: Decimal
 
 
-class SensibilidadResponse(BaseModel):
+class SensibilidadResponse(UtcBaseModel):
     receta_nombre: str
     pe_base_unidades: Decimal
     pe_base_ingresos: Decimal
@@ -860,7 +876,7 @@ class SensibilidadResponse(BaseModel):
     resultados: List[SensibilidadResultado]
 
 
-class EscenarioPrecioCompleto(BaseModel):
+class EscenarioPrecioCompleto(UtcBaseModel):
     nombre: str
     precio: Decimal
     margen_porcentaje: Decimal
@@ -869,20 +885,20 @@ class EscenarioPrecioCompleto(BaseModel):
     viabilidad: str  # VIABLE | CRITICO | NO_VIABLE
 
 
-class EscenariosRequest(BaseModel):
+class EscenariosRequest(UtcBaseModel):
     receta_id: UUID
     costos_fijos: Decimal = Field(ge=0)
     volumen: int = Field(gt=0)
     precio_mercado_referencia: Optional[Decimal] = Field(None, gt=0)
 
 
-class EscenariosResponse(BaseModel):
+class EscenariosResponse(UtcBaseModel):
     receta_nombre: str
     costo_variable_unitario: Decimal
     escenarios: List[EscenarioPrecioCompleto]
 
 
-class RentabilidadItem(BaseModel):
+class RentabilidadItem(UtcBaseModel):
     receta_id: str
     receta_nombre: str
     costo_unitario: Decimal
@@ -893,19 +909,19 @@ class RentabilidadItem(BaseModel):
     mc_por_minuto: Optional[Decimal] = None
 
 
-class EscalaLote(BaseModel):
+class EscalaLote(UtcBaseModel):
     lote: int
     costo_unitario: Decimal
     ahorro_vs_lote_1: Decimal
 
 
-class EconomiaEscalaRequest(BaseModel):
+class EconomiaEscalaRequest(UtcBaseModel):
     receta_id: UUID
     costos_fijos_setup: Decimal = Field(ge=0, description="Costo fijo de preparación/setup por lote")
     lotes: List[int] = Field(default=[1, 5, 10, 20, 50], description="Tamaños de lote a evaluar")
 
 
-class EconomiaEscalaResponse(BaseModel):
+class EconomiaEscalaResponse(UtcBaseModel):
     receta_nombre: str
     costo_variable_unitario: Decimal
     escala: List[EscalaLote]
@@ -916,11 +932,11 @@ class EconomiaEscalaResponse(BaseModel):
 # ============================================================================
 
 
-class SociaLogroCreate(BaseModel):
+class SociaLogroCreate(UtcBaseModel):
     logro_id: str = Field(..., max_length=50)
 
 
-class SociaLogroResponse(BaseModel):
+class SociaLogroResponse(UtcBaseModel):
     id: UUID
     logro_id: str
     desbloqueado_en: datetime
@@ -929,7 +945,7 @@ class SociaLogroResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class SociaProgresoResponse(BaseModel):
+class SociaProgresoResponse(UtcBaseModel):
     nivel_actual: str
     logros: List[str]
     total_logros: int
@@ -940,7 +956,7 @@ class SociaProgresoResponse(BaseModel):
 # ============================================================================
 
 
-class CotizacionesDetalleBase(BaseModel):
+class CotizacionesDetalleBase(UtcBaseModel):
     producto_id: UUID
     cantidad: Decimal = Field(..., gt=0)
     precio_unitario: Decimal = Field(..., ge=0)
@@ -973,7 +989,7 @@ class CotizacionesDetalleResponse(CotizacionesDetalleBase):
         return result
 
 
-class CotizacionesBase(BaseModel):
+class CotizacionesBase(UtcBaseModel):
     tercero_id: UUID
     fecha_cotizacion: date
     fecha_vencimiento: date
@@ -981,7 +997,7 @@ class CotizacionesBase(BaseModel):
     observaciones: Optional[str] = None
 
 
-class CotizacionesCreate(BaseModel):
+class CotizacionesCreate(UtcBaseModel):
     tercero_id: UUID
     fecha_cotizacion: date
     fecha_vencimiento: date
@@ -990,12 +1006,12 @@ class CotizacionesCreate(BaseModel):
     detalles: List[CotizacionesDetalleCreate]
 
 
-class CotizacionesUpdate(BaseModel):
+class CotizacionesUpdate(UtcBaseModel):
     estado: Optional[str] = None
     observaciones: Optional[str] = None
 
 
-class CotizacionesResponse(BaseModel):
+class CotizacionesResponse(UtcBaseModel):
     id: UUID
     numero_cotizacion: str
     tercero_id: UUID
@@ -1027,7 +1043,7 @@ class CotizacionesResponse(BaseModel):
 # ============================================================================
 
 
-class CuentaContableBase(BaseModel):
+class CuentaContableBase(UtcBaseModel):
     codigo: str = Field(..., max_length=20)
     nombre: str = Field(..., max_length=200)
     tipo_cuenta: str = Field(..., pattern="^(ACTIVO|PASIVO|PATRIMONIO|INGRESO|EGRESO|COSTOS)$")
@@ -1042,7 +1058,7 @@ class CuentaContableCreate(CuentaContableBase):
     pass
 
 
-class CuentaContableUpdate(BaseModel):
+class CuentaContableUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     acepta_movimiento: Optional[bool] = None
     estado: Optional[bool] = None
@@ -1060,7 +1076,7 @@ class CuentaContableResponse(CuentaContableBase):
 # ============================================================================
 
 
-class ConfiguracionContableBase(BaseModel):
+class ConfiguracionContableBase(UtcBaseModel):
     concepto: str = Field(..., max_length=100)
     cuenta_debito_id: Optional[UUID] = None
     cuenta_credito_id: Optional[UUID] = None
@@ -1071,13 +1087,13 @@ class ConfiguracionContableCreate(ConfiguracionContableBase):
     pass
 
 
-class ConfiguracionContableUpdate(BaseModel):
+class ConfiguracionContableUpdate(UtcBaseModel):
     cuenta_debito_id: Optional[UUID] = None
     cuenta_credito_id: Optional[UUID] = None
     descripcion: Optional[str] = None
 
 
-class ConfiguracionContableResponse(BaseModel):
+class ConfiguracionContableResponse(UtcBaseModel):
     id: UUID
     concepto: str
     cuenta_debito_id: Optional[UUID] = None
@@ -1097,7 +1113,7 @@ class ConfiguracionContableResponse(BaseModel):
 # ============================================================================
 
 
-class PeriodoContableResponse(BaseModel):
+class PeriodoContableResponse(UtcBaseModel):
     id: UUID
     anio: int
     mes: int
@@ -1114,7 +1130,7 @@ class PeriodoContableResponse(BaseModel):
 # ============================================================================
 
 
-class DetalleAsientoBase(BaseModel):
+class DetalleAsientoBase(UtcBaseModel):
     cuenta_id: UUID
     debito: Decimal = Field(default=Decimal("0.00"), ge=0)
     credito: Decimal = Field(default=Decimal("0.00"), ge=0)
@@ -1133,7 +1149,7 @@ class DetalleAsientoResponse(DetalleAsientoBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AsientoContableBase(BaseModel):
+class AsientoContableBase(UtcBaseModel):
     fecha: date
     tipo_asiento: str = Field(..., pattern="^(VENTAS|COMPRAS|PRODUCCION|AJUSTE|NOMINA|OTRO)$")
     concepto: str = Field(..., max_length=200)
@@ -1141,7 +1157,7 @@ class AsientoContableBase(BaseModel):
     estado: str = "ACTIVO"
 
 
-class AsientoContableCreate(BaseModel):
+class AsientoContableCreate(UtcBaseModel):
     fecha: date
     tipo_asiento: str
     concepto: str
@@ -1150,11 +1166,11 @@ class AsientoContableCreate(BaseModel):
     detalles: List[DetalleAsientoCreate]
 
 
-class AsientoContableUpdate(BaseModel):
+class AsientoContableUpdate(UtcBaseModel):
     estado: Optional[str] = None
 
 
-class AsientoContableResponse(BaseModel):
+class AsientoContableResponse(UtcBaseModel):
     id: UUID
     numero_asiento: str
     fecha: date
@@ -1181,7 +1197,7 @@ class AsientoContableResponse(BaseModel):
 # ============================================================================
 
 
-class MedioPagoBase(BaseModel):
+class MedioPagoBase(UtcBaseModel):
     nombre: str = Field(..., max_length=100)
     tipo: str = Field(..., pattern="^(EFECTIVO|TRANSFERENCIA|CHEQUE|TARJETA_CREDITO|TARJETA_DEBITO|OTRO)$")
     requiere_referencia: bool = False
@@ -1192,7 +1208,7 @@ class MedioPagoCreate(MedioPagoBase):
     pass
 
 
-class MedioPagoUpdate(BaseModel):
+class MedioPagoUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     requiere_referencia: Optional[bool] = None
     estado: Optional[bool] = None
@@ -1210,7 +1226,7 @@ class MedioPagoResponse(MedioPagoBase):
 # ============================================================================
 
 
-class CarteraBase(BaseModel):
+class CarteraBase(UtcBaseModel):
     tipo_cartera: str = Field(..., pattern="^(COBRAR|PAGAR)$")
     documento_referencia: str = Field(..., max_length=100)
     tercero_id: UUID
@@ -1226,7 +1242,7 @@ class CarteraCreate(CarteraBase):
     pass
 
 
-class CarteraUpdate(BaseModel):
+class CarteraUpdate(UtcBaseModel):
     saldo_pendiente: Optional[Decimal] = None
     estado: Optional[str] = None
     observaciones: Optional[str] = None
@@ -1239,7 +1255,7 @@ class CarteraResponse(CarteraBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PagoCarteraBase(BaseModel):
+class PagoCarteraBase(UtcBaseModel):
     cartera_id: UUID
     fecha_pago: date
     valor_pago: Decimal = Field(..., gt=0)
@@ -1263,7 +1279,7 @@ class PagoCarteraResponse(PagoCarteraBase):
 # ============================================================================
 
 
-class SecuenciaBase(BaseModel):
+class SecuenciaBase(UtcBaseModel):
     nombre: str = Field(..., max_length=50)
     prefijo: str = Field(..., max_length=20)
     siguiente_numero: int = Field(default=1, ge=1)
@@ -1274,7 +1290,7 @@ class SecuenciaCreate(SecuenciaBase):
     pass
 
 
-class SecuenciaUpdate(BaseModel):
+class SecuenciaUpdate(UtcBaseModel):
     siguiente_numero: Optional[int] = None
 
 
@@ -1290,7 +1306,7 @@ class SecuenciaResponse(SecuenciaBase):
 # ============================================================================
 
 
-class PlanBase(BaseModel):
+class PlanBase(UtcBaseModel):
     nombre: str = Field(..., max_length=100)
     descripcion: Optional[str] = None
     precio_mensual: Decimal = Field(default=Decimal("0.00"), ge=0)
@@ -1307,7 +1323,7 @@ class PlanCreate(PlanBase):
     pass
 
 
-class PlanUpdate(BaseModel):
+class PlanUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     precio_mensual: Optional[Decimal] = None
@@ -1337,7 +1353,7 @@ class PlanWithStats(PlanResponse):
 # ============================================================================
 
 
-class TenantBase(BaseModel):
+class TenantBase(UtcBaseModel):
     nombre: str = Field(..., max_length=200)
     slug: str = Field(..., max_length=100, pattern=r"^[a-z0-9-]+$")
     nit: Optional[str] = Field(None, max_length=50)
@@ -1361,7 +1377,7 @@ class TenantCreate(TenantBase):
     admin_password: str = Field(..., min_length=8)
 
 
-class TenantUpdate(BaseModel):
+class TenantUpdate(UtcBaseModel):
     nombre: Optional[str] = None
     nit: Optional[str] = None
     email_contacto: Optional[EmailStr] = None
@@ -1385,7 +1401,7 @@ class TenantResponse(TenantBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class TenantBriefResponse(BaseModel):
+class TenantBriefResponse(UtcBaseModel):
     """Respuesta simplificada de tenant para listados"""
 
     id: UUID
@@ -1401,7 +1417,7 @@ class TenantBriefResponse(BaseModel):
 # ============================================================================
 
 
-class UsuarioTenantBase(BaseModel):
+class UsuarioTenantBase(UtcBaseModel):
     rol: str = Field(default="operador", pattern="^(admin|operador|contador|vendedor|readonly)$")
     esta_activo: bool = True
     es_default: bool = False
@@ -1412,7 +1428,7 @@ class UsuarioTenantCreate(UsuarioTenantBase):
     tenant_id: UUID
 
 
-class UsuarioTenantUpdate(BaseModel):
+class UsuarioTenantUpdate(UtcBaseModel):
     rol: Optional[str] = None
     esta_activo: Optional[bool] = None
     es_default: Optional[bool] = None
@@ -1433,13 +1449,13 @@ class UsuarioTenantResponse(UsuarioTenantBase):
 # ============================================================================
 
 
-class TenantSelectionRequest(BaseModel):
+class TenantSelectionRequest(UtcBaseModel):
     """Request para seleccionar un tenant después del login"""
 
     tenant_id: UUID
 
 
-class TokenWithTenants(BaseModel):
+class TokenWithTenants(UtcBaseModel):
     """Respuesta de login con lista de tenants disponibles"""
 
     access_token: str
@@ -1451,7 +1467,7 @@ class TokenWithTenants(BaseModel):
     is_new_user: bool = False
 
 
-class TokenWithTenant(BaseModel):
+class TokenWithTenant(UtcBaseModel):
     """Respuesta después de seleccionar un tenant"""
 
     access_token: str
@@ -1468,7 +1484,7 @@ class TokenWithTenant(BaseModel):
 # ============================================================================
 
 
-class TenantRegisterRequest(BaseModel):
+class TenantRegisterRequest(UtcBaseModel):
     """Request para registrar un nuevo tenant y su admin"""
 
     # Datos del tenant
@@ -1489,7 +1505,7 @@ class TenantRegisterRequest(BaseModel):
     plan_id: Optional[UUID] = None
 
 
-class TenantRegisterResponse(BaseModel):
+class TenantRegisterResponse(UtcBaseModel):
     """Respuesta del registro de tenant"""
 
     tenant: TenantResponse
@@ -1497,7 +1513,7 @@ class TenantRegisterResponse(BaseModel):
     message: str = "Tenant registrado exitosamente"
 
 
-class TenantRegisterWithClerkRequest(BaseModel):
+class TenantRegisterWithClerkRequest(UtcBaseModel):
     """Request para registrar un tenant con usuario ya autenticado via Clerk"""
 
     nombre_empresa: str = Field(..., max_length=200)
@@ -1515,19 +1531,19 @@ class TenantRegisterWithClerkRequest(BaseModel):
 # ============================================================================
 
 
-class TenantChangePlanRequest(BaseModel):
+class TenantChangePlanRequest(UtcBaseModel):
     """Request para cambiar el plan de un tenant."""
 
     plan_id: UUID
 
 
-class TenantExtendTrialRequest(BaseModel):
+class TenantExtendTrialRequest(UtcBaseModel):
     """Request para extender el periodo trial de un tenant."""
 
     dias_adicionales: int = Field(..., ge=1, le=90)
 
 
-class TenantMetricas(BaseModel):
+class TenantMetricas(UtcBaseModel):
     """Métricas de uso de un tenant."""
 
     tenant_id: UUID
@@ -1541,7 +1557,7 @@ class TenantMetricas(BaseModel):
     max_facturas_mes: int = 0
 
 
-class TenantPulse(BaseModel):
+class TenantPulse(UtcBaseModel):
     """Health Score de un tenant para predecir churn."""
 
     tenant_id: UUID
@@ -1553,7 +1569,7 @@ class TenantPulse(BaseModel):
     calculado_en: datetime
 
 
-class SaaSDashboardKPIs(BaseModel):
+class SaaSDashboardKPIs(UtcBaseModel):
     """KPIs del dashboard SaaS para superadmin."""
 
     total_tenants: int = 0
@@ -1567,7 +1583,7 @@ class SaaSDashboardKPIs(BaseModel):
     revenue_por_plan: list = []
 
 
-class SuscripcionResponse(BaseModel):
+class SuscripcionResponse(UtcBaseModel):
     """Respuesta de suscripción."""
 
     id: UUID
@@ -1581,7 +1597,7 @@ class SuscripcionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PagoHistorialResponse(BaseModel):
+class PagoHistorialResponse(UtcBaseModel):
     """Respuesta de historial de pagos."""
 
     id: UUID
@@ -1595,7 +1611,7 @@ class PagoHistorialResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UsuarioTenantDetailResponse(BaseModel):
+class UsuarioTenantDetailResponse(UtcBaseModel):
     """Respuesta de usuario en tenant con detalle de usuario."""
 
     id: UUID
@@ -1614,7 +1630,7 @@ class UsuarioTenantDetailResponse(BaseModel):
 # ============================================================================
 
 
-class AuditLogResponse(BaseModel):
+class AuditLogResponse(UtcBaseModel):
     """Respuesta de un registro de auditoría."""
 
     id: UUID
@@ -1631,7 +1647,7 @@ class AuditLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AuditLogListResponse(BaseModel):
+class AuditLogListResponse(UtcBaseModel):
     """Respuesta paginada de audit logs."""
 
     items: List[AuditLogResponse]
@@ -1645,7 +1661,7 @@ class AuditLogListResponse(BaseModel):
 # ============================================================================
 
 
-class ImpersonationResponse(BaseModel):
+class ImpersonationResponse(UtcBaseModel):
     """Respuesta al impersonar un usuario. Token de corta duración (15 min)."""
 
     access_token: str
@@ -1661,7 +1677,7 @@ class ImpersonationResponse(BaseModel):
 # ============================================================================
 
 
-class GlobalUserCreate(BaseModel):
+class GlobalUserCreate(UtcBaseModel):
     """Crear usuario global sin asociación a tenant."""
 
     nombre: str = Field(..., max_length=100)
@@ -1671,7 +1687,7 @@ class GlobalUserCreate(BaseModel):
     estado: bool = True
 
 
-class GlobalUserUpdate(BaseModel):
+class GlobalUserUpdate(UtcBaseModel):
     """Actualizar datos globales de un usuario."""
 
     nombre: Optional[str] = Field(None, max_length=100)
@@ -1686,7 +1702,7 @@ class GlobalUserResponse(UsuarioResponse):
     tenant_count: int = 0
 
 
-class GlobalUserListResponse(BaseModel):
+class GlobalUserListResponse(UtcBaseModel):
     """Respuesta paginada de usuarios globales."""
 
     items: List[GlobalUserResponse]
@@ -1695,7 +1711,7 @@ class GlobalUserListResponse(BaseModel):
     limit: int
 
 
-class ForcePasswordRequest(BaseModel):
+class ForcePasswordRequest(UtcBaseModel):
     """Request para forzar reset de contraseña (superadmin)."""
 
     new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
@@ -1707,7 +1723,7 @@ class ForcePasswordRequest(BaseModel):
 
 
 # Pipelines
-class CrmPipelineBase(BaseModel):
+class CrmPipelineBase(UtcBaseModel):
     """Base schema para CRM Pipeline."""
 
     nombre: str = Field(..., max_length=100)
@@ -1722,7 +1738,7 @@ class CrmPipelineCreate(CrmPipelineBase):
     pass
 
 
-class CrmPipelineUpdate(BaseModel):
+class CrmPipelineUpdate(UtcBaseModel):
     """Schema para actualizar Pipeline."""
 
     nombre: Optional[str] = Field(None, max_length=100)
@@ -1730,7 +1746,7 @@ class CrmPipelineUpdate(BaseModel):
     color: Optional[str] = Field(None, max_length=7)
 
 
-class CrmStageBase(BaseModel):
+class CrmStageBase(UtcBaseModel):
     """Base schema para CRM Stage."""
 
     nombre: str = Field(..., max_length=100)
@@ -1773,7 +1789,7 @@ class CrmStageCreate(CrmStageBase):
 
 
 # Deals
-class CrmDealBase(BaseModel):
+class CrmDealBase(UtcBaseModel):
     """Base schema para CRM Deal."""
 
     nombre: str = Field(..., max_length=200)
@@ -1791,7 +1807,7 @@ class CrmDealCreate(CrmDealBase):
     usuario_id: Optional[UUID] = None
 
 
-class CrmDealUpdate(BaseModel):
+class CrmDealUpdate(UtcBaseModel):
     """Schema para actualizar Deal."""
 
     nombre: Optional[str] = Field(None, max_length=200)
@@ -1823,13 +1839,13 @@ class CrmDealResponse(CrmDealBase):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
-class CrmDealMoveRequest(BaseModel):
+class CrmDealMoveRequest(UtcBaseModel):
     """Request para mover deal a otro stage."""
 
     stage_id: UUID
 
 
-class CrmDealCloseRequest(BaseModel):
+class CrmDealCloseRequest(UtcBaseModel):
     """Request para cerrar deal."""
 
     estado_cierre: str = Field(..., pattern="^(GANADO|PERDIDO|ABANDONADO)$")
@@ -1837,7 +1853,7 @@ class CrmDealCloseRequest(BaseModel):
 
 
 # Activities
-class CrmActivityCreate(BaseModel):
+class CrmActivityCreate(UtcBaseModel):
     """Schema para crear Activity."""
 
     deal_id: UUID
@@ -1853,7 +1869,7 @@ class CrmActivityCreate(BaseModel):
         return v or datetime.now(timezone.utc)
 
 
-class CrmActivityResponse(BaseModel):
+class CrmActivityResponse(UtcBaseModel):
     """Schema de respuesta para Activity."""
 
     id: UUID
@@ -1881,7 +1897,7 @@ class CrmActivityResponse(BaseModel):
 # ============================================================================
 
 
-class TicketPQRSCreate(BaseModel):
+class TicketPQRSCreate(UtcBaseModel):
     """Request para crear un ticket PQRS"""
 
     tipo: str = Field(default="SOPORTE", description="PETICION|QUEJA|RECLAMO|SUGERENCIA|SOPORTE")
@@ -1890,20 +1906,20 @@ class TicketPQRSCreate(BaseModel):
     prioridad: str = Field(default="MEDIA", description="BAJA|MEDIA|ALTA|CRITICA")
 
 
-class TicketPQRSUpdate(BaseModel):
+class TicketPQRSUpdate(UtcBaseModel):
     """Request para actualizar un ticket (admin)"""
 
     estado: Optional[str] = Field(None, description="ABIERTO|EN_PROCESO|RESUELTO|CERRADO")
     prioridad: Optional[str] = Field(None, description="BAJA|MEDIA|ALTA|CRITICA")
 
 
-class RespuestaTicket(BaseModel):
+class RespuestaTicket(UtcBaseModel):
     """Request para agregar una respuesta a un ticket"""
 
     contenido: str = Field(..., min_length=1)
 
 
-class TicketPQRSResponse(BaseModel):
+class TicketPQRSResponse(UtcBaseModel):
     """Response de un ticket PQRS"""
 
     id: UUID
@@ -1931,7 +1947,7 @@ class TicketPQRSAdminResponse(TicketPQRSResponse):
 # ============================================================================
 
 
-class CalificacionCreate(BaseModel):
+class CalificacionCreate(UtcBaseModel):
     """Request para crear o actualizar la calificación del tenant."""
 
     estrellas: int = Field(..., ge=1, le=5, description="Calificación de 1 a 5 estrellas")
@@ -1939,7 +1955,7 @@ class CalificacionCreate(BaseModel):
     comentario: Optional[str] = None
 
 
-class CalificacionResponse(BaseModel):
+class CalificacionResponse(UtcBaseModel):
     """Response de una calificación."""
 
     id: UUID
@@ -1955,7 +1971,7 @@ class CalificacionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CalificacionPublicaResponse(BaseModel):
+class CalificacionPublicaResponse(UtcBaseModel):
     """Para la landing page — sin datos sensibles de tenant."""
 
     estrellas: int
@@ -1967,7 +1983,7 @@ class CalificacionPublicaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CalificacionModerarRequest(BaseModel):
+class CalificacionModerarRequest(UtcBaseModel):
     """Request para moderar una calificación (superadmin)."""
 
     nuevo_estado: str = Field(..., pattern="^(aprobada|rechazada)$")
