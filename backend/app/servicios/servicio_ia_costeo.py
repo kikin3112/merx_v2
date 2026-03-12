@@ -269,24 +269,28 @@ Analiza los escenarios y responde ÚNICAMENTE con un objeto JSON válido (sin ma
         validated = SociaAnalisisResponse(**raw)
 
         # Post-validation: ground precio_sugerido and margen_esperado in real math
-        cvu: Decimal = Decimal(str(context.get("costo_variable_unitario", "0")))
+        # costo_unitario_completo viene del contexto (ya calculado en generar_escenarios_precio)
+        # para no duplicar la llamada a calcular_costo_receta.
+        costo_unitario_completo: Decimal = Decimal(str(context.get("costo_unitario_completo", "0")))
 
-        # Fix 1: precio_sugerido must be >= CVU (cannot sell below variable cost)
-        if validated.precio_sugerido < cvu:
+        # Fix 1: precio_sugerido must be >= costo_unitario_completo (no vender a pérdida neta)
+        if validated.precio_sugerido < costo_unitario_completo:
             precios_viables = [
                 Decimal(str(e["precio"]))
                 for e in context.get("escenarios", [])
-                if e.get("viabilidad") in ("VIABLE", "CRITICO") and Decimal(str(e.get("precio", 0))) > 0
+                if e.get("viabilidad") in ("VIABLE", "CRITICO")
+                and Decimal(str(e.get("precio", 0))) > costo_unitario_completo
             ]
-            precio_corregido = min(precios_viables) if precios_viables else cvu
+            precio_corregido = min(precios_viables) if precios_viables else costo_unitario_completo
             validated = validated.model_copy(update={"precio_sugerido": precio_corregido})
-            logger.warning(f"Socia: precio_sugerido < CVU corregido a {precio_corregido}")
+            logger.warning(f"Socia: precio_sugerido < costo_unitario_completo corregido a {precio_corregido}")
 
-        # Fix 2: margen_esperado recalculado deterministicamente (no confiar en el LLM)
+        # Fix 2: margen_esperado recalculado deterministicamente usando costo total
+        # (margen neto, no margen de contribución) — consistente con calcular_costo_receta
         if validated.precio_sugerido > 0:
-            real_margen = ((validated.precio_sugerido - cvu) / validated.precio_sugerido * Decimal("100")).quantize(
-                Decimal("0.01"), rounding=ROUND_HALF_UP
-            )
+            real_margen = (
+                (validated.precio_sugerido - costo_unitario_completo) / validated.precio_sugerido * Decimal("100")
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             validated = validated.model_copy(update={"margen_esperado": real_margen})
 
         result = validated.model_dump(mode="json")  # Decimals → str for JSONB storage
