@@ -219,13 +219,18 @@ class ServicioAnalisisCVU:
         5. Precio premium — mercado * 1.30
         """
         receta = self._get_receta(receta_id)
-        # Una sola llamada a calcular_costo_receta para obtener ambas bases
-        resultado_completo = self._calculadora.calcular_costo_receta(receta_id)
+        # Calcular costo con CIF (mismo flujo que el endpoint /calcular-costo)
+        resultado_base = self._calculadora.calcular_costo_receta(receta_id)
+        costo_base = resultado_base["costo_ingredientes"] + resultado_base["costo_mano_obra"]
+        cif_fijo, cif_porc = self._indirectos.calcular_fijo_y_porcentaje(costo_base)
+        resultado_con_cif = self._calculadora.calcular_costo_receta(
+            receta_id, cif_fijo_mensual=cif_fijo, cif_porcentaje=cif_porc
+        )
         cantidad = receta.cantidad_resultado if receta.cantidad_resultado > 0 else 1
         # CVU (costo primo/cantidad) — para PE y análisis de contribución (excluye CIF fijo)
-        cvu = (Decimal(str(resultado_completo["costo_primo"])) / cantidad).quantize(_D01, rounding=ROUND_HALF_UP)
-        # costo_unitario_completo incluye CIF prorrateado — fuente de verdad para precio objetivo
-        costo_unitario_completo = Decimal(str(resultado_completo["costo_unitario"]))
+        cvu = (Decimal(str(resultado_base["costo_primo"])) / cantidad).quantize(_D01, rounding=ROUND_HALF_UP)
+        # costo_unitario_completo incluye CIF prorrateado — única fuente de verdad para precio objetivo
+        costo_unitario_completo = Decimal(str(resultado_con_cif["costo_unitario"]))
         vol = Decimal(volumen)
 
         def _build_escenario(nombre: str, precio: Decimal, cf: Decimal, v: Decimal) -> dict:
