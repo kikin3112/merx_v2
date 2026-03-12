@@ -10,8 +10,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
-from ..datos.modelos import Inventarios, MovimientosInventario, Productos, Recetas, TipoMovimiento
+from ..datos.modelos import (
+    Inventarios,
+    MovimientosInventario,
+    ProductoEquivalenciaUnidad,
+    Productos,
+    Recetas,
+    TipoMovimiento,
+)
 from ..utils.logger import setup_logger
+from .servicio_productos import _TABLA_CONVERSION_ESTANDAR
 
 logger = setup_logger(__name__)
 
@@ -241,6 +249,27 @@ class ServicioInventario:
     # PRODUCCION DESDE RECETAS
     # ========================================================================
 
+    def _resolver_factor_conversion(self, ing_unidad: str, producto: Productos) -> Decimal:
+        """Retorna factor para convertir cantidad en unidad_receta a unidad_inventario. Default 1."""
+        prod_unidad = producto.unidad_medida
+        if ing_unidad == prod_unidad:
+            return Decimal("1")
+        par = (ing_unidad, prod_unidad)
+        if par in _TABLA_CONVERSION_ESTANDAR:
+            return _TABLA_CONVERSION_ESTANDAR[par]
+        eq = (
+            self.db.query(ProductoEquivalenciaUnidad)
+            .filter(
+                ProductoEquivalenciaUnidad.tenant_id == self.tenant_id,
+                ProductoEquivalenciaUnidad.producto_id == producto.id,
+                ProductoEquivalenciaUnidad.unidad_receta == ing_unidad,
+            )
+            .first()
+        )
+        if eq:
+            return eq.factor
+        return Decimal("1")
+
     def validar_stock_receta(self, receta: Recetas, cantidad_producir: Decimal) -> List[dict]:
         """
         Valida si hay stock suficiente para producir la cantidad indicada.
@@ -254,7 +283,11 @@ class ServicioInventario:
             merma = getattr(ingrediente, "porcentaje_merma", None) or Decimal("0.00")
             factor = Decimal("1") - merma / Decimal("100")
             cantidad_bruta = (ingrediente.cantidad / factor).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
-            cantidad_requerida = cantidad_bruta * cantidad_producir
+            cantidad_requerida_receta = cantidad_bruta * cantidad_producir
+            factor_conv = self._resolver_factor_conversion(ingrediente.unidad, ingrediente.producto)
+            cantidad_requerida = (cantidad_requerida_receta * factor_conv).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
             stock_disponible = self.obtener_stock_disponible(ingrediente.producto_id)
 
             if stock_disponible < cantidad_requerida:
@@ -342,7 +375,11 @@ class ServicioInventario:
             cantidad_bruta_unitaria = (ingrediente.cantidad / factor).quantize(
                 Decimal("0.0001"), rounding=ROUND_HALF_UP
             )
-            cantidad_requerida = cantidad_bruta_unitaria * cantidad_producir
+            cantidad_requerida_receta = cantidad_bruta_unitaria * cantidad_producir
+            factor_conv = self._resolver_factor_conversion(ingrediente.unidad, ingrediente.producto)
+            cantidad_requerida = (cantidad_requerida_receta * factor_conv).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
             costo_unitario_ing = self.obtener_costo_promedio(ingrediente.producto_id)
             costo_total_ingredientes += (cantidad_requerida * costo_unitario_ing).quantize(
                 Decimal("0.01"), rounding=ROUND_HALF_UP
